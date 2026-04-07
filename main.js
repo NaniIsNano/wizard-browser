@@ -101,17 +101,23 @@ function createWindow() {
     }
   });
 
-  // Block third-party cookies
+  // Block third-party cookies only (allow first-party for site functionality)
   ses.webRequest.onHeadersReceived((details, callback) => {
     const headers = details.responseHeaders || {};
 
-    // Remove tracking headers
-    delete headers['set-cookie'];
-    delete headers['Set-Cookie'];
-
-    // Add security headers
-    headers['X-Content-Type-Options'] = ['nosniff'];
-    headers['X-Frame-Options'] = ['SAMEORIGIN'];
+    // Only strip cookies from third-party requests
+    try {
+      const pageUrl = new URL(details.url);
+      const frameUrl = details.frame ? new URL(details.frame.url) : null;
+      if (frameUrl && pageUrl.hostname !== frameUrl.hostname) {
+        delete headers['set-cookie'];
+        delete headers['Set-Cookie'];
+      }
+    } catch {
+      // If we can't parse URLs, strip cookies to be safe
+      delete headers['set-cookie'];
+      delete headers['Set-Cookie'];
+    }
 
     callback({ responseHeaders: headers });
   });
