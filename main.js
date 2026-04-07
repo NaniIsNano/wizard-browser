@@ -57,13 +57,30 @@ function createWindow() {
 
   mainWindow.setBrowserView(browserView);
 
-  // Position the BrowserView below the toolbar (48px)
+  // Position the BrowserView below the toolbar (48px), or fullscreen
+  let isFullscreen = false;
   const updateBounds = () => {
     const bounds = mainWindow.getContentBounds();
-    browserView.setBounds({ x: 0, y: 48, width: bounds.width, height: bounds.height - 48 });
+    if (isFullscreen) {
+      browserView.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
+    } else {
+      browserView.setBounds({ x: 0, y: 48, width: bounds.width, height: bounds.height - 48 });
+    }
   };
   updateBounds();
   mainWindow.on('resize', updateBounds);
+
+  // Handle HTML5 fullscreen (e.g. YouTube video player)
+  browserView.webContents.on('enter-html-full-screen', () => {
+    isFullscreen = true;
+    mainWindow.setFullScreen(true);
+    updateBounds();
+  });
+  browserView.webContents.on('leave-html-full-screen', () => {
+    isFullscreen = false;
+    mainWindow.setFullScreen(false);
+    updateBounds();
+  });
 
   // --- PRIVACY: Block trackers & ads at network level ---
   const ses = browserView.webContents.session;
