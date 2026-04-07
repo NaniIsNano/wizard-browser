@@ -2,7 +2,10 @@
   "name": "wizard-browser",
   "version": "1.0.0",
   "description": "Privacy-focused browser powered by Wizard Search",
-  "author": "NaniIsNano",
+  "author": {
+    "name": "NaniIsNano",
+    "email": "naniis@nano.dev"
+  },
   "license": "MIT",
   "main": "main.js",
   "scripts": {

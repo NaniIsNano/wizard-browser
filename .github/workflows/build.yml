@@ -15,9 +15,7 @@ jobs:
         with:
           node-version: 20
       - run: npm install
-      - run: npx electron-builder --win nsis portable
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: npx electron-builder --win nsis portable --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: wizard-browser-windows
@@ -32,9 +30,7 @@ jobs:
         with:
           node-version: 20
       - run: npm install
-      - run: npx electron-builder --linux AppImage deb
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: npx electron-builder --linux AppImage deb --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: wizard-browser-linux
