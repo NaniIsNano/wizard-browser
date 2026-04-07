@@ -1,6 +1,8 @@
 # Wizard Browser
 
-A privacy-focused browser with a built-in search engine that doesn't track you.
+A libre, privacy-focused browser with a built-in search engine that doesn't track you.
+
+**Free software, free as in freedom.**
 
 ## Features
 
