@@ -65,15 +65,12 @@ function createWindow() {
   updateBounds();
   mainWindow.on('resize', updateBounds);
 
+  // --- PRIVACY: Block trackers & ads at network level ---
+  const ses = browserView.webContents.session;
+
   // Override user agent at session level to remove Electron identifier
   const spoofedUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
   ses.setUserAgent(spoofedUA);
-
-  // Load the search engine as homepage
-  browserView.webContents.loadFile('search.html');
-
-  // --- PRIVACY: Block trackers & ads at network level ---
-  const ses = browserView.webContents.session;
 
   ses.webRequest.onBeforeRequest((details, callback) => {
     const url = details.url.toLowerCase();
@@ -149,6 +146,9 @@ function createWindow() {
     browserView.webContents.loadURL(url);
     return { action: 'deny' };
   });
+
+  // Load the search engine as homepage
+  browserView.webContents.loadFile('search.html');
 
   // Clear all browsing data on window close
   mainWindow.on('close', async () => {
