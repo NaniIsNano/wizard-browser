@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Wizard Search</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #181818;
+  --border: #222;
+  --text: #e5e5e5;
+  --text2: #888;
+  --accent: #7c3aed;
+  --accent2: #a855f7;
+  --green: #22c55e;
+  --red: #ef4444;
+  --link: #a78bfa;
+  --link-hover: #c4b5fd;
+  --url-color: #555;
+  --snippet: #999;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- HOME STATE --- */
+#home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2em;
+}
+
+#logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 3.5em;
+  font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.6em;
+  letter-spacing: -1px;
+  user-select: none;
+  cursor: pointer;
+}
+
+#logo-sub {
+  font-size: 0.85em;
+  color: var(--text2);
+  margin-bottom: 2em;
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+#search-form {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 620px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#search-form:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+}
+
+#searchbar {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.05em;
+  font-family: 'Inter', sans-serif;
+  padding: 14px 18px;
+  outline: none;
+}
+
+#searchbar::placeholder { color: #444; }
+
+#search-btn {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  padding: 14px 24px;
+  font-size: 0.95em;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+  letter-spacing: 0.3px;
+}
+
+#search-btn:hover { background: var(--accent2); }
+
+#shortcuts {
+  display: flex;
+  gap: 12px;
+  margin-top: 2em;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.shortcut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: var(--text2);
+  font-size: 0.82em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.shortcut:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.shortcut-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+/* --- RESULTS STATE --- */
+#results-page {
+  display: none;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 24px;
+}
+
+#results-body {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+#results-main {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  #results-body {
+    flex-direction: column-reverse;
+  }
+  #knowledge-panel {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+#results-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+#results-logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.4em;
+  font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+#results-search-form {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+#results-search-form:focus-within { border-color: var(--accent); }
+
+#results-searchbar {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.95em;
+  font-family: 'Inter', sans-serif;
+  padding: 10px 14px;
+  outline: none;
+}
+
+#results-search-btn {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 18px;
+  font-size: 0.85em;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+
+#results-search-btn:hover { background: var(--accent2); }
+
+/* Tabs */
+#tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  padding: 8px 18px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.85em;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.tab-btn:hover { background: var(--surface); color: var(--text); }
+
+.tab-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Loading */
+#loading {
+  display: none;
+  text-align: center;
+  padding: 3em 0;
+  color: var(--text2);
+}
+
+.spinner {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Stats */
+#stats {
+  font-size: 0.8em;
+  color: var(--text2);
+  margin-bottom: 16px;
+}
+
+/* Results */
+.result {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.15s;
+}
+
+.result:hover { border-color: #333; }
+
+.result-source {
+  font-size: 0.7em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent2);
+  margin-bottom: 6px;
+}
+
+.result-title {
+  font-weight: 600;
+  font-size: 1.05em;
+  color: var(--link);
+  text-decoration: none;
+  display: block;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.result-title:hover { color: var(--link-hover); }
+
+.result-url {
+  font-size: 0.78em;
+  color: var(--url-color);
+  word-break: break-all;
+  margin-bottom: 6px;
+}
+
+.result-snippet {
+  font-size: 0.85em;
+  color: var(--snippet);
+  line-height: 1.5;
+}
+
+/* Images toolbar */
+#images-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+#images-toolbar label {
+  font-size: 0.82em;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+#images-toolbar input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+#images-count {
+  font-size: 0.8em;
+  color: var(--text2);
+  margin-left: auto;
+}
+
+/* Images grid */
+#images-results {
+  display: none;
+}
+
+.images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.result-image {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s, transform 0.15s;
+  cursor: pointer;
+}
+
+.result-image:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+.result-image img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+
+.result-image .img-title {
+  padding: 7px 10px;
+  font-size: 0.72em;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.result-image .img-source {
+  padding: 0 10px 7px;
+  font-size: 0.65em;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Image Viewer Overlay (Google-style) */
+#image-viewer {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 9999;
+  backdrop-filter: blur(8px);
+}
+
+#iv-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+#iv-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  min-width: 0;
+}
+
+#iv-left img {
+  max-width: 100%;
+  max-height: calc(100vh - 40px);
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+  user-select: none;
+}
+
+#iv-nav-prev, #iv-nav-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  background: rgba(30,30,30,0.8);
+  border: 1px solid #333;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 10;
+}
+
+#iv-nav-prev { left: 16px; }
+#iv-nav-next { right: 16px; }
+#iv-nav-prev:hover, #iv-nav-next:hover { background: var(--accent); }
+
+#iv-sidebar {
+  width: 360px;
+  background: #111;
+  border-left: 1px solid #222;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+#iv-close {
+  position: absolute;
+  top: 16px;
+  right: 380px;
+  width: 40px;
+  height: 40px;
+  background: rgba(30,30,30,0.8);
+  border: 1px solid #333;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.15s;
+}
+
+#iv-close:hover { background: var(--red); }
+
+#iv-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+#iv-source {
+  font-size: 0.8em;
+  color: var(--accent2);
+  word-break: break-all;
+  margin-bottom: 16px;
+}
+
+#iv-size {
+  font-size: 0.78em;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+
+.iv-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.iv-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid #252525;
+  background: #1a1a1a;
+  color: var(--text);
+  font-size: 0.85em;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+
+.iv-btn:hover { border-color: var(--accent); background: #222; }
+
+.iv-btn svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+
+.iv-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.iv-btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+#iv-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-weight: 500;
+  z-index: 10000;
+  display: none;
+  animation: toastIn 0.2s ease;
+}
+
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 24px;
+  padding-bottom: 40px;
+}
+
+.pagination button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 0.85em;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.pagination button:hover { border-color: var(--accent); color: var(--text); }
+.pagination button:disabled { background: var(--accent); color: #fff; border-color: var(--accent); cursor: default; }
+
+/* No results */
+#no-results {
+  display: none;
+  text-align: center;
+  padding: 3em 0;
+  color: var(--text2);
+  font-size: 0.95em;
+}
+
+/* Privacy badge at bottom of home */
+#privacy-badge {
+  margin-top: 3em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green);
+  font-size: 0.8em;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+/* Knowledge Panel */
+#knowledge-panel {
+  display: none;
+  width: 380px;
+  max-width: 380px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 10px;
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  align-self: flex-start;
+}
+
+#knowledge-panel::-webkit-scrollbar { width: 5px; }
+#knowledge-panel::-webkit-scrollbar-track { background: transparent; }
+#knowledge-panel::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+#knowledge-panel::-webkit-scrollbar-thumb:hover { background: #444; }
+
+.kp-image-wrap {
+  width: 100%;
+  overflow: hidden;
+  background: var(--surface2);
+}
+
+.kp-image {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+  display: block;
+}
+
+.kp-body {
+  padding: 20px 24px;
+}
+
+.kp-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5em;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.kp-subtitle {
+  font-size: 0.85em;
+  color: var(--accent2);
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+
+.kp-description {
+  font-size: 0.88em;
+  color: var(--snippet);
+  line-height: 1.65;
+  margin-bottom: 20px;
+}
+
+.kp-facts {
+  font-size: 0.82em;
+  margin-bottom: 4px;
+}
+
+.kp-fact-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.kp-fact-row:last-child {
+  border-bottom: none;
+}
+
+.kp-fact-label {
+  color: var(--text2);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kp-fact-value {
+  color: var(--text);
+  text-align: right;
+  word-break: break-word;
+}
+
+/* People also search for */
+.kp-also-section {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.kp-also-title {
+  font-size: 0.82em;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kp-also-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.kp-also-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  flex-shrink: 0;
+  width: 72px;
+  cursor: pointer;
+}
+
+.kp-also-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  transition: border-color 0.15s;
+}
+
+.kp-also-item:hover .kp-also-thumb {
+  border-color: var(--accent);
+}
+
+.kp-also-name {
+  font-size: 0.7em;
+  color: var(--text2);
+  text-align: center;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+.kp-also-item:hover .kp-also-name {
+  color: var(--link);
+}
+
+/* Wikipedia source link */
+.kp-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+}
+
+.kp-wiki-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.kp-source {
+  font-size: 0.78em;
+  color: var(--text2);
+}
+
+.kp-source a {
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.kp-source a:hover { color: var(--link-hover); text-decoration: underline; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home">
+  <div id="logo" onclick="goHome()">Wizard</div>
+  <div id="logo-sub">Private Search</div>
+  <form id="search-form" autocomplete="off" onsubmit="handleSearch(event)">
+    <input type="text" id="searchbar" placeholder="Search the web privately..." autofocus />
+    <button type="submit" id="search-btn">Search</button>
+  </form>
+  <div id="shortcuts">
+    <a class="shortcut" href="https://youtube.com" target="_blank"><span class="shortcut-icon">Y</span> YouTube</a>
+    <a class="shortcut" href="https://github.com" target="_blank"><span class="shortcut-icon">G</span> GitHub</a>
+    <a class="shortcut" href="https://reddit.com" target="_blank"><span class="shortcut-icon">R</span> Reddit</a>
+    <a class="shortcut" href="https://wikipedia.org" target="_blank"><span class="shortcut-icon">W</span> Wikipedia</a>
+  </div>
+  <div id="privacy-badge">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+    No tracking. No cookies. No logs.
+  </div>
+</div>
+
+<!-- RESULTS PAGE -->
+<div id="results-page">
+  <div id="results-header">
+    <div id="results-logo" onclick="goHome()">Wizard</div>
+    <form id="results-search-form" autocomplete="off" onsubmit="handleResultsSearch(event)">
+      <input type="text" id="results-searchbar" placeholder="Search..." />
+      <button type="submit" id="results-search-btn">Go</button>
+    </form>
+  </div>
+
+  <div id="results-body">
+    <div id="results-main">
+      <div id="tabs">
+        <button class="tab-btn active" id="web-tab" onclick="showTab('web')">Web</button>
+        <button class="tab-btn" id="images-tab" onclick="showTab('images')">Images</button>
+      </div>
+
+      <div id="loading"><div class="spinner"></div><br>Searching...</div>
+      <div id="stats"></div>
+      <div id="no-results">No results found. Try different keywords.</div>
+
+      <div id="web-results"></div>
+      <div id="images-results">
+        <div id="images-toolbar">
+          <label><input type="checkbox" id="safesearch-toggle" checked /> SafeSearch</label>
+          <span id="images-count"></span>
+        </div>
+        <div class="images-grid" id="images-grid"></div>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+    <div id="knowledge-panel"></div>
+  </div>
+</div>
+
+<!-- Image Viewer Overlay -->
+<div id="image-viewer">
+  <button id="iv-close" title="Close">&times;</button>
+  <div id="iv-container">
+    <div id="iv-left">
+      <button id="iv-nav-prev" title="Previous">&#9664;</button>
+      <img id="iv-img" src="" alt="" />
+      <button id="iv-nav-next" title="Next">&#9654;</button>
+    </div>
+    <div id="iv-sidebar">
+      <div id="iv-title"></div>
+      <div id="iv-source"></div>
+      <div id="iv-size"></div>
+      <div class="iv-actions">
+        <a id="iv-visit" class="iv-btn iv-btn-primary" href="#" target="_blank">
+          <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+          Visit page
+        </a>
+        <button id="iv-copy-url" class="iv-btn">
+          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          Copy image URL
+        </button>
+        <button id="iv-copy-img" class="iv-btn">
+          <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+          Copy image
+        </button>
+        <a id="iv-open-img" class="iv-btn" href="#" target="_blank">
+          <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+          Open image in new tab
+        </a>
+        <button id="iv-download" class="iv-btn">
+          <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Download image
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="iv-toast">Copied!</div>
+
+<script>
+let webResults = [];
+let imagesResults = [];
+let currentPage = 1;
+const resultsPerPage = 15;
+let searchStartTime = 0;
+
+function goHome() {
+  document.getElementById('home').style.display = 'flex';
+  document.getElementById('results-page').style.display = 'none';
+  document.getElementById('searchbar').value = '';
+  document.getElementById('searchbar').focus();
+}
+
+function handleSearch(e) {
+  e.preventDefault();
+  const term = document.getElementById('searchbar').value.trim();
+  if (term) startSearch(term);
+}
+
+function handleResultsSearch(e) {
+  e.preventDefault();
+  const term = document.getElementById('results-searchbar').value.trim();
+  if (term) startSearch(term);
+}
+
+function startSearch(term) {
+  // URL detection — go directly
+  if (isURL(term)) {
+    let url = term;
+    if (!/^https?:\/\//.test(url)) url = 'https://' + url;
+    window.location.href = url;
+    return;
+  }
+
+  // Switch to results view
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('results-page').style.display = 'block';
+  document.getElementById('results-searchbar').value = term;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('no-results').style.display = 'none';
+  document.getElementById('web-results').innerHTML = '';
+  document.getElementById('images-grid').innerHTML = '';
+  document.getElementById('pagination').innerHTML = '';
+  document.getElementById('stats').textContent = '';
+  document.getElementById('knowledge-panel').style.display = 'none';
+
+  searchStartTime = performance.now();
+  search(term);
+}
+
+function isURL(term) {
+  return /^(https?:\/\/|www\.)/.test(term) || (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(term) && !term.includes(' '));
+}
+
+function getDomain(url) {
+  try { return new URL(url).hostname.replace('www.', ''); } catch { return url; }
+}
+
+function getSource(url) {
+  const d = getDomain(url);
+  if (d.includes('reddit.com')) return 'Reddit';
+  if (d.includes('wikipedia.org')) return 'Wikipedia';
+  if (d.includes('news.ycombinator.com') || d.includes('hn.algolia.com')) return 'Hacker News';
+  if (d.includes('archive.org')) return 'Archive';
+  if (d.includes('stackoverflow.com')) return 'Stack Overflow';
+  if (d.includes('github.com')) return 'GitHub';
+  if (d.includes('youtube.com') || d.includes('youtu.be')) return 'YouTube';
+  if (d.includes('amazon.com')) return 'Amazon';
+  if (d.includes('ebay.com')) return 'eBay';
+  if (d.includes('openstreetmap.org')) return 'Maps';
+  return getDomain(url);
+}
+
+// ---- APIs ----
+
+// === SearXNG — privacy metasearch (aggregates Google, Bing, etc.) ===
+const searxInstances = [
+  'https://searx.be',
+  'https://priv.au',
+  'https://search.bladerunn.in'
+];
+
+async function fetchSearx(term) {
+  for (const instance of searxInstances) {
+    try {
+      const res = await fetch(`${instance}/search?q=${encodeURIComponent(term)}&format=json&categories=general`, { signal: AbortSignal.timeout(4000) });
+      if (!res.ok) continue;
+      const json = await res.json();
+      if (json.results && json.results.length > 0) {
+        return json.results.slice(0, 15).map((r, i) => ({
+          title: r.title || '',
+          url: r.url,
+          snippet: (r.content || '').slice(0, 200),
+          relevance: 98 - i,
+          source: getDomain(r.url)
+        }));
+      }
+    } catch { continue; }
+  }
+  return [];
+}
+
+// === Wikipedia ===
+async function fetchWiki(term) {
+  try {
+    const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&srlimit=3&format=json&origin=*`);
+    const json = await res.json();
+    return json.query.search.map((s, i) => ({
+      title: s.title,
+      url: `https://en.wikipedia.org/wiki/${encodeURIComponent(s.title.replace(/ /g,'_'))}`,
+      snippet: s.snippet.replace(/<[^>]*>/g, ''),
+      relevance: 92 - i,
+      source: 'Wikipedia'
+    }));
+  } catch { return []; }
+}
+
+// === Reddit ===
+async function fetchReddit(term) {
+  try {
+    const res = await fetch(`https://www.reddit.com/search.json?q=${encodeURIComponent(term)}&limit=5&sort=relevance`);
+    const json = await res.json();
+    return json.data.children.map((p, i) => ({
+      title: p.data.title,
+      url: 'https://www.reddit.com' + p.data.permalink,
+      snippet: (p.data.selftext || '').slice(0, 150),
+      relevance: 78 - i + Math.min((p.data.ups || 0) / 100, 10),
+      source: 'Reddit'
+    }));
+  } catch { return []; }
+}
+
+// === Hacker News ===
+async function fetchHN(term) {
+  try {
+    const res = await fetch(`https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(term)}&tags=story&hitsPerPage=5`);
+    const json = await res.json();
+    return json.hits.filter(h => h.url).map((h, i) => ({
+      title: h.title,
+      url: h.url,
+      snippet: `${h.points || 0} points | ${h.num_comments || 0} comments`,
+      relevance: 80 - i + Math.min((h.points || 0) / 50, 10),
+      source: 'Hacker News'
+    }));
+  } catch { return []; }
+}
+
+// === Archive.org ===
+async function fetchArchive(term) {
+  try {
+    const res = await fetch(`https://archive.org/advancedsearch.php?q=${encodeURIComponent(term)}&output=json&rows=3`);
+    const json = await res.json();
+    return json.response.docs.map((d, i) => ({
+      title: d.title || 'Untitled',
+      url: `https://archive.org/details/${d.identifier}`,
+      snippet: d.description ? (Array.isArray(d.description) ? d.description[0] : d.description).slice(0, 150) : '',
+      relevance: 55 - i,
+      source: 'Archive'
+    }));
+  } catch { return []; }
+}
+
+// === Stack Overflow ===
+async function fetchStackOverflow(term) {
+  try {
+    const res = await fetch(`https://api.stackexchange.com/2.3/search/excerpts?order=desc&sort=relevance&q=${encodeURIComponent(term)}&site=stackoverflow&pagesize=5`);
+    const json = await res.json();
+    return (json.items || []).filter(i => i.question_id).map((item, i) => ({
+      title: item.title.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'),
+      url: `https://stackoverflow.com/questions/${item.question_id}`,
+      snippet: (item.excerpt || '').replace(/<[^>]*>/g, '').slice(0, 150),
+      relevance: 85 - i,
+      source: 'Stack Overflow'
+    }));
+  } catch { return []; }
+}
+
+// === GitHub ===
+async function fetchGitHub(term) {
+  try {
+    const res = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(term)}&sort=stars&per_page=5`);
+    const json = await res.json();
+    return (json.items || []).map((repo, i) => ({
+      title: `${repo.full_name} — ${(repo.description || '').slice(0, 80)}`,
+      url: repo.html_url,
+      snippet: `★ ${repo.stargazers_count.toLocaleString()} stars · ${repo.language || 'Multi'} · ${repo.forks_count.toLocaleString()} forks`,
+      relevance: 88 - i,
+      source: 'GitHub'
+    }));
+  } catch { return []; }
+}
+
+// === YouTube via Piped (privacy frontend) ===
+async function fetchYouTube(term) {
+  const instances = [
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.adminforge.de'
+  ];
+  for (const instance of instances) {
+    try {
+      const res = await fetch(`${instance}/search?q=${encodeURIComponent(term)}&filter=videos`, { signal: AbortSignal.timeout(3000) });
+      const json = await res.json();
+      return (json.items || []).filter(v => v.url).slice(0, 5).map((v, i) => ({
+        title: v.title || '',
+        url: `https://www.youtube.com${v.url}`,
+        snippet: `${v.uploaderName || ''} · ${formatViews(v.views)} views`,
+        relevance: 90 - i,
+        source: 'YouTube'
+      }));
+    } catch { continue; }
+  }
+  return [];
+}
+
+function formatViews(n) {
+  if (!n) return '0';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
+
+async function fetchImages(term) {
+  // Only curated sources — no Reddit (random people/memes)
+  const results = await Promise.all([
+    fetchWikipediaPageImages(term),
+    fetchWikimediaImages(term, 40)
+  ]);
+
+  // Wikipedia page images first (curated for the topic), then Commons
+  let all = [...results[0], ...results[1]];
+
+  // Relevance scoring — rank by how well title/filename matches search term
+  const termLower = term.toLowerCase();
+  const termWords = termLower.split(/\s+/).filter(w => w.length > 1);
+  const termJoined = termWords.join('');
+  const termUnder = termWords.join('_');
+
+  all.forEach(img => {
+    const titleLower = (img.title || '').toLowerCase();
+    const filename = (img.full_url || img.thumb_url || '').split('/').pop().toLowerCase().replace(/_/g, ' ');
+    let score = 0;
+
+    // Exact full term in title = highest relevance
+    if (titleLower.includes(termLower)) score += 100;
+    // Exact full term in filename
+    if (filename.includes(termLower) || filename.includes(termUnder) || filename.includes(termJoined)) score += 80;
+
+    // Count how many search words appear in the title
+    let wordHits = 0;
+    termWords.forEach(w => {
+      if (titleLower.includes(w)) { score += 25; wordHits++; }
+      if (filename.includes(w)) score += 10;
+    });
+
+    // If NONE of the search words appear in title or filename, it's irrelevant
+    const filenameHasAny = termWords.some(w => filename.includes(w));
+    if (wordHits === 0 && !filenameHasAny) {
+      // Only keep if it's a Wikipedia page image (curated for the article)
+      if (img.source !== 'Wikipedia') {
+        score -= 500; // kill it
+      } else {
+        score -= 30; // demote but keep (could be a related painting etc.)
+      }
+    }
+
+    // Wikipedia page images get a boost (editor-curated)
+    if (img.source === 'Wikipedia') score += 40;
+
+    // Penalize generic wiki UI junk
+    const junkPatterns = ['banner', 'logo', 'icon', 'button', 'flag of', 'map of', 'coat of arms', 'commons-logo', 'wikidata', 'edit-clear', 'ambox', 'question book', 'text-x', 'folder', 'crystal', 'nuvola', 'gnome', 'tango', 'fairuse', 'stub', 'wikt-', 'wikiquote', 'wikisource', 'wikinews', 'bookshelf', 'portal-', 'p vridge', 'disambig', 'redirect', 'lock-', 'emblem-', 'symbol-', 'alert-', 'dialog-', 'help-'];
+    if (junkPatterns.some(g => titleLower.includes(g) || filename.includes(g))) score -= 500;
+
+    // Prefer larger images
+    if (img.width && img.height) {
+      if (img.width >= 800 && img.height >= 600) score += 10;
+      if (img.width < 100 || img.height < 100) score -= 100;
+    }
+
+    img._score = score;
+  });
+
+  // Filter out junk and irrelevant images
+  all = all.filter(img => {
+    if (!img.thumb_url) return false;
+    if (img.thumb_url.endsWith('.svg')) return false;
+    if (img._score < 0) return false; // drop anything with negative score
+    return true;
+  });
+
+  // Sort by relevance score (highest first)
+  all.sort((a, b) => b._score - a._score);
+
+  // Deduplicate by filename
+  const seen = new Set();
+  return all.filter(img => {
+    const key = img.thumb_url.split('/').pop().split('?')[0].toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function fetchWikimediaImages(term, limit) {
+  try {
+    const res = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(term)}&gsrlimit=${limit || 30}&gsrnamespace=6&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=400&format=json&origin=*`);
+    const json = await res.json();
+    if (!json.query || !json.query.pages) return [];
+    return Object.values(json.query.pages)
+      .filter(p => {
+        if (!p.imageinfo || !p.imageinfo[0] || !p.imageinfo[0].thumburl) return false;
+        const mime = p.imageinfo[0].mime || '';
+        return mime.startsWith('image/') && !mime.includes('svg');
+      })
+      .map(p => {
+        const info = p.imageinfo[0];
+        return {
+          title: p.title.replace('File:', '').replace(/\.\w+$/, '').replace(/_/g, ' '),
+          thumb_url: info.thumburl,
+          full_url: info.url,
+          page_url: info.descriptionurl || info.url,
+          width: info.width,
+          height: info.height,
+          source: 'Wikimedia Commons'
+        };
+      });
+  } catch { return []; }
+}
+
+async function fetchWikipediaPageImages(term) {
+  try {
+    // Get images from actual Wikipedia article — these are the most relevant
+    // Try multiple related articles
+    const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&srlimit=3&format=json&origin=*`);
+    const searchJson = await searchRes.json();
+    const pageTitles = (searchJson.query?.search || []).map(s => s.title);
+    if (pageTitles.length === 0) return [];
+
+    // Get images from all matched pages
+    const allImageNames = [];
+    for (const title of pageTitles) {
+      const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=images&imlimit=30&format=json&origin=*`);
+      const json = await res.json();
+      const pages = json.query?.pages;
+      if (!pages) continue;
+      Object.values(pages).forEach(p => {
+        (p.images || []).forEach(img => {
+          if (img.title && !img.title.includes('.svg') && !img.title.toLowerCase().includes('icon') && !img.title.toLowerCase().includes('logo')) {
+            allImageNames.push(img.title);
+          }
+        });
+      });
+    }
+
+    if (allImageNames.length === 0) return [];
+
+    // Dedupe image names
+    const uniqueNames = [...new Set(allImageNames)].slice(0, 30);
+
+    // Batch into groups of 10 (API limit for titles param)
+    const batches = [];
+    for (let i = 0; i < uniqueNames.length; i += 10) {
+      batches.push(uniqueNames.slice(i, i + 10));
+    }
+
+    const allImages = [];
+    await Promise.all(batches.map(async (batch) => {
+      const titles = batch.join('|');
+      const infoRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles)}&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=400&format=json&origin=*`);
+      const infoJson = await infoRes.json();
+      if (!infoJson.query || !infoJson.query.pages) return;
+      Object.values(infoJson.query.pages).forEach(p => {
+        if (!p.imageinfo || !p.imageinfo[0]) return;
+        const mime = p.imageinfo[0].mime || '';
+        if (!mime.startsWith('image/') || mime.includes('svg')) return;
+        const info = p.imageinfo[0];
+        allImages.push({
+          title: p.title.replace('File:', '').replace(/\.\w+$/, '').replace(/_/g, ' '),
+          thumb_url: info.thumburl || info.url,
+          full_url: info.url,
+          page_url: `https://en.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
+          width: info.width,
+          height: info.height,
+          source: 'Wikipedia'
+        });
+      });
+    }));
+
+    return allImages;
+  } catch { return []; }
+}
+
+
+// ---- Knowledge Panel (Wikipedia REST API) ----
+
+async function fetchKnowledgePanel(term) {
+  const kp = document.getElementById('knowledge-panel');
+  kp.style.display = 'none';
+  kp.innerHTML = '';
+
+  try {
+    // Search Wikipedia first to find the best matching article title
+    const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&srlimit=1&format=json&origin=*`);
+    const searchJson = await searchRes.json();
+    const bestTitle = searchJson.query?.search?.[0]?.title;
+    if (!bestTitle) return;
+
+    // Now get the summary for the matched article
+    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestTitle.replace(/ /g, '_'))}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // Only show for actual article matches (not disambiguation etc.)
+    if (data.type === 'disambiguation' || !data.extract || data.extract.length < 50) return;
+
+    // Try to get structured info from Wikidata
+    let facts = [];
+    if (data.wikibase_item) {
+      facts = await fetchWikidataFacts(data.wikibase_item);
+    }
+
+    const hasImage = data.thumbnail && data.thumbnail.source;
+    const description = data.description || '';
+    const wikiUrl = data.content_urls.desktop.page;
+
+    let html = '';
+
+    // Image at the top, full width
+    if (hasImage) {
+      const imgSrc = data.originalimage ? data.originalimage.source : data.thumbnail.source;
+      html += `<div class="kp-image-wrap"><img class="kp-image" src="${imgSrc}" alt="${data.title}" onerror="this.parentElement.style.display='none'" /></div>`;
+    }
+
+    // Body content
+    html += '<div class="kp-body">';
+    html += `<div class="kp-title">${escapeHtml(data.title)}</div>`;
+
+    if (description) {
+      html += `<div class="kp-subtitle">${escapeHtml(capitalize(description))}</div>`;
+    }
+
+    html += `<div class="kp-description">${escapeHtml(data.extract)}</div>`;
+
+    // Facts with divider rows
+    if (facts.length > 0) {
+      html += '<div class="kp-facts">';
+      facts.forEach(f => {
+        html += `<div class="kp-fact-row"><span class="kp-fact-label">${escapeHtml(f.label)}</span><span class="kp-fact-value">${escapeHtml(f.value)}</span></div>`;
+      });
+      html += '</div>';
+    }
+
+    html += '</div>'; // end kp-body
+
+    // "People also search for" section — fetched from Wikipedia "See also" links
+    html += '<div class="kp-also-section" id="kp-also-section" style="display:none"><div class="kp-also-title">People also search for</div><div class="kp-also-list" id="kp-also-list"></div></div>';
+
+    // Wikipedia source link footer
+    html += `<div class="kp-footer">`;
+    html += `<img class="kp-wiki-icon" src="https://en.wikipedia.org/static/favicon/wikipedia.ico" alt="W" onerror="this.style.display='none'" />`;
+    html += `<span class="kp-source"><a href="${wikiUrl}" target="_blank">Wikipedia</a></span>`;
+    html += `</div>`;
+
+    kp.innerHTML = html;
+    kp.style.display = 'block';
+
+    // Fetch "See also" links asynchronously
+    fetchSeeAlso(bestTitle);
+  } catch {}
+}
+
+async function fetchSeeAlso(title) {
+  try {
+    // Get the article wikitext to find "See also" links
+    const res = await fetch(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=links&format=json&origin=*`);
+    const json = await res.json();
+    const allLinks = json.parse?.links || [];
+
+    // Filter to namespace 0 (main articles) and pick some related ones
+    const mainLinks = allLinks
+      .filter(l => l.ns === 0 && l.exists !== undefined)
+      .map(l => l['*'])
+      .filter(t => t && !t.includes(':') && !t.includes('/'))
+      .slice(0, 8);
+
+    if (mainLinks.length === 0) return;
+
+    // Get thumbnails for these related articles
+    const titles = mainLinks.slice(0, 6).join('|');
+    const thumbRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles)}&prop=pageimages&piprop=thumbnail&pithumbsize=120&format=json&origin=*`);
+    const thumbJson = await thumbRes.json();
+    const pages = thumbJson.query?.pages;
+    if (!pages) return;
+
+    const section = document.getElementById('kp-also-section');
+    const list = document.getElementById('kp-also-list');
+    if (!section || !list) return;
+
+    let count = 0;
+    Object.values(pages).forEach(p => {
+      if (count >= 5) return;
+      const thumb = p.thumbnail?.source;
+      const pTitle = p.title;
+      if (!pTitle) return;
+
+      const item = document.createElement('a');
+      item.className = 'kp-also-item';
+      item.href = `https://en.wikipedia.org/wiki/${encodeURIComponent(pTitle.replace(/ /g, '_'))}`;
+      item.target = '_blank';
+      item.onclick = (e) => {
+        e.preventDefault();
+        document.getElementById('results-searchbar').value = pTitle;
+        startSearch(pTitle);
+      };
+
+      if (thumb) {
+        item.innerHTML = `<img class="kp-also-thumb" src="${thumb}" alt="${escapeHtml(pTitle)}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 60 60%22><rect fill=%22%23222%22 width=%2260%22 height=%2260%22/><text x=%2230%22 y=%2235%22 text-anchor=%22middle%22 fill=%22%23555%22 font-size=%2220%22>${escapeHtml(pTitle.charAt(0))}</text></svg>'" /><span class="kp-also-name">${escapeHtml(pTitle)}</span>`;
+      } else {
+        item.innerHTML = `<div class="kp-also-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.4em;color:var(--text2);background:var(--surface2)">${escapeHtml(pTitle.charAt(0))}</div><span class="kp-also-name">${escapeHtml(pTitle)}</span>`;
+      }
+
+      list.appendChild(item);
+      count++;
+    });
+
+    if (count > 0) {
+      section.style.display = 'block';
+    }
+  } catch {}
+}
+
+async function fetchWikidataFacts(wikidataId) {
+  try {
+    const res = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`);
+    const json = await res.json();
+    const entity = json.entities[wikidataId];
+    if (!entity || !entity.claims) return [];
+
+    const facts = [];
+    const props = {
+      'P569': 'Born',
+      'P570': 'Died',
+      'P19': 'Birthplace',
+      'P27': 'Nationality',
+      'P106': 'Occupation',
+      'P26': 'Spouse',
+      'P40': 'Children',
+      'P22': 'Father',
+      'P25': 'Mother',
+      'P102': 'Party',
+      'P39': 'Position',
+      'P69': 'Education',
+      'P166': 'Awards',
+      'P1411': 'Nominated for',
+      'P264': 'Record label',
+      'P136': 'Genre',
+      'P413': 'Position played',
+      'P54': 'Team',
+      'P118': 'League',
+      'P17': 'Country',
+      'P36': 'Capital',
+      'P1082': 'Population',
+      'P571': 'Founded',
+      'P112': 'Founded by',
+      'P159': 'Headquarters',
+      'P452': 'Industry',
+      'P169': 'CEO',
+      'P856': 'Website'
+    };
+
+    for (const [propId, label] of Object.entries(props)) {
+      const claims = entity.claims[propId];
+      if (!claims || claims.length === 0) continue;
+
+      const values = [];
+      // Only take first 2-3 values to keep it clean
+      const limit = (label === 'Occupation' || label === 'Awards' || label === 'Genre') ? 3 : 1;
+
+      for (let i = 0; i < Math.min(claims.length, limit); i++) {
+        const claim = claims[i];
+        const snak = claim.mainsnak;
+        if (!snak || !snak.datavalue) continue;
+
+        const dv = snak.datavalue;
+
+        if (dv.type === 'time') {
+          const date = dv.value.time;
+          // Parse +YYYY-MM-DD
+          const match = date.match(/\+(\d{4})-(\d{2})-(\d{2})/);
+          if (match) {
+            const d = new Date(match[1], match[2] - 1, match[3]);
+            values.push(d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+          }
+        } else if (dv.type === 'wikibase-entityid') {
+          // Need to resolve entity label
+          const entityId = dv.value.id;
+          try {
+            const labelRes = await fetch(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${entityId}&props=labels&languages=en&format=json&origin=*`);
+            const labelJson = await labelRes.json();
+            const lbl = labelJson.entities[entityId]?.labels?.en?.value;
+            if (lbl) values.push(lbl);
+          } catch {}
+        } else if (dv.type === 'quantity') {
+          const num = parseInt(dv.value.amount);
+          if (!isNaN(num)) values.push(num.toLocaleString());
+        } else if (dv.type === 'string') {
+          values.push(dv.value);
+        }
+      }
+
+      if (values.length > 0) {
+        facts.push({ label, value: values.join(', ') });
+      }
+
+      // Cap at 6 facts to keep the panel clean
+      if (facts.length >= 6) break;
+    }
+
+    return facts;
+  } catch { return []; }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// ---- Main search ----
+
+async function search(term) {
+  webResults = [];
+  imagesResults = [];
+  currentPage = 1;
+  document.getElementById('knowledge-panel').style.display = 'none';
+
+  // Smart result boosting
+  const isCodeQuery = /code|programming|function|error|bug|api|library|framework|react|python|javascript|java|css|html|sql|regex|npm|pip|git/i.test(term);
+  const isProductQuery = /buy|price|cheap|deal|review|book|laptop|phone|monitor|gpu|keyboard|headphones|camera|shoe|nike|samsung|apple/i.test(term);
+
+  // Fetch knowledge panel in parallel (non-blocking)
+  fetchKnowledgePanel(term);
+
+  // SearXNG first (aggregates Google/Bing/etc privately) + all other sources
+  const fetches = [
+    fetchSearx(term),
+    fetchWiki(term),
+    fetchYouTube(term),
+    fetchHN(term),
+    fetchReddit(term),
+    fetchArchive(term)
+  ];
+
+  if (isCodeQuery) {
+    fetches.push(fetchStackOverflow(term));
+    fetches.push(fetchGitHub(term));
+  }
+
+  const allResults = await Promise.all(fetches);
+
+  // Also fetch images in background
+  fetchImages(term).then(imgs => {
+    imagesResults = imgs;
+    if (document.getElementById('images-results').style.display !== 'none') renderImages();
+  });
+
+  // Merge all
+  allResults.forEach(arr => webResults.push(...arr));
+
+  // Product shortcuts
+  if (isProductQuery) {
+    webResults.unshift(
+      { title: `Shop "${term}" on Amazon`, url: `https://www.amazon.com/s?k=${encodeURIComponent(term)}`, snippet: 'Browse products, read reviews, and compare prices.', relevance: 999, source: 'Amazon' },
+      { title: `Find "${term}" on eBay`, url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(term)}`, snippet: 'New and used items, auctions, and deals.', relevance: 998, source: 'eBay' }
+    );
+  }
+
+  // Boost by keyword match
+  const termLower = term.toLowerCase();
+  webResults.forEach(r => {
+    if (r.title && r.title.toLowerCase().includes(termLower)) r.relevance += 12;
+    if (r.url && r.url.toLowerCase().includes(termLower)) r.relevance += 8;
+  });
+
+  // Deduplicate by URL
+  const seen = new Set();
+  webResults = webResults.filter(r => {
+    const key = r.url.replace(/\/+$/, '').toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // Sort by relevance
+  webResults.sort((a, b) => b.relevance - a.relevance);
+
+  // Enforce diversity — no more than 3 consecutive results from same source
+  const diverse = [];
+  const sourceCounts = {};
+  const maxPerSource = 4;
+  const deferred = [];
+  for (const r of webResults) {
+    const src = r.source || 'other';
+    sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+    if (sourceCounts[src] <= maxPerSource) {
+      diverse.push(r);
+    } else {
+      deferred.push(r);
+    }
+  }
+  webResults = [...diverse, ...deferred];
+
+  // Done loading
+  document.getElementById('loading').style.display = 'none';
+
+  if (webResults.length === 0) {
+    document.getElementById('no-results').style.display = 'block';
+  } else {
+    const elapsed = ((performance.now() - searchStartTime) / 1000).toFixed(2);
+    document.getElementById('stats').textContent = `${webResults.length} results (${elapsed}s)`;
+    renderWebPage();
+  }
+  showTab('web');
+}
+
+function renderWebPage() {
+  const container = document.getElementById('web-results');
+  const paginationDiv = document.getElementById('pagination');
+  container.innerHTML = '';
+  paginationDiv.innerHTML = '';
+
+  const start = (currentPage - 1) * resultsPerPage;
+  const end = start + resultsPerPage;
+  const pageResults = webResults.slice(start, end);
+
+  pageResults.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'result';
+
+    const source = document.createElement('div');
+    source.className = 'result-source';
+    source.textContent = r.source || getSource(r.url);
+    div.appendChild(source);
+
+    const a = document.createElement('a');
+    a.href = r.url;
+    a.target = '_blank';
+    a.className = 'result-title';
+    a.textContent = r.title;
+    div.appendChild(a);
+
+    const url = document.createElement('div');
+    url.className = 'result-url';
+    url.textContent = r.url;
+    div.appendChild(url);
+
+    if (r.snippet) {
+      const snip = document.createElement('div');
+      snip.className = 'result-snippet';
+      snip.textContent = r.snippet;
+      div.appendChild(snip);
+    }
+
+    container.appendChild(div);
+  });
+
+  const totalPages = Math.ceil(webResults.length / resultsPerPage);
+  if (totalPages > 1) {
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = document.createElement('button');
+      btn.textContent = i;
+      if (i === currentPage) btn.disabled = true;
+      btn.onclick = () => { currentPage = i; renderWebPage(); window.scrollTo(0, 0); };
+      paginationDiv.appendChild(btn);
+    }
+  }
+}
+
+function renderImages() {
+  const grid = document.getElementById('images-grid');
+  const countEl = document.getElementById('images-count');
+  grid.innerHTML = '';
+  countEl.textContent = imagesResults.length + ' images';
+
+  imagesResults.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'result-image';
+    div.onclick = () => openImageViewer(index);
+
+    const img = document.createElement('img');
+    img.src = item.thumb_url || '';
+    img.alt = item.title || '';
+    img.loading = 'lazy';
+    img.onerror = function() { this.parentElement.style.display = 'none'; };
+    div.appendChild(img);
+
+    const title = document.createElement('div');
+    title.className = 'img-title';
+    title.textContent = item.title || '';
+    div.appendChild(title);
+
+    const source = document.createElement('div');
+    source.className = 'img-source';
+    source.textContent = item.source || '';
+    div.appendChild(source);
+
+    grid.appendChild(div);
+  });
+}
+
+// SafeSearch toggle re-fetches
+document.getElementById('safesearch-toggle').addEventListener('change', () => {
+  const term = document.getElementById('results-searchbar').value.trim();
+  if (term) {
+    fetchImages(term).then(imgs => {
+      imagesResults = imgs;
+      renderImages();
+    });
+  }
+});
+
+// ---- Image Viewer ----
+let currentImageIndex = 0;
+
+function openImageViewer(index) {
+  currentImageIndex = index;
+  const viewer = document.getElementById('image-viewer');
+  viewer.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  updateImageViewer();
+}
+
+function closeImageViewer() {
+  document.getElementById('image-viewer').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function updateImageViewer() {
+  const item = imagesResults[currentImageIndex];
+  if (!item) return;
+
+  const imgEl = document.getElementById('iv-img');
+  const fullUrl = item.full_url || item.thumb_url;
+  imgEl.src = fullUrl;
+  imgEl.alt = item.title || '';
+
+  document.getElementById('iv-title').textContent = item.title || 'Untitled';
+  document.getElementById('iv-source').textContent = item.source || '';
+
+  // Get image dimensions once loaded
+  const sizeEl = document.getElementById('iv-size');
+  sizeEl.textContent = 'Loading dimensions...';
+  imgEl.onload = () => {
+    const w = item.width || imgEl.naturalWidth;
+    const h = item.height || imgEl.naturalHeight;
+    sizeEl.textContent = `${w} × ${h} pixels`;
+  };
+
+  document.getElementById('iv-visit').href = item.page_url || item.full_url || '#';
+  document.getElementById('iv-open-img').href = fullUrl;
+}
+
+// Viewer navigation
+document.getElementById('iv-close').onclick = closeImageViewer;
+document.getElementById('iv-nav-prev').onclick = () => {
+  currentImageIndex = (currentImageIndex - 1 + imagesResults.length) % imagesResults.length;
+  updateImageViewer();
+};
+document.getElementById('iv-nav-next').onclick = () => {
+  currentImageIndex = (currentImageIndex + 1) % imagesResults.length;
+  updateImageViewer();
+};
+
+// Close on backdrop click
+document.getElementById('iv-left').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('iv-left')) closeImageViewer();
+});
+
+// Toast helper
+function showToast(msg) {
+  const toast = document.getElementById('iv-toast');
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 1500);
+}
+
+// Copy image URL
+document.getElementById('iv-copy-url').onclick = () => {
+  const item = imagesResults[currentImageIndex];
+  const url = item.full_url || item.thumb_url;
+  navigator.clipboard.writeText(url).then(() => showToast('Image URL copied!'));
+};
+
+// Copy image to clipboard
+document.getElementById('iv-copy-img').onclick = async () => {
+  try {
+    const item = imagesResults[currentImageIndex];
+    const imgUrl = item.full_url || item.thumb_url;
+    const res = await fetch(imgUrl);
+    const blob = await res.blob();
+    // Convert to PNG for clipboard
+    const canvas = document.createElement('canvas');
+    const imgEl = document.getElementById('iv-img');
+    canvas.width = imgEl.naturalWidth;
+    canvas.height = imgEl.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0);
+    canvas.toBlob(async (pngBlob) => {
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
+        showToast('Image copied!');
+      } catch { showToast('Could not copy image'); }
+    }, 'image/png');
+  } catch { showToast('Could not copy image'); }
+};
+
+// Download image
+document.getElementById('iv-download').onclick = () => {
+  const item = imagesResults[currentImageIndex];
+  const url = item.full_url || item.thumb_url;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (item.title || 'image').replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 50) + '.jpg';
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+// Keyboard controls for viewer
+document.addEventListener('keydown', (e) => {
+  const viewer = document.getElementById('image-viewer');
+  if (viewer.style.display === 'block') {
+    if (e.key === 'Escape') closeImageViewer();
+    if (e.key === 'ArrowLeft') { currentImageIndex = (currentImageIndex - 1 + imagesResults.length) % imagesResults.length; updateImageViewer(); }
+    if (e.key === 'ArrowRight') { currentImageIndex = (currentImageIndex + 1) % imagesResults.length; updateImageViewer(); }
+    return;
+  }
+  if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+    e.preventDefault();
+    const bar = document.getElementById('searchbar');
+    if (bar.offsetParent !== null) bar.focus();
+    else document.getElementById('results-searchbar').focus();
+  }
+});
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tab + '-tab').classList.add('active');
+  document.getElementById('web-results').style.display = tab === 'web' ? 'block' : 'none';
+  document.getElementById('images-results').style.display = tab === 'images' ? 'block' : 'none';
+  document.getElementById('pagination').style.display = tab === 'web' ? 'flex' : 'none';
+  if (tab === 'images') renderImages();
+}
+</script>
+</body>
+</html>

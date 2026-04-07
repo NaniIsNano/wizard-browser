@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Wizard Browser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: #0d0d0d;
+  color: #e0e0e0;
+  overflow: hidden;
+  height: 48px;
+}
+#toolbar {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  background: #0d0d0d;
+  padding: 0 10px;
+  gap: 6px;
+  border-bottom: 1px solid #1e1e1e;
+  -webkit-app-region: drag;
+}
+#toolbar > * { -webkit-app-region: no-drag; }
+.nav-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.nav-btn:hover { background: #1a1a1a; color: #fff; }
+.nav-btn:active { background: #252525; }
+.nav-btn svg { width: 16px; height: 16px; fill: currentColor; }
+#url-bar {
+  flex: 1;
+  height: 32px;
+  border: 1px solid #252525;
+  background: #141414;
+  color: #ccc;
+  padding: 0 14px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.2s;
+}
+#url-bar:focus { border-color: #7c3aed; background: #1a1a1a; color: #fff; }
+#url-bar::placeholder { color: #555; }
+#shield {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #141414;
+  border: 1px solid #252525;
+  border-radius: 8px;
+  padding: 0 10px;
+  height: 32px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #22c55e;
+  cursor: default;
+  user-select: none;
+}
+#shield svg { width: 14px; height: 14px; fill: #22c55e; }
+#clear-btn {
+  height: 32px;
+  border: 1px solid #252525;
+  background: #141414;
+  color: #888;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+#clear-btn:hover { background: #1a1a1a; color: #ef4444; border-color: #ef4444; }
+#loading-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  width: 0%;
+  transition: width 0.3s;
+  border-radius: 0 2px 0 0;
+}
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <button class="nav-btn" id="btn-back" title="Back">
+    <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+  </button>
+  <button class="nav-btn" id="btn-forward" title="Forward">
+    <svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>
+  </button>
+  <button class="nav-btn" id="btn-reload" title="Reload">
+    <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+  </button>
+  <button class="nav-btn" id="btn-home" title="Home">
+    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+  </button>
+  <input type="text" id="url-bar" placeholder="Search or enter URL..." spellcheck="false" />
+  <div id="shield" title="Trackers blocked this session">
+    <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+    <span id="blocked-count">0</span>
+  </div>
+  <button id="clear-btn" title="Clear all browsing data">CLEAR</button>
+  <div id="loading-bar"></div>
+</div>
+
+<script>
+const urlBar = document.getElementById('url-bar');
+const blockedSpan = document.getElementById('blocked-count');
+const loadingBar = document.getElementById('loading-bar');
+
+urlBar.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const val = urlBar.value.trim();
+    if (val) window.wizardBrowser.navigate(val);
+    urlBar.blur();
+  }
+});
+urlBar.addEventListener('focus', () => urlBar.select());
+
+document.getElementById('btn-back').addEventListener('click', () => window.wizardBrowser.goBack());
+document.getElementById('btn-forward').addEventListener('click', () => window.wizardBrowser.goForward());
+document.getElementById('btn-reload').addEventListener('click', () => window.wizardBrowser.reload());
+document.getElementById('btn-home').addEventListener('click', () => window.wizardBrowser.goHome());
+document.getElementById('clear-btn').addEventListener('click', async () => {
+  await window.wizardBrowser.clearAllData();
+  blockedSpan.textContent = '0';
+});
+
+window.wizardBrowser.onUrlChange((url) => {
+  urlBar.value = url.startsWith('file://') ? '' : url;
+});
+window.wizardBrowser.onTitleChange((title) => {
+  document.title = title + ' — Wizard';
+});
+window.wizardBrowser.onLoadingChange((loading) => {
+  if (loading) {
+    loadingBar.style.width = '70%';
+  } else {
+    loadingBar.style.width = '100%';
+    setTimeout(() => {
+      loadingBar.style.transition = 'none';
+      loadingBar.style.width = '0%';
+      setTimeout(() => { loadingBar.style.transition = 'width 0.3s'; }, 50);
+    }, 300);
+  }
+});
+window.wizardBrowser.onBlockedUpdate((count) => {
+  blockedSpan.textContent = count;
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'l') { urlBar.focus(); e.preventDefault(); }
+  if (e.altKey && e.key === 'ArrowLeft') window.wizardBrowser.goBack();
+  if (e.altKey && e.key === 'ArrowRight') window.wizardBrowser.goForward();
+  if (e.key === 'F5') window.wizardBrowser.reload();
+});
+</script>
+</body>
+</html>

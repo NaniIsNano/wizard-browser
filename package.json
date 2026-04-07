@@ -1,0 +1,43 @@
+{
+  "name": "wizard-browser",
+  "version": "1.0.0",
+  "description": "Privacy-focused browser powered by Wizard Search",
+  "author": "NaniIsNano",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable --linux AppImage",
+    "build:win": "electron-builder --win nsis portable",
+    "build:linux": "electron-builder --linux AppImage deb"
+  },
+  "contributors": [
+    "MrBlight (https://github.com/MrBlight)"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NaniIsNano/wizard-browser.git"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.wizard.browser",
+    "productName": "Wizard Browser",
+    "win": {
+      "target": ["portable", "nsis"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Network"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "browser.html",
+      "search.html",
+      "tracker-list.json"
+    ]
+  }
+}
