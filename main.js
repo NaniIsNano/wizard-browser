@@ -213,6 +213,22 @@ ipcMain.handle('clear-all-data', async () => {
   return true;
 });
 
+// Tor proxy toggle (SOCKS5 on 127.0.0.1:9050)
+ipcMain.handle('toggle-tor', async (_, enable) => {
+  if (!browserView) return false;
+  const ses = browserView.webContents.session;
+  try {
+    if (enable) {
+      await ses.setProxy({ proxyRules: 'socks5://127.0.0.1:9050' });
+    } else {
+      await ses.setProxy({ proxyRules: '' });
+    }
+    return true;
+  } catch {
+    return false;
+  }
+});
+
 // Privacy: clear data when quitting
 app.on('before-quit', async () => {
   try {

@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   goHome: () => ipcRenderer.send('go-home'),
   getBlockedCount: () => ipcRenderer.invoke('get-blocked-count'),
   clearAllData: () => ipcRenderer.invoke('clear-all-data'),
+  toggleTor: (enable) => ipcRenderer.invoke('toggle-tor', enable),
   onUrlChange: (cb) => ipcRenderer.on('url-changed', (_, url) => cb(url)),
   onTitleChange: (cb) => ipcRenderer.on('title-changed', (_, title) => cb(title)),
   onLoadingChange: (cb) => ipcRenderer.on('loading-changed', (_, loading) => cb(loading)),
