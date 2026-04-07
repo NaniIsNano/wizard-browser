@@ -14,8 +14,6 @@ let blockedCount = 0;
 // Privacy: disable hardware acceleration fingerprinting
 app.commandLine.appendSwitch('disable-webgl');
 app.commandLine.appendSwitch('disable-reading-from-canvas');
-// Disable remote fonts fingerprinting
-app.commandLine.appendSwitch('disable-remote-fonts');
 // Disable WebRTC IP leak
 app.commandLine.appendSwitch('force-webrtc-ip-handling-policy', 'disable_non_proxied_udp');
 // Disable background networking
@@ -67,6 +65,10 @@ function createWindow() {
   };
   updateBounds();
   mainWindow.on('resize', updateBounds);
+
+  // Override user agent at session level to remove Electron identifier
+  const spoofedUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  ses.setUserAgent(spoofedUA);
 
   // Load the search engine as homepage
   browserView.webContents.loadFile('search.html');
