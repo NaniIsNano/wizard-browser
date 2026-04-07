@@ -53,6 +53,10 @@ npm run build:linux
 
 Built executables will be in `dist/`.
 
+## Windows SmartScreen Warning
+
+When running the `.exe` for the first time, Windows may show a "Windows protected your PC" warning. This is normal for unsigned open-source software — the app is not code-signed. Click **"More info"** then **"Run anyway"** to proceed. The source code is fully open and auditable.
+
 ## Credits
 
 - [MrBlight](https://github.com/MrBlight) - Project contributor
