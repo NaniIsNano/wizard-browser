@@ -59,4 +59,4 @@ Built executables will be in `dist/`.
 
 ## License
 
-MIT
+GPL-3.0
