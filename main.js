@@ -11,8 +11,7 @@ let mainWindow;
 let browserView;
 let blockedCount = 0;
 
-// Privacy: disable hardware acceleration fingerprinting
-app.commandLine.appendSwitch('disable-webgl');
+// Privacy: disable canvas fingerprinting (WebGL left enabled for video playback)
 app.commandLine.appendSwitch('disable-reading-from-canvas');
 // Disable WebRTC IP leak
 app.commandLine.appendSwitch('force-webrtc-ip-handling-policy', 'disable_non_proxied_udp');
