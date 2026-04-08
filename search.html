@@ -997,27 +997,85 @@ function getSource(url) {
 const searxInstances = [
   'https://searx.be',
   'https://priv.au',
-  'https://search.bladerunn.in'
+  'https://baresearch.org',
+  'https://opnxng.com',
+  'https://paulgo.io',
+  'https://etsi.me',
+  'https://copp.gg',
+  'https://search.bladerunn.in',
+  'https://search.ononoki.org',
+  'https://s.mble.dk',
+  'https://search.bus-hit.me',
+  'https://northboot.xyz'
 ];
 
+// Try multiple SearXNG instances in parallel, take first success
 async function fetchSearx(term) {
-  for (const instance of searxInstances) {
+  // Race 4 random instances in parallel for speed
+  const shuffled = [...searxInstances].sort(() => Math.random() - 0.5);
+  const batch = shuffled.slice(0, 4);
+
+  const attempts = batch.map(instance =>
+    fetch(`${instance}/search?q=${encodeURIComponent(term)}&format=json&categories=general`, { signal: AbortSignal.timeout(5000) })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(json => {
+        if (json.results && json.results.length > 0) return json.results;
+        return Promise.reject();
+      })
+      .catch(() => null)
+  );
+
+  const results = await Promise.all(attempts);
+  const best = results.filter(Boolean).sort((a, b) => b.length - a.length)[0];
+
+  if (best) {
+    return best.slice(0, 20).map((r, i) => ({
+      title: r.title || '',
+      url: r.url,
+      snippet: (r.content || '').slice(0, 250),
+      relevance: 100 - i,
+      source: getDomain(r.url)
+    }));
+  }
+
+  // Fallback: try remaining instances sequentially
+  for (const instance of shuffled.slice(4)) {
     try {
-      const res = await fetch(`${instance}/search?q=${encodeURIComponent(term)}&format=json&categories=general`, { signal: AbortSignal.timeout(4000) });
+      const res = await fetch(`${instance}/search?q=${encodeURIComponent(term)}&format=json&categories=general`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) continue;
       const json = await res.json();
       if (json.results && json.results.length > 0) {
-        return json.results.slice(0, 15).map((r, i) => ({
+        return json.results.slice(0, 20).map((r, i) => ({
           title: r.title || '',
           url: r.url,
-          snippet: (r.content || '').slice(0, 200),
-          relevance: 98 - i,
+          snippet: (r.content || '').slice(0, 250),
+          relevance: 100 - i,
           source: getDomain(r.url)
         }));
       }
     } catch { continue; }
   }
   return [];
+}
+
+// === Brave Search API (free: 2000 queries/month, no key needed for web search) ===
+async function fetchBrave(term) {
+  try {
+    const res = await fetch(`https://search.brave.com/api/suggest?q=${encodeURIComponent(term)}&rich=true`, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) return [];
+    const json = await res.json();
+    // Brave suggest returns rich results with URLs
+    if (json[1] && json[1].length > 0) {
+      return json[1].slice(0, 5).map((title, i) => ({
+        title: title,
+        url: `https://search.brave.com/search?q=${encodeURIComponent(title)}`,
+        snippet: json[2] ? (json[2][i] || '') : '',
+        relevance: 75 - i,
+        source: 'Brave'
+      }));
+    }
+    return [];
+  } catch { return []; }
 }
 
 // === Wikipedia ===
@@ -1573,7 +1631,8 @@ async function search(term) {
     fetchYouTube(term),
     fetchHN(term),
     fetchReddit(term),
-    fetchArchive(term)
+    fetchArchive(term),
+    fetchBrave(term)
   ];
 
   if (isCodeQuery) {
@@ -1600,11 +1659,32 @@ async function search(term) {
     );
   }
 
-  // Boost by keyword match
+  // Smart relevance boosting
   const termLower = term.toLowerCase();
+  const termWords = termLower.split(/\s+/).filter(w => w.length > 1);
   webResults.forEach(r => {
-    if (r.title && r.title.toLowerCase().includes(termLower)) r.relevance += 12;
-    if (r.url && r.url.toLowerCase().includes(termLower)) r.relevance += 8;
+    const titleLower = (r.title || '').toLowerCase();
+    const urlLower = (r.url || '').toLowerCase();
+    const snippetLower = (r.snippet || '').toLowerCase();
+
+    // Exact title match — strong boost
+    if (titleLower.includes(termLower)) r.relevance += 20;
+
+    // Individual word matches in title
+    const titleWordMatches = termWords.filter(w => titleLower.includes(w)).length;
+    r.relevance += (titleWordMatches / Math.max(termWords.length, 1)) * 15;
+
+    // URL contains search term
+    if (urlLower.includes(termLower.replace(/\s+/g, ''))) r.relevance += 10;
+
+    // Boost official/authoritative domains
+    if (urlLower.includes('.gov') || urlLower.includes('.edu') || urlLower.includes('.org')) r.relevance += 5;
+
+    // Boost results that have a rich snippet
+    if (snippetLower.length > 100) r.relevance += 3;
+
+    // Penalize very short/empty results
+    if (!r.snippet || r.snippet.length < 20) r.relevance -= 10;
   });
 
   // Deduplicate by URL
