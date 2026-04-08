@@ -473,8 +473,13 @@ autoUpdater.on('update-not-available', () => {
   }
 });
 
-autoUpdater.on('error', () => {
-  // Silently fail — don't bother user if update check fails
+autoUpdater.on('error', (err) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('update-status', {
+      status: 'error',
+      message: err ? err.message : 'Unknown error'
+    });
+  }
 });
 
 // Manual check + install trigger from UI

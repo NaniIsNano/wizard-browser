@@ -485,6 +485,12 @@ if (window.wizardBrowser.onUpdateStatus) {
       text.textContent = `Update v${data.version} ready to install`;
       installBtn.style.display = '';
       banner.classList.add('show');
+    } else if (data.status === 'error') {
+      text.textContent = `Auto-update error: ${data.message}`;
+      installBtn.style.display = 'none';
+      banner.classList.add('show');
+      banner.style.background = '#2e0a0a';
+      banner.style.borderColor = '#ef4444';
     }
   });
 }
