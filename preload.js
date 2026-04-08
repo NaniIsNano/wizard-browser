@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   serverSearch: (term) => ipcRenderer.invoke('server-search', term),
   // Auto-update
   checkUpdate: () => ipcRenderer.invoke('check-update'),
+  installUpdate: () => ipcRenderer.send('install-update'),
+  onUpdateStatus: (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
   // Events
   onUrlChange: (cb) => ipcRenderer.on('url-changed', (_, url) => cb(url)),
   onTitleChange: (cb) => ipcRenderer.on('title-changed', (_, title) => cb(title)),

@@ -2,6 +2,7 @@ const { app, BrowserWindow, BrowserView, ipcMain, session, dialog } = require('e
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+const { autoUpdater } = require('electron-updater');
 
 // Load tracker blocklist
 const trackerList = JSON.parse(
@@ -443,35 +444,50 @@ ipcMain.on('show-download', (_, filePath) => {
 // Download manager: get all downloads
 ipcMain.handle('get-downloads', () => downloads);
 
-// Auto-update check
-ipcMain.handle('check-update', async () => {
-  return new Promise((resolve) => {
-    const options = {
-      hostname: 'api.github.com',
-      path: '/repos/NaniIsNano/wizard-browser/releases/latest',
-      headers: { 'User-Agent': 'Wizard-Browser' }
-    };
-    https.get(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        try {
-          const release = JSON.parse(data);
-          const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf-8'));
-          resolve({
-            current: pkg.version,
-            latest: release.tag_name ? release.tag_name.replace('v', '') : pkg.version,
-            url: release.html_url || '',
-            hasUpdate: release.tag_name ? release.tag_name.replace('v', '') !== pkg.version : false
-          });
-        } catch {
-          resolve({ current: '1.0.0', latest: '1.0.0', url: '', hasUpdate: false });
-        }
-      });
-    }).on('error', () => {
-      resolve({ current: '1.0.0', latest: '1.0.0', url: '', hasUpdate: false });
+// --- Auto-updater (electron-updater) ---
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on('update-available', (info) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('update-status', {
+      status: 'downloading',
+      version: info.version
     });
-  });
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('update-status', {
+      status: 'ready',
+      version: info.version
+    });
+  }
+});
+
+autoUpdater.on('update-not-available', () => {
+  if (mainWindow) {
+    mainWindow.webContents.send('update-status', { status: 'up-to-date' });
+  }
+});
+
+autoUpdater.on('error', () => {
+  // Silently fail — don't bother user if update check fails
+});
+
+// Manual check + install trigger from UI
+ipcMain.handle('check-update', async () => {
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { checking: true };
+  } catch {
+    return { checking: false };
+  }
+});
+
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall(false, true);
 });
 
 // Privacy: clear data when quitting
@@ -483,7 +499,13 @@ app.on('before-quit', async () => {
   } catch {}
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  // Check for updates after launch
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 3000);
+});
 
 app.on('window-all-closed', () => {
   app.quit();

@@ -323,7 +323,7 @@ body {
 <!-- Update available banner -->
 <div id="update-banner">
   <span id="update-text">A new version is available!</span>
-  <a id="update-link" target="_blank">Download update</a>
+  <button id="update-install" style="background:#22c55e;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;font-weight:500;">Restart & Update</button>
   <button class="dismiss" id="update-dismiss">&times;</button>
 </div>
 
@@ -470,17 +470,27 @@ window.wizardBrowser.onUrlChange((url) => {
   onionBanner.classList.remove('show');
 });
 
-// --- Auto-update check ---
-(async () => {
-  try {
-    const update = await window.wizardBrowser.checkUpdate();
-    if (update.hasUpdate) {
-      document.getElementById('update-text').textContent = `Update available: v${update.latest} (current: v${update.current})`;
-      document.getElementById('update-link').href = update.url;
-      document.getElementById('update-banner').classList.add('show');
+// --- Auto-update (electron-updater) ---
+if (window.wizardBrowser.onUpdateStatus) {
+  window.wizardBrowser.onUpdateStatus((data) => {
+    const banner = document.getElementById('update-banner');
+    const text = document.getElementById('update-text');
+    const installBtn = document.getElementById('update-install');
+
+    if (data.status === 'downloading') {
+      text.textContent = `Downloading update v${data.version}...`;
+      installBtn.style.display = 'none';
+      banner.classList.add('show');
+    } else if (data.status === 'ready') {
+      text.textContent = `Update v${data.version} ready to install`;
+      installBtn.style.display = '';
+      banner.classList.add('show');
     }
-  } catch {}
-})();
+  });
+}
+document.getElementById('update-install').addEventListener('click', () => {
+  window.wizardBrowser.installUpdate();
+});
 document.getElementById('update-dismiss').addEventListener('click', () => {
   document.getElementById('update-banner').classList.remove('show');
 });
