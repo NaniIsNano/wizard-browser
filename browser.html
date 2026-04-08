@@ -109,13 +109,14 @@ body {
 .toolbar-btn.active:hover { background: #250e3f; }
 #loading-bar {
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed, #a855f7, #c084fc);
   width: 0%;
-  transition: width 0.3s;
-  border-radius: 0 2px 0 0;
+  transition: width 0.4s ease;
+  z-index: 9999;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.6);
 }
 
 /* Onion banner */
