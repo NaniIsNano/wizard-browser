@@ -396,6 +396,7 @@ ipcMain.on('go-home', () => {
 });
 
 ipcMain.handle('get-blocked-count', () => blockedCount);
+ipcMain.handle('get-version', () => app.getVersion());
 
 ipcMain.handle('clear-all-data', async () => {
   if (!browserView) return;

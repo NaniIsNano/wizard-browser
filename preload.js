@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   // Onion detection
   navigateOnion: (url) => ipcRenderer.send('navigate-onion', url),
   onOnionAvailable: (cb) => ipcRenderer.on('onion-available', (_, data) => cb(data)),
+  // App version
+  getVersion: () => ipcRenderer.invoke('get-version'),
   // Server-side search (bypasses CORS)
   serverSearch: (term) => ipcRenderer.invoke('server-search', term),
   // Auto-update

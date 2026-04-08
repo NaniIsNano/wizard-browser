@@ -1581,7 +1581,11 @@ function capitalize(str) {
 (async () => {
   const badge = document.getElementById('version-badge');
   if (!badge) return;
-  const currentVersion = '1.1.0';
+  let currentVersion = '1.1.0';
+  // Get version from Electron (single source of truth: package.json)
+  if (window.wizardBrowser && window.wizardBrowser.getVersion) {
+    try { currentVersion = await window.wizardBrowser.getVersion(); } catch {}
+  }
   badge.textContent = `v${currentVersion}`;
   try {
     const res = await fetch('https://api.github.com/repos/NaniIsNano/wizard-browser/releases/latest', { signal: AbortSignal.timeout(5000) });
