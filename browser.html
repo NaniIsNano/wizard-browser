@@ -87,7 +87,7 @@ body {
   letter-spacing: 0.3px;
 }
 #clear-btn:hover { background: #1a1a1a; color: #ef4444; border-color: #ef4444; }
-#tor-btn {
+.toolbar-btn {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -104,9 +104,9 @@ body {
   transition: all 0.15s;
   letter-spacing: 0.3px;
 }
-#tor-btn:hover { background: #1a1a1a; color: #a855f7; border-color: #a855f7; }
-#tor-btn.active { background: #1a0a2e; color: #a855f7; border-color: #a855f7; }
-#tor-btn.active:hover { background: #250e3f; }
+.toolbar-btn:hover { background: #1a1a1a; color: #a855f7; border-color: #a855f7; }
+.toolbar-btn.active { background: #1a0a2e; color: #a855f7; border-color: #a855f7; }
+.toolbar-btn.active:hover { background: #250e3f; }
 #loading-bar {
   position: absolute;
   bottom: 0;
@@ -117,6 +117,169 @@ body {
   transition: width 0.3s;
   border-radius: 0 2px 0 0;
 }
+
+/* Onion banner */
+#onion-banner {
+  display: none;
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  background: #1a0a2e;
+  border-bottom: 1px solid #7c3aed;
+  padding: 8px 16px;
+  z-index: 100;
+  font-size: 13px;
+  color: #d4b5ff;
+  align-items: center;
+  gap: 10px;
+}
+#onion-banner.show { display: flex; }
+#onion-banner button {
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  font-weight: 500;
+}
+#onion-banner button:hover { background: #9333ea; }
+#onion-banner .dismiss {
+  background: transparent;
+  color: #888;
+  margin-left: auto;
+  font-size: 16px;
+  padding: 2px 6px;
+}
+#onion-banner .dismiss:hover { color: #fff; }
+
+/* Download manager panel */
+#download-panel {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  right: 16px;
+  width: 360px;
+  max-height: 300px;
+  background: #141414;
+  border: 1px solid #252525;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  z-index: 1000;
+  overflow: hidden;
+  flex-direction: column;
+}
+#download-panel.show { display: flex; }
+#dl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #252525;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+#dl-header button {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+#dl-header button:hover { color: #fff; background: #252525; }
+#dl-list {
+  overflow-y: auto;
+  flex: 1;
+  max-height: 250px;
+}
+.dl-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dl-item:last-child { border-bottom: none; }
+.dl-filename {
+  font-size: 12px;
+  font-weight: 500;
+  color: #e0e0e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dl-progress-bar {
+  height: 4px;
+  background: #252525;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.dl-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.dl-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #888;
+}
+.dl-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+.dl-actions button {
+  background: transparent;
+  border: none;
+  color: #7c3aed;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'Inter', sans-serif;
+  padding: 0;
+}
+.dl-actions button:hover { color: #a855f7; text-decoration: underline; }
+
+/* Update banner */
+#update-banner {
+  display: none;
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  background: #0a2e1a;
+  border-bottom: 1px solid #22c55e;
+  padding: 8px 16px;
+  z-index: 99;
+  font-size: 13px;
+  color: #b5ffd4;
+  align-items: center;
+  gap: 10px;
+}
+#update-banner.show { display: flex; }
+#update-banner a {
+  color: #22c55e;
+  text-decoration: underline;
+  cursor: pointer;
+}
+#update-banner .dismiss {
+  background: transparent;
+  border: none;
+  color: #888;
+  margin-left: auto;
+  font-size: 16px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+#update-banner .dismiss:hover { color: #fff; }
 </style>
 </head>
 <body>
@@ -138,12 +301,39 @@ body {
     <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
     <span id="blocked-count">0</span>
   </div>
-  <button id="tor-btn" title="Connect via Tor (SOCKS5 proxy on 127.0.0.1:9050)">
-    <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
+  <button class="toolbar-btn" id="tor-btn" title="Connect via Tor (SOCKS5 proxy on 127.0.0.1:9050)">
+    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
     <span>TOR</span>
+  </button>
+  <button class="toolbar-btn" id="dl-btn" title="Downloads">
+    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/></svg>
   </button>
   <button id="clear-btn" title="Clear all browsing data">CLEAR</button>
   <div id="loading-bar"></div>
+</div>
+
+<!-- Onion site available banner -->
+<div id="onion-banner">
+  <svg viewBox="0 0 24 24" width="16" height="16" style="fill: #a855f7; flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+  <span id="onion-text">.onion version available</span>
+  <button id="onion-go">Switch to .onion</button>
+  <button class="dismiss" id="onion-dismiss">&times;</button>
+</div>
+
+<!-- Update available banner -->
+<div id="update-banner">
+  <span id="update-text">A new version is available!</span>
+  <a id="update-link" target="_blank">Download update</a>
+  <button class="dismiss" id="update-dismiss">&times;</button>
+</div>
+
+<!-- Download manager -->
+<div id="download-panel">
+  <div id="dl-header">
+    <span>Downloads</span>
+    <button id="dl-close">&times;</button>
+  </div>
+  <div id="dl-list"></div>
 </div>
 
 <script>
@@ -170,6 +360,7 @@ document.getElementById('clear-btn').addEventListener('click', async () => {
   blockedSpan.textContent = '0';
 });
 
+// Tor toggle
 const torBtn = document.getElementById('tor-btn');
 let torActive = false;
 torBtn.addEventListener('click', async () => {
@@ -183,9 +374,118 @@ torBtn.addEventListener('click', async () => {
   }
 });
 
+// --- Download Manager ---
+const dlBtn = document.getElementById('dl-btn');
+const dlPanel = document.getElementById('download-panel');
+const dlList = document.getElementById('dl-list');
+const dlClose = document.getElementById('dl-close');
+let dlItems = {};
+
+dlBtn.addEventListener('click', () => {
+  dlPanel.classList.toggle('show');
+});
+dlClose.addEventListener('click', () => {
+  dlPanel.classList.remove('show');
+});
+
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function renderDownload(dl) {
+  let el = document.getElementById('dl-' + dl.id);
+  const pct = dl.totalBytes > 0 ? Math.round((dl.receivedBytes / dl.totalBytes) * 100) : 0;
+  const isDone = dl.state === 'completed';
+  const isFailed = dl.state === 'cancelled' || dl.state === 'interrupted';
+
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'dl-item';
+    el.id = 'dl-' + dl.id;
+    dlList.prepend(el);
+    // Auto-show panel
+    dlPanel.classList.add('show');
+  }
+
+  el.innerHTML = `
+    <div class="dl-filename" title="${dl.filename}">${dl.filename}</div>
+    ${!isDone && !isFailed ? `
+    <div class="dl-progress-bar"><div class="dl-progress-fill" style="width:${pct}%"></div></div>
+    ` : ''}
+    <div class="dl-info">
+      <span>${isDone ? 'Completed' : isFailed ? 'Failed' : formatBytes(dl.receivedBytes) + ' / ' + formatBytes(dl.totalBytes)}</span>
+      <span>${isDone ? formatBytes(dl.totalBytes) : pct + '%'}</span>
+    </div>
+    ${isDone ? `
+    <div class="dl-actions">
+      <button onclick="window.wizardBrowser.openDownload('${dl.path.replace(/\\/g, '\\\\')}')">Open</button>
+      <button onclick="window.wizardBrowser.showDownload('${dl.path.replace(/\\/g, '\\\\')}')">Show in folder</button>
+    </div>
+    ` : ''}
+  `;
+}
+
+window.wizardBrowser.onDownloadStarted((dl) => {
+  dlItems[dl.id] = dl;
+  renderDownload(dl);
+});
+window.wizardBrowser.onDownloadUpdated((dl) => {
+  dlItems[dl.id] = dl;
+  renderDownload(dl);
+});
+window.wizardBrowser.onDownloadDone((dl) => {
+  dlItems[dl.id] = dl;
+  renderDownload(dl);
+});
+
+// --- Onion detection ---
+const onionBanner = document.getElementById('onion-banner');
+const onionText = document.getElementById('onion-text');
+const onionGo = document.getElementById('onion-go');
+const onionDismiss = document.getElementById('onion-dismiss');
+let currentOnion = null;
+
+window.wizardBrowser.onOnionAvailable((data) => {
+  if (!torActive) return; // Only show when Tor is active
+  currentOnion = data.onion;
+  onionText.textContent = `.onion version available for ${data.clearnet}`;
+  onionBanner.classList.add('show');
+});
+
+onionGo.addEventListener('click', () => {
+  if (currentOnion) window.wizardBrowser.navigateOnion(currentOnion);
+  onionBanner.classList.remove('show');
+});
+onionDismiss.addEventListener('click', () => {
+  onionBanner.classList.remove('show');
+});
+
+// Hide onion banner on navigation
 window.wizardBrowser.onUrlChange((url) => {
   urlBar.value = url.startsWith('file://') ? '' : url;
+  onionBanner.classList.remove('show');
 });
+
+// --- Auto-update check ---
+(async () => {
+  try {
+    const update = await window.wizardBrowser.checkUpdate();
+    if (update.hasUpdate) {
+      document.getElementById('update-text').textContent = `Update available: v${update.latest} (current: v${update.current})`;
+      document.getElementById('update-link').href = update.url;
+      document.getElementById('update-banner').classList.add('show');
+    }
+  } catch {}
+})();
+document.getElementById('update-dismiss').addEventListener('click', () => {
+  document.getElementById('update-banner').classList.remove('show');
+});
+
+// --- Events ---
 window.wizardBrowser.onTitleChange((title) => {
   document.title = title + ' — Wizard';
 });
@@ -210,6 +510,7 @@ document.addEventListener('keydown', (e) => {
   if (e.altKey && e.key === 'ArrowLeft') window.wizardBrowser.goBack();
   if (e.altKey && e.key === 'ArrowRight') window.wizardBrowser.goForward();
   if (e.key === 'F5') window.wizardBrowser.reload();
+  if (e.ctrlKey && e.key === 'j') { dlPanel.classList.toggle('show'); e.preventDefault(); }
 });
 </script>
 </body>
