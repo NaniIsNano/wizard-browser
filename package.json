@@ -47,7 +47,8 @@
       {
         "provider": "github",
         "owner": "NaniIsNano",
-        "repo": "wizard-browser"
+        "repo": "wizard-browser",
+        "releaseType": "release"
       }
     ],
     "files": [
