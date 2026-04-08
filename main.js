@@ -67,6 +67,7 @@ function createWindow() {
   // Create a BrowserView for web content
   browserView = new BrowserView({
     webPreferences: {
+      preload: path.join(__dirname, 'preload-search.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
