@@ -245,6 +245,115 @@ function checkOnionAvailable(url) {
   } catch {}
 }
 
+// --- Server-side search (no CORS issues) ---
+ipcMain.handle('server-search', async (_, term) => {
+  const http = require('https');
+
+  // Try SearXNG from server side (no CORS)
+  const searxInstances = [
+    'https://searx.be',
+    'https://priv.au',
+    'https://baresearch.org',
+    'https://opnxng.com',
+    'https://paulgo.io',
+    'https://etsi.me',
+    'https://search.ononoki.org',
+    'https://northboot.xyz',
+    'https://s.mble.dk'
+  ];
+
+  // Shuffle and try instances
+  const shuffled = searxInstances.sort(() => Math.random() - 0.5);
+
+  for (const instance of shuffled) {
+    try {
+      const results = await new Promise((resolve, reject) => {
+        const url = `${instance}/search?q=${encodeURIComponent(term)}&format=json&categories=general`;
+        const req = http.get(url, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0' } }, (res) => {
+          if (res.statusCode !== 200) { reject(); return; }
+          let data = '';
+          res.on('data', c => data += c);
+          res.on('end', () => {
+            try {
+              const json = JSON.parse(data);
+              if (json.results && json.results.length > 0) {
+                resolve(json.results.slice(0, 20).map((r, i) => ({
+                  title: r.title || '',
+                  url: r.url,
+                  snippet: (r.content || '').slice(0, 250),
+                  relevance: 100 - i,
+                  source: 'web'
+                })));
+              } else reject();
+            } catch { reject(); }
+          });
+        });
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(); });
+      });
+      if (results && results.length > 0) return results;
+    } catch { continue; }
+  }
+
+  // Fallback: DuckDuckGo lite (HTML scraping, always works)
+  try {
+    const results = await new Promise((resolve, reject) => {
+      const postData = `q=${encodeURIComponent(term)}`;
+      const options = {
+        hostname: 'lite.duckduckgo.com',
+        path: '/lite/',
+        method: 'POST',
+        timeout: 6000,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(postData),
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0'
+        }
+      };
+      const req = http.request(options, (res) => {
+        let data = '';
+        res.on('data', c => data += c);
+        res.on('end', () => {
+          const results = [];
+          // Parse DDG lite HTML results
+          const linkRegex = /<a[^>]+href="([^"]+)"[^>]*class="result-link"[^>]*>([^<]*)<\/a>/gi;
+          const snippetRegex = /<td[^>]*class="result-snippet"[^>]*>([\s\S]*?)<\/td>/gi;
+          let match;
+          const urls = [];
+          const titles = [];
+          while ((match = linkRegex.exec(data)) !== null) {
+            urls.push(match[1]);
+            titles.push(match[2].replace(/<[^>]*>/g, '').trim());
+          }
+          const snippets = [];
+          while ((match = snippetRegex.exec(data)) !== null) {
+            snippets.push(match[1].replace(/<[^>]*>/g, '').trim());
+          }
+          for (let i = 0; i < Math.min(urls.length, 20); i++) {
+            if (urls[i] && !urls[i].includes('duckduckgo.com')) {
+              results.push({
+                title: titles[i] || '',
+                url: urls[i],
+                snippet: (snippets[i] || '').slice(0, 250),
+                relevance: 100 - i,
+                source: 'web'
+              });
+            }
+          }
+          resolve(results);
+        });
+      });
+      req.on('error', () => resolve([]));
+      req.on('timeout', () => { req.destroy(); resolve([]); });
+      req.write(postData);
+      req.end();
+    });
+    if (results.length > 0) return results;
+  } catch {}
+
+  return [];
+});
+
 // --- IPC Handlers ---
 ipcMain.on('navigate', (_, url) => {
   if (!browserView) return;
