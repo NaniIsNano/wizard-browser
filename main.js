@@ -123,17 +123,13 @@ function createWindow() {
   // Position the BrowserView below the toolbar (48px), or fullscreen
   let isFullscreen = false;
   const TOOLBAR_HEIGHT = 48;
-  const { screen } = require('electron');
   const updateBounds = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     const [w, h] = mainWindow.getContentSize();
-    // On Windows with DPI scaling, BrowserView.setBounds uses physical pixels
-    // while getContentSize returns logical pixels — scale the toolbar offset
-    const scaleFactor = screen.getPrimaryDisplay().scaleFactor || 1;
-    const scaledToolbar = Math.round(TOOLBAR_HEIGHT * scaleFactor);
+    // Both getContentSize and setBounds use DIPs — no scaling needed
     const bvBounds = isFullscreen
       ? { x: 0, y: 0, width: w, height: h }
-      : { x: 0, y: scaledToolbar, width: w, height: h - scaledToolbar };
+      : { x: 0, y: TOOLBAR_HEIGHT, width: w, height: h - TOOLBAR_HEIGHT };
     browserView.setBounds(bvBounds);
   };
   updateBounds();
