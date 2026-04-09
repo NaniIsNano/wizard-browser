@@ -435,35 +435,6 @@ body {
   font-size: 12px;
   min-height: 16px;
 }
-/* Debug panel */
-#debug-panel {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.92);
-  z-index: 99999;
-  overflow-y: auto;
-  padding: 20px;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 13px;
-  color: #e0e0e0;
-}
-#debug-panel.show { display: block; }
-#debug-panel h2 { color: #a855f7; margin-bottom: 16px; font-family: 'Inter', sans-serif; }
-#debug-panel .debug-section { margin-bottom: 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px 16px; }
-#debug-panel .debug-section h3 { color: #22c55e; margin-bottom: 8px; font-size: 14px; font-family: 'Inter', sans-serif; }
-#debug-panel .debug-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #222; }
-#debug-panel .debug-key { color: #888; }
-#debug-panel .debug-val { color: #f0f0f0; font-weight: 600; }
-#debug-panel .debug-val.warn { color: #f59e0b; }
-#debug-panel .debug-val.bad { color: #ef4444; }
-#debug-panel .debug-val.good { color: #22c55e; }
-#debug-panel .debug-close { position: absolute; top: 12px; right: 20px; background: #333; border: none; color: #fff; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-#debug-panel .debug-close:hover { background: #555; }
-#debug-panel .debug-note { color: #f59e0b; font-size: 12px; margin-top: 12px; padding: 8px 12px; background: #1a1500; border: 1px solid #f59e0b33; border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -491,7 +462,6 @@ body {
     <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
   </button>
   <input type="text" id="url-bar" placeholder="Search or enter URL..." spellcheck="false" />
-  <button class="toolbar-btn" id="debug-btn" title="Debug Info" onclick="toggleDebugPanel()" style="color:#f59e0b;border-color:#f59e0b33;">DEBUG</button>
   <div id="shield" title="Trackers blocked this session">
     <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
     <span id="blocked-count">0</span>
@@ -871,124 +841,9 @@ document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'j') { dlPanel.classList.toggle('show'); e.preventDefault(); }
   if (e.ctrlKey && e.key === 'b') { bmPanel.classList.toggle('show'); if (bmPanel.classList.contains('show')) renderBookmarks(); e.preventDefault(); }
   if (e.ctrlKey && e.key === 'd') { document.getElementById('bookmark-btn').click(); e.preventDefault(); }
-  // Debug panel — Ctrl+Shift+D
-  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-    e.preventDefault();
-    toggleDebugPanel();
-  }
 });
 
-async function toggleDebugPanel() {
-  let panel = document.getElementById('debug-panel');
-  if (panel && panel.classList.contains('show')) {
-    panel.classList.remove('show');
-    return;
-  }
-  if (!panel) {
-    panel = document.createElement('div');
-    panel.id = 'debug-panel';
-    document.body.appendChild(panel);
-  }
-  panel.innerHTML = '<h2>Loading debug info...</h2>';
-  panel.classList.add('show');
 
-  try {
-    const info = await window.wizardBrowser.getDebugInfo();
-    const dpr = window.devicePixelRatio || 1;
-    const toolbarEl = document.getElementById('toolbar');
-    const toolbarRect = toolbarEl ? toolbarEl.getBoundingClientRect() : null;
-
-    const row = (key, val, cls) => `<div class="debug-row"><span class="debug-key">${key}</span><span class="debug-val ${cls || ''}">${val}</span></div>`;
-
-    let html = `<h2>Wizard Browser Debug Panel</h2><button class="debug-close" onclick="document.getElementById('debug-panel').classList.remove('show')">Close (Ctrl+Shift+D)</button>`;
-
-    // Platform
-    html += `<div class="debug-section"><h3>Platform</h3>`;
-    html += row('Electron', info.electronVersion);
-    html += row('Chromium', info.chromiumVersion);
-    html += row('Platform', info.platform + ' / ' + info.arch);
-    html += `</div>`;
-
-    // Display
-    const sf = info.primaryDisplay.scaleFactor;
-    html += `<div class="debug-section"><h3>Display</h3>`;
-    html += row('Scale Factor (main process)', sf, sf !== 1 ? 'warn' : 'good');
-    html += row('window.devicePixelRatio', dpr, dpr !== 1 ? 'warn' : 'good');
-    html += row('Screen Size', `${info.primaryDisplay.size.width} x ${info.primaryDisplay.size.height}`);
-    html += row('Work Area', `${info.primaryDisplay.workAreaSize.width} x ${info.primaryDisplay.workAreaSize.height}`);
-    html += row('Rotation', info.primaryDisplay.rotation + '°');
-    html += `</div>`;
-
-    // Window
-    if (info.window) {
-      const w = info.window;
-      html += `<div class="debug-section"><h3>BrowserWindow</h3>`;
-      html += row('Bounds', `x:${w.bounds.x} y:${w.bounds.y} w:${w.bounds.width} h:${w.bounds.height}`);
-      html += row('Content Bounds', `x:${w.contentBounds.x} y:${w.contentBounds.y} w:${w.contentBounds.width} h:${w.contentBounds.height}`);
-      html += row('Content Size', `${w.contentSize[0]} x ${w.contentSize[1]}`);
-      html += row('Maximized', w.isMaximized);
-      html += row('FullScreen', w.isFullScreen);
-      html += `</div>`;
-    }
-
-    // BrowserView
-    if (info.browserView) {
-      const bv = info.browserView;
-      const expectedY = info.toolbarHeight;
-      const actualY = bv.bounds.y;
-      const yOk = actualY >= expectedY;
-      html += `<div class="debug-section"><h3>BrowserView</h3>`;
-      html += row('Bounds', `x:${bv.bounds.x} y:${bv.bounds.y} w:${bv.bounds.width} h:${bv.bounds.height}`);
-      html += row('Expected Y offset', expectedY + 'px (toolbar height)');
-      html += row('Actual Y offset', actualY + 'px', yOk ? 'good' : 'bad');
-      html += row('Scaled toolbar used', Math.round(info.toolbarHeight * sf) + 'px (toolbar × scaleFactor)');
-      if (!yOk) {
-        html += `<div class="debug-note">BrowserView Y (${actualY}) is LESS than toolbar height (${expectedY}). The BrowserView is covering the toolbar!</div>`;
-      }
-      if (actualY > expectedY * 2) {
-        html += `<div class="debug-note">BrowserView Y (${actualY}) is MORE than double the toolbar height (${expectedY}). There's a large gap between toolbar and content.</div>`;
-      }
-      html += `</div>`;
-    }
-
-    // Toolbar DOM
-    html += `<div class="debug-section"><h3>Toolbar DOM</h3>`;
-    if (toolbarRect) {
-      html += row('getBoundingClientRect()', `x:${toolbarRect.x} y:${toolbarRect.y} w:${Math.round(toolbarRect.width)} h:${Math.round(toolbarRect.height)}`);
-      html += row('CSS height', toolbarEl.style.height || '48px (from stylesheet)');
-      html += row('offsetHeight', toolbarEl.offsetHeight + 'px');
-      html += row('Visible?', toolbarEl.offsetHeight > 0 ? 'Yes' : 'NO', toolbarEl.offsetHeight > 0 ? 'good' : 'bad');
-      html += row('Children count', toolbarEl.children.length);
-      // Check each child visibility
-      let hiddenKids = [];
-      for (const child of toolbarEl.children) {
-        const r = child.getBoundingClientRect();
-        if (r.height === 0 || r.width === 0) hiddenKids.push(child.id || child.tagName);
-      }
-      html += row('Hidden children', hiddenKids.length ? hiddenKids.join(', ') : 'None', hiddenKids.length ? 'bad' : 'good');
-    } else {
-      html += row('Toolbar element', 'NOT FOUND', 'bad');
-    }
-    html += `</div>`;
-
-    // Diagnosis
-    html += `<div class="debug-section"><h3>Diagnosis</h3>`;
-    const bvY = info.browserView ? info.browserView.bounds.y : 0;
-    const tbH = info.toolbarHeight;
-    if (bvY < tbH) {
-      html += `<div class="debug-note">PROBLEM: BrowserView.y (${bvY}) < toolbar height (${tbH}). The web content is overlapping the toolbar. The scaleFactor is ${sf} and devicePixelRatio is ${dpr}. The bounds calculation needs to account for DPI correctly.</div>`;
-    } else if (bvY === tbH) {
-      html += row('Status', 'BrowserView.y matches toolbar height exactly (no DPI scaling applied)', sf !== 1 ? 'warn' : 'good');
-    } else {
-      html += row('Status', `BrowserView.y (${bvY}) > toolbar (${tbH}) — gap of ${bvY - tbH}px`, bvY > tbH * 2 ? 'warn' : 'good');
-    }
-    html += `</div>`;
-
-    panel.innerHTML = html;
-  } catch (err) {
-    panel.innerHTML = `<h2>Debug Error</h2><pre style="color:#ef4444">${err.stack || err.message || err}</pre><button class="debug-close" onclick="document.getElementById('debug-panel').classList.remove('show')">Close</button>`;
-  }
-}
 </script>
 </body>
 </html>
