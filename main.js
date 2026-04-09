@@ -131,18 +131,14 @@ function createWindow() {
       : { x: 0, y: TOOLBAR_HEIGHT, width: w, height: h - TOOLBAR_HEIGHT };
     browserView.setBounds(bvBounds);
   };
-  // Defer initial bounds to after window is shown and laid out
+  updateBounds();
   mainWindow.on('resize', updateBounds);
   mainWindow.on('show', updateBounds);
   mainWindow.on('maximize', updateBounds);
   mainWindow.on('unmaximize', updateBounds);
   mainWindow.on('restore', updateBounds);
-  mainWindow.webContents.on('did-finish-load', () => {
-    updateBounds();
-    // Double-ensure after a short delay for DPI scaling
-    setTimeout(updateBounds, 100);
-    setTimeout(updateBounds, 500);
-  });
+  mainWindow.webContents.on('did-finish-load', updateBounds);
+  browserView.webContents.on('did-finish-load', updateBounds);
 
   // Handle HTML5 fullscreen (e.g. YouTube video player)
   browserView.webContents.on('enter-html-full-screen', () => {
