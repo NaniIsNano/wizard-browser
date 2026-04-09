@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, ipcMain, session, dialog, Menu, clipboard, nativeImage } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, session, dialog, Menu, clipboard, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -99,14 +99,11 @@ function createWindow() {
     }
   });
 
-  // Remove the default menu bar entirely
-  Menu.setApplicationMenu(null);
-
   // Load the browser UI shell
   mainWindow.loadFile('browser.html');
 
-  // Create a WebContentsView for web content (replaces deprecated BrowserView)
-  browserView = new WebContentsView({
+  // Create a BrowserView for web content
+  browserView = new BrowserView({
     webPreferences: {
       preload: path.join(__dirname, 'preload-search.js'),
       contextIsolation: true,
@@ -118,28 +115,21 @@ function createWindow() {
     }
   });
 
-  mainWindow.contentView.addChildView(browserView);
+  mainWindow.setBrowserView(browserView);
 
   // Position the BrowserView below the toolbar (48px), or fullscreen
   let isFullscreen = false;
-  const TOOLBAR_HEIGHT = 48;
   const updateBounds = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
-    const [w, h] = mainWindow.getContentSize();
-    // Both getContentSize and setBounds use DIPs — no scaling needed
-    const bvBounds = isFullscreen
-      ? { x: 0, y: 0, width: w, height: h }
-      : { x: 0, y: TOOLBAR_HEIGHT, width: w, height: h - TOOLBAR_HEIGHT };
-    browserView.setBounds(bvBounds);
+    const bounds = mainWindow.getContentBounds();
+    if (isFullscreen) {
+      browserView.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
+    } else {
+      browserView.setBounds({ x: 0, y: 48, width: bounds.width, height: bounds.height - 48 });
+    }
   };
   updateBounds();
   mainWindow.on('resize', updateBounds);
-  mainWindow.on('show', updateBounds);
-  mainWindow.on('maximize', updateBounds);
-  mainWindow.on('unmaximize', updateBounds);
-  mainWindow.on('restore', updateBounds);
-  mainWindow.webContents.on('did-finish-load', updateBounds);
-  browserView.webContents.on('did-finish-load', updateBounds);
 
   // Handle HTML5 fullscreen (e.g. YouTube video player)
   browserView.webContents.on('enter-html-full-screen', () => {
