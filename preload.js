@@ -49,5 +49,7 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   onUrlChange: (cb) => ipcRenderer.on('url-changed', (_, url) => cb(url)),
   onTitleChange: (cb) => ipcRenderer.on('title-changed', (_, title) => cb(title)),
   onLoadingChange: (cb) => ipcRenderer.on('loading-changed', (_, loading) => cb(loading)),
-  onBlockedUpdate: (cb) => ipcRenderer.on('blocked-update', (_, count) => cb(count))
+  onBlockedUpdate: (cb) => ipcRenderer.on('blocked-update', (_, count) => cb(count)),
+  // Debug
+  getDebugInfo: () => ipcRenderer.invoke('get-debug-info')
 });

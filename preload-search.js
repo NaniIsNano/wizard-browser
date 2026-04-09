@@ -19,5 +19,7 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   skipPinSetup: () => ipcRenderer.invoke('skip-pin-setup'),
   // Navigation
   openSettings: () => ipcRenderer.send('open-settings'),
-  openIRC: () => ipcRenderer.send('open-irc')
+  openIRC: () => ipcRenderer.send('open-irc'),
+  // Debug
+  getDebugInfo: () => ipcRenderer.invoke('get-debug-info')
 });

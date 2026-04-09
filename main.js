@@ -123,12 +123,17 @@ function createWindow() {
   // Position the BrowserView below the toolbar (48px), or fullscreen
   let isFullscreen = false;
   const TOOLBAR_HEIGHT = 48;
+  const { screen } = require('electron');
   const updateBounds = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     const [w, h] = mainWindow.getContentSize();
+    // On Windows with DPI scaling, BrowserView.setBounds uses physical pixels
+    // while getContentSize returns logical pixels — scale the toolbar offset
+    const scaleFactor = screen.getPrimaryDisplay().scaleFactor || 1;
+    const scaledToolbar = Math.round(TOOLBAR_HEIGHT * scaleFactor);
     const bvBounds = isFullscreen
       ? { x: 0, y: 0, width: w, height: h }
-      : { x: 0, y: TOOLBAR_HEIGHT, width: w, height: h - TOOLBAR_HEIGHT };
+      : { x: 0, y: scaledToolbar, width: w, height: h - scaledToolbar };
     browserView.setBounds(bvBounds);
   };
   updateBounds();
@@ -156,7 +161,13 @@ function createWindow() {
   const ses = browserView.webContents.session;
 
   // Override user agent at session level — use a current, realistic Chrome UA
-  const spoofedUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  // Derive the real Chromium version from Electron's UA so headers stay consistent
+  const realUA = ses.getUserAgent();
+  const chromiumMatch = realUA.match(/Chrome\/([\d.]+)/);
+  const chromiumVer = chromiumMatch ? chromiumMatch[1] : '134.0.0.0';
+  const majorVer = chromiumVer.split('.')[0];
+  // Build a UA that looks like stock Chrome but keeps the real Chromium version
+  const spoofedUA = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromiumVer} Safari/537.36`;
   ses.setUserAgent(spoofedUA);
 
   // Tracker blocking
@@ -210,8 +221,8 @@ function createWindow() {
     // Set Accept-Language to a common value to reduce fingerprinting
     headers['Accept-Language'] = 'en-US,en;q=0.9';
 
-    // Set Sec-CH-UA headers to match spoofed UA
-    headers['Sec-CH-UA'] = '"Chromium";v="131", "Not_A Brand";v="24"';
+    // Set Sec-CH-UA headers to match spoofed UA (use real Chromium version)
+    headers['Sec-CH-UA'] = `"Chromium";v="${majorVer}", "Not_A Brand";v="24"`;
     headers['Sec-CH-UA-Mobile'] = '?0';
     headers['Sec-CH-UA-Platform'] = '"Windows"';
 
@@ -584,6 +595,42 @@ ipcMain.on('go-home', () => {
 
 ipcMain.handle('get-blocked-count', () => blockedCount);
 ipcMain.handle('get-version', () => app.getVersion());
+
+// Debug info for troubleshooting toolbar/layout issues
+ipcMain.handle('get-debug-info', () => {
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const info = {
+    electronVersion: process.versions.electron,
+    chromiumVersion: process.versions.chrome,
+    platform: process.platform,
+    arch: process.arch,
+    primaryDisplay: {
+      scaleFactor: primaryDisplay.scaleFactor,
+      size: primaryDisplay.size,
+      workAreaSize: primaryDisplay.workAreaSize,
+      rotation: primaryDisplay.rotation,
+    },
+    window: null,
+    browserView: null,
+    toolbarHeight: 48,
+  };
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    info.window = {
+      bounds: mainWindow.getBounds(),
+      contentBounds: mainWindow.getContentBounds(),
+      contentSize: mainWindow.getContentSize(),
+      isMaximized: mainWindow.isMaximized(),
+      isFullScreen: mainWindow.isFullScreen(),
+    };
+  }
+  if (browserView) {
+    info.browserView = {
+      bounds: browserView.getBounds(),
+    };
+  }
+  return info;
+});
 
 ipcMain.handle('clear-all-data', async () => {
   if (!browserView) return;
