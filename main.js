@@ -91,6 +91,7 @@ function createWindow() {
     height: 900,
     title: 'Wizard Browser',
     icon: path.join(__dirname, 'icon.png'),
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -98,6 +99,9 @@ function createWindow() {
       sandbox: true
     }
   });
+
+  // Remove the default menu bar entirely
+  mainWindow.setMenuBarVisibility(false);
 
   // Load the browser UI shell
   mainWindow.loadFile('browser.html');
@@ -690,6 +694,13 @@ ipcMain.handle('skip-pin-setup', () => {
 ipcMain.on('open-settings', () => {
   if (browserView) {
     browserView.webContents.loadFile('settings.html');
+  }
+});
+
+// --- IRC page navigation ---
+ipcMain.on('open-irc', () => {
+  if (browserView) {
+    browserView.webContents.loadFile('irc.html');
   }
 });
 

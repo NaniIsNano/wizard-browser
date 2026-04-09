@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   getSpeedDial: () => ipcRenderer.invoke('get-speed-dial'),
   saveSpeedDial: (sd) => ipcRenderer.invoke('save-speed-dial', sd),
   openSettings: () => ipcRenderer.send('open-settings'),
+  openIRC: () => ipcRenderer.send('open-irc'),
   // PIN lock
   getPinState: () => ipcRenderer.invoke('get-pin-state'),
   setPin: (data) => ipcRenderer.invoke('set-pin', data),

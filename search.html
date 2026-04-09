@@ -68,6 +68,57 @@ body.theme-hacker {
 body.theme-hacker { font-family: 'Courier New', monospace !important; }
 body.theme-hacker * { font-family: inherit !important; }
 
+/* Theme: Mountains (background image) */
+body.theme-mountains {
+  --bg: #0a0a0a; --surface: rgba(10,10,10,0.75); --surface2: rgba(20,20,20,0.7); --border: rgba(255,255,255,0.12);
+  --text: #f0f0f0; --text2: #bbb; --accent: #7cb9e8; --accent2: #a8d4f0;
+  --link: #a8d4f0; --link-hover: #cde8f7; --url-color: #8aa; --snippet: #bbb;
+}
+body.theme-mountains {
+  background: url('backgrounds/mountains.jpg') center/cover fixed !important;
+}
+body.theme-mountains #home { background: rgba(0,0,0,0.45); min-height: 100vh; }
+body.theme-mountains .result { background: rgba(10,10,10,0.7); backdrop-filter: blur(12px); }
+body.theme-mountains #search-form { background: rgba(10,10,10,0.7); backdrop-filter: blur(10px); }
+body.theme-mountains .shortcut { background: rgba(10,10,10,0.6); backdrop-filter: blur(8px); }
+body.theme-mountains #knowledge-panel { background: rgba(10,10,10,0.7); backdrop-filter: blur(10px); }
+body.theme-mountains #results-page { background: rgba(0,0,0,0.5); min-height: 100vh; }
+
+/* Theme: Canola (background image) */
+body.theme-canola {
+  --bg: #0a0a0a; --surface: rgba(255,255,255,0.7); --surface2: rgba(255,255,255,0.5); --border: rgba(200,200,100,0.3);
+  --text: #1a2a0a; --text2: #556b2f; --accent: #4a7c10; --accent2: #6b8e23;
+  --green: #2e7d32; --red: #c62828;
+  --link: #2e5a00; --link-hover: #3a7000; --url-color: #6a8a4a; --snippet: #4a6a2a;
+}
+body.theme-canola {
+  background: url('backgrounds/canola.jpg') center/cover fixed !important;
+}
+body.theme-canola #home { background: rgba(255,255,255,0.25); min-height: 100vh; }
+body.theme-canola .result { background: rgba(255,255,255,0.65); backdrop-filter: blur(12px); }
+body.theme-canola #search-form { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); }
+body.theme-canola .shortcut { background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); }
+body.theme-canola #knowledge-panel { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); }
+body.theme-canola #results-page { background: rgba(255,255,255,0.3); min-height: 100vh; }
+body.theme-canola #logo { background: linear-gradient(135deg, #2e5a00, #6b8e23, #8fbc3a); -webkit-background-clip: text; background-clip: text; }
+
+/* Theme: Fortress (background image) */
+body.theme-fortress {
+  --bg: #0a0a0a; --surface: rgba(15,12,10,0.8); --surface2: rgba(25,20,15,0.7); --border: rgba(180,160,130,0.2);
+  --text: #e8e0d0; --text2: #a89878; --accent: #c9a84c; --accent2: #dabb66;
+  --link: #dabb66; --link-hover: #eedd88; --url-color: #8a7a5a; --snippet: #b0a080;
+}
+body.theme-fortress {
+  background: url('backgrounds/fortress.jpg') center/cover fixed !important;
+}
+body.theme-fortress #home { background: rgba(0,0,0,0.5); min-height: 100vh; }
+body.theme-fortress .result { background: rgba(15,12,10,0.75); backdrop-filter: blur(12px); }
+body.theme-fortress #search-form { background: rgba(15,12,10,0.75); backdrop-filter: blur(10px); }
+body.theme-fortress .shortcut { background: rgba(15,12,10,0.65); backdrop-filter: blur(8px); }
+body.theme-fortress #knowledge-panel { background: rgba(15,12,10,0.75); backdrop-filter: blur(10px); }
+body.theme-fortress #results-page { background: rgba(0,0,0,0.5); min-height: 100vh; }
+body.theme-fortress #logo { background: linear-gradient(135deg, #c9a84c, #dabb66, #eedd88); -webkit-background-clip: text; background-clip: text; }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
