@@ -176,7 +176,7 @@ function createWindow() {
   ses.setUserAgent(spoofedUA);
 
   // Tracker blocking
-  if (settings.trackerBlocking) {
+  if (settings.trackerBlocking !== false) {
     ses.webRequest.onBeforeRequest((details, callback) => {
       const url = details.url.toLowerCase();
       const blocked = trackerList.some(tracker => url.includes(tracker));

@@ -1700,7 +1700,7 @@ function capitalize(str) {
 (async () => {
   const badge = document.getElementById('version-badge');
   if (!badge) return;
-  let currentVersion = '1.1.0';
+  let currentVersion = '2.0.0';
   // Get version from Electron (single source of truth: package.json)
   if (window.wizardBrowser && window.wizardBrowser.getVersion) {
     try { currentVersion = await window.wizardBrowser.getVersion(); } catch {}
