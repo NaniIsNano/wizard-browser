@@ -91,7 +91,7 @@ function createWindow() {
     height: 900,
     title: 'Wizard Browser',
     icon: path.join(__dirname, 'icon.png'),
-    autoHideMenuBar: true,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -101,8 +101,7 @@ function createWindow() {
   });
 
   // Remove the default menu bar entirely
-  const { Menu: AppMenu } = require('electron');
-  mainWindow.setMenu(null);
+  Menu.setApplicationMenu(null);
 
   // Load the browser UI shell
   mainWindow.loadFile('browser.html');
@@ -132,7 +131,12 @@ function createWindow() {
       browserView.setBounds({ x: 0, y: 48, width, height: height - 48 });
     }
   };
-  updateBounds();
+
+  // Wait for window to be ready before setting bounds, then show
+  mainWindow.once('ready-to-show', () => {
+    updateBounds();
+    mainWindow.show();
+  });
   mainWindow.on('resize', updateBounds);
 
   // Handle HTML5 fullscreen (e.g. YouTube video player)
