@@ -124,16 +124,25 @@ function createWindow() {
   let isFullscreen = false;
   const TOOLBAR_HEIGHT = 48;
   const updateBounds = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
     const [w, h] = mainWindow.getContentSize();
     const bvBounds = isFullscreen
       ? { x: 0, y: 0, width: w, height: h }
       : { x: 0, y: TOOLBAR_HEIGHT, width: w, height: h - TOOLBAR_HEIGHT };
     browserView.setBounds(bvBounds);
   };
-  updateBounds();
+  // Defer initial bounds to after window is shown and laid out
   mainWindow.on('resize', updateBounds);
-  // Ensure bounds are correct after window fully renders
-  mainWindow.webContents.on('did-finish-load', updateBounds);
+  mainWindow.on('show', updateBounds);
+  mainWindow.on('maximize', updateBounds);
+  mainWindow.on('unmaximize', updateBounds);
+  mainWindow.on('restore', updateBounds);
+  mainWindow.webContents.on('did-finish-load', () => {
+    updateBounds();
+    // Double-ensure after a short delay for DPI scaling
+    setTimeout(updateBounds, 100);
+    setTimeout(updateBounds, 500);
+  });
 
   // Handle HTML5 fullscreen (e.g. YouTube video player)
   browserView.webContents.on('enter-html-full-screen', () => {
