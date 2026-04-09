@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, ipcMain, session, dialog, Menu, clipboard, nativeImage } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, session, dialog, Menu, clipboard, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -105,8 +105,8 @@ function createWindow() {
   // Load the browser UI shell
   mainWindow.loadFile('browser.html');
 
-  // Create a BrowserView for web content
-  browserView = new BrowserView({
+  // Create a WebContentsView for web content (replaces deprecated BrowserView)
+  browserView = new WebContentsView({
     webPreferences: {
       preload: path.join(__dirname, 'preload-search.js'),
       contextIsolation: true,
@@ -118,7 +118,7 @@ function createWindow() {
     }
   });
 
-  mainWindow.setBrowserView(browserView);
+  mainWindow.contentView.addChildView(browserView);
 
   // Position the BrowserView below the toolbar (48px), or fullscreen
   let isFullscreen = false;
@@ -856,4 +856,5 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
+
 });
