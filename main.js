@@ -101,7 +101,8 @@ function createWindow() {
   });
 
   // Remove the default menu bar entirely
-  mainWindow.setMenuBarVisibility(false);
+  const { Menu: AppMenu } = require('electron');
+  mainWindow.setMenu(null);
 
   // Load the browser UI shell
   mainWindow.loadFile('browser.html');
@@ -124,11 +125,11 @@ function createWindow() {
   // Position the BrowserView below the toolbar (48px), or fullscreen
   let isFullscreen = false;
   const updateBounds = () => {
-    const bounds = mainWindow.getContentBounds();
+    const [width, height] = mainWindow.getContentSize();
     if (isFullscreen) {
-      browserView.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
+      browserView.setBounds({ x: 0, y: 0, width, height });
     } else {
-      browserView.setBounds({ x: 0, y: 48, width: bounds.width, height: bounds.height - 48 });
+      browserView.setBounds({ x: 0, y: 48, width, height: height - 48 });
     }
   };
   updateBounds();
