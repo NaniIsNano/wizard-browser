@@ -153,6 +153,25 @@ function createWindow() {
     updateBounds();
   });
 
+  // --- ANTI-BOT: Hide Electron/automation signals before any page loads ---
+  browserView.webContents.on('dom-ready', () => {
+    browserView.webContents.executeJavaScript(`
+      // Hide navigator.webdriver (Electron sets this to true)
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      // Ensure plugins array looks normal (empty in headless = bot signal)
+      Object.defineProperty(navigator, 'plugins', {
+        get: () => [1, 2, 3, 4, 5]
+      });
+      // Ensure languages look normal
+      Object.defineProperty(navigator, 'languages', {
+        get: () => ['en-US', 'en']
+      });
+      // Chrome runtime stub (missing in Electron = bot signal)
+      if (!window.chrome) window.chrome = {};
+      if (!window.chrome.runtime) window.chrome.runtime = {};
+    `, true).catch(() => {});
+  });
+
   // --- PRIVACY: Block trackers & ads at network level ---
   const ses = browserView.webContents.session;
 
@@ -218,9 +237,17 @@ function createWindow() {
     headers['Accept-Language'] = 'en-US,en;q=0.9';
 
     // Set Sec-CH-UA headers to match spoofed UA (use real Chromium version)
-    headers['Sec-CH-UA'] = `"Chromium";v="${majorVer}", "Not_A Brand";v="24"`;
+    // Must include "Google Chrome" brand — omitting it is a bot fingerprint
+    headers['Sec-CH-UA'] = `"Chromium";v="${majorVer}", "Google Chrome";v="${majorVer}", "Not_A Brand";v="24"`;
     headers['Sec-CH-UA-Mobile'] = '?0';
     headers['Sec-CH-UA-Platform'] = '"Windows"';
+    headers['Sec-CH-UA-Full-Version-List'] = `"Chromium";v="${chromiumVer}", "Google Chrome";v="${chromiumVer}", "Not_A Brand";v="24.0.0.0"`;
+
+    // Ensure Sec-Fetch headers are present (Akamai checks these)
+    if (!headers['Sec-Fetch-Site']) headers['Sec-Fetch-Site'] = 'none';
+    if (!headers['Sec-Fetch-Mode']) headers['Sec-Fetch-Mode'] = 'navigate';
+    if (!headers['Sec-Fetch-User']) headers['Sec-Fetch-User'] = '?1';
+    if (!headers['Sec-Fetch-Dest']) headers['Sec-Fetch-Dest'] = 'document';
 
     callback({ requestHeaders: headers });
   });
