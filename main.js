@@ -124,13 +124,11 @@ function createWindow() {
   let isFullscreen = false;
   const TOOLBAR_HEIGHT = 48;
   const updateBounds = () => {
-    const bounds = mainWindow.getContentBounds();
-    if (isFullscreen) {
-      browserView.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
-    } else {
-      browserView.setBounds({ x: 0, y: TOOLBAR_HEIGHT, width: bounds.width, height: bounds.height - TOOLBAR_HEIGHT });
-    }
-    browserView.setAutoResize({ width: true, height: true, horizontal: false, vertical: false });
+    const [w, h] = mainWindow.getContentSize();
+    const bvBounds = isFullscreen
+      ? { x: 0, y: 0, width: w, height: h }
+      : { x: 0, y: TOOLBAR_HEIGHT, width: w, height: h - TOOLBAR_HEIGHT };
+    browserView.setBounds(bvBounds);
   };
   updateBounds();
   mainWindow.on('resize', updateBounds);
