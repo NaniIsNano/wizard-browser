@@ -89,6 +89,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 900,
+    show: false,
     title: 'Wizard Browser',
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
@@ -121,14 +122,20 @@ function createWindow() {
   let isFullscreen = false;
   const updateBounds = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
-    const bounds = mainWindow.getContentBounds();
+    const [width, height] = mainWindow.getContentSize();
     if (isFullscreen) {
-      browserView.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
+      browserView.setBounds({ x: 0, y: 0, width, height });
     } else {
-      browserView.setBounds({ x: 0, y: 48, width: bounds.width, height: bounds.height - 48 });
+      browserView.setBounds({ x: 0, y: 48, width, height: height - 48 });
     }
   };
-  updateBounds();
+
+  // Wait for browser.html to finish loading before showing window
+  // This ensures the toolbar is rendered before the BrowserView overlays it
+  mainWindow.once('ready-to-show', () => {
+    updateBounds();
+    mainWindow.show();
+  });
   mainWindow.on('resize', updateBounds);
 
   // Handle HTML5 fullscreen (e.g. YouTube video player)
