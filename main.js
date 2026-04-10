@@ -176,7 +176,7 @@ function createWindow() {
   ses.setUserAgent(spoofedUA);
 
   // Tracker blocking
-  if (settings.trackerBlocking) {
+  if (settings.trackerBlocking !== false) {
     ses.webRequest.onBeforeRequest((details, callback) => {
       const url = details.url.toLowerCase();
       const blocked = trackerList.some(tracker => url.includes(tracker));
@@ -378,6 +378,9 @@ function createWindow() {
     menuTemplate.push({
       label: 'Inspect Element',
       click: () => {
+        if (!browserView.webContents.isDevToolsOpened()) {
+          browserView.webContents.openDevTools({ mode: 'detach' });
+        }
         browserView.webContents.inspectElement(params.x, params.y);
       }
     });
@@ -608,42 +611,6 @@ ipcMain.on('go-home', () => {
 
 ipcMain.handle('get-blocked-count', () => blockedCount);
 ipcMain.handle('get-version', () => app.getVersion());
-
-// Debug info for troubleshooting toolbar/layout issues
-ipcMain.handle('get-debug-info', () => {
-  const { screen } = require('electron');
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const info = {
-    electronVersion: process.versions.electron,
-    chromiumVersion: process.versions.chrome,
-    platform: process.platform,
-    arch: process.arch,
-    primaryDisplay: {
-      scaleFactor: primaryDisplay.scaleFactor,
-      size: primaryDisplay.size,
-      workAreaSize: primaryDisplay.workAreaSize,
-      rotation: primaryDisplay.rotation,
-    },
-    window: null,
-    browserView: null,
-    toolbarHeight: 48,
-  };
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    info.window = {
-      bounds: mainWindow.getBounds(),
-      contentBounds: mainWindow.getContentBounds(),
-      contentSize: mainWindow.getContentSize(),
-      isMaximized: mainWindow.isMaximized(),
-      isFullScreen: mainWindow.isFullScreen(),
-    };
-  }
-  if (browserView) {
-    info.browserView = {
-      bounds: browserView.getBounds(),
-    };
-  }
-  return info;
-});
 
 ipcMain.handle('clear-all-data', async () => {
   if (!browserView) return;

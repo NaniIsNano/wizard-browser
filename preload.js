@@ -50,6 +50,4 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   onTitleChange: (cb) => ipcRenderer.on('title-changed', (_, title) => cb(title)),
   onLoadingChange: (cb) => ipcRenderer.on('loading-changed', (_, loading) => cb(loading)),
   onBlockedUpdate: (cb) => ipcRenderer.on('blocked-update', (_, count) => cb(count)),
-  // Debug
-  getDebugInfo: () => ipcRenderer.invoke('get-debug-info')
 });
