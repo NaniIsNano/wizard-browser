@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, ipcMain, session, dialog, Menu, clipboard, nativeImage } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, session, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -14,48 +14,10 @@ let browserView;
 let blockedCount = 0;
 let downloads = []; // Download manager state
 
-// --- Settings persistence ---
-const settingsPath = path.join(app.getPath('userData'), 'wizard-settings.json');
-const bookmarksPath = path.join(app.getPath('userData'), 'wizard-bookmarks.json');
-const pinPath = path.join(app.getPath('userData'), 'wizard-pin.json');
-
-function loadJSON(filePath, fallback) {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  } catch { return fallback; }
-}
-
-function saveJSON(filePath, data) {
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-}
-
-let settings = loadJSON(settingsPath, {
-  theme: 'dark',
-  doNotTrack: true,
-  canvasSpoofing: true,
-  webrtcProtection: true,
-  referrerStripping: true,
-  trackerBlocking: true,
-  clearOnExit: true,
-  speedDial: [
-    { name: 'YouTube', url: 'https://youtube.com', icon: 'Y' },
-    { name: 'GitHub', url: 'https://github.com', icon: 'G' },
-    { name: 'Reddit', url: 'https://reddit.com', icon: 'R' },
-    { name: 'Wikipedia', url: 'https://wikipedia.org', icon: 'W' }
-  ]
-});
-
-let bookmarks = loadJSON(bookmarksPath, []);
-let pinData = loadJSON(pinPath, { enabled: false, pin: null, asked: true });
-
 // Privacy: disable canvas fingerprinting (WebGL left enabled for video playback)
-if (settings.canvasSpoofing) {
-  app.commandLine.appendSwitch('disable-reading-from-canvas');
-}
+app.commandLine.appendSwitch('disable-reading-from-canvas');
 // Disable WebRTC IP leak
-if (settings.webrtcProtection) {
-  app.commandLine.appendSwitch('force-webrtc-ip-handling-policy', 'disable_non_proxied_udp');
-}
+app.commandLine.appendSwitch('force-webrtc-ip-handling-policy', 'disable_non_proxied_udp');
 // Disable background networking
 app.commandLine.appendSwitch('disable-background-networking');
 // Disable various Chrome features that phone home
@@ -142,42 +104,24 @@ function createWindow() {
     updateBounds();
   });
 
-  // --- ANTI-BOT: Hide Electron/automation signals before any page loads ---
-  browserView.webContents.on('dom-ready', () => {
-    browserView.webContents.executeJavaScript(`
-      Object.defineProperty(navigator, 'webdriver', { get: () => false });
-      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-      Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-      if (!window.chrome) window.chrome = {};
-      if (!window.chrome.runtime) window.chrome.runtime = {};
-    `, true).catch(() => {});
-  });
-
   // --- PRIVACY: Block trackers & ads at network level ---
   const ses = browserView.webContents.session;
 
-  // Override user agent — derive real Chromium version for consistent headers
-  const realUA = ses.getUserAgent();
-  const chromiumMatch = realUA.match(/Chrome\/([\d.]+)/);
-  const chromiumVer = chromiumMatch ? chromiumMatch[1] : '134.0.0.0';
-  const majorVer = chromiumVer.split('.')[0];
-  const spoofedUA = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromiumVer} Safari/537.36`;
+  // Override user agent at session level to fully match real Chrome
+  const spoofedUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
   ses.setUserAgent(spoofedUA);
 
-  // Tracker blocking (conditional on settings)
-  if (settings.trackerBlocking !== false) {
-    ses.webRequest.onBeforeRequest((details, callback) => {
-      const url = details.url.toLowerCase();
-      const blocked = trackerList.some(tracker => url.includes(tracker));
-      if (blocked) {
-        blockedCount++;
-        mainWindow.webContents.send('blocked-update', blockedCount);
-        callback({ cancel: true });
-      } else {
-        callback({});
-      }
-    });
-  }
+  ses.webRequest.onBeforeRequest((details, callback) => {
+    const url = details.url.toLowerCase();
+    const blocked = trackerList.some(tracker => url.includes(tracker));
+    if (blocked) {
+      blockedCount++;
+      mainWindow.webContents.send('blocked-update', blockedCount);
+      callback({ cancel: true });
+    } else {
+      callback({});
+    }
+  });
 
   // Strip tracking cookies from third-party responses only
   // First-party cookies are allowed so users can log into sites
@@ -186,15 +130,16 @@ function createWindow() {
     callback({ responseHeaders: headers });
   });
 
-  // Strip referrer and tracking headers, add anti-bot headers
+  // Strip referrer and tracking headers from outgoing requests
   ses.webRequest.onBeforeSendHeaders((details, callback) => {
     const headers = details.requestHeaders;
 
-    // Referrer stripping (conditional)
-    if (settings.referrerStripping !== false && headers['Referer']) {
+    // Remove or genericize referrer
+    if (headers['Referer']) {
       try {
         const refUrl = new URL(headers['Referer']);
         const reqUrl = new URL(details.url);
+        // Only send referrer to same origin
         if (refUrl.origin !== reqUrl.origin) {
           delete headers['Referer'];
         }
@@ -203,28 +148,8 @@ function createWindow() {
       }
     }
 
-    // DNT/GPC headers
-    if (settings.doNotTrack !== false) {
-      headers['DNT'] = '1';
-      headers['Sec-GPC'] = '1';
-    } else {
-      delete headers['DNT'];
-    }
-
-    // Set Accept-Language to reduce fingerprinting
-    headers['Accept-Language'] = 'en-US,en;q=0.9';
-
-    // Anti-bot: Sec-CH-UA headers to match spoofed UA
-    headers['Sec-CH-UA'] = `"Chromium";v="${majorVer}", "Google Chrome";v="${majorVer}", "Not_A Brand";v="24"`;
-    headers['Sec-CH-UA-Mobile'] = '?0';
-    headers['Sec-CH-UA-Platform'] = '"Windows"';
-    headers['Sec-CH-UA-Full-Version-List'] = `"Chromium";v="${chromiumVer}", "Google Chrome";v="${chromiumVer}", "Not_A Brand";v="24.0.0.0"`;
-
-    // Ensure Sec-Fetch headers are present (Akamai checks these)
-    if (!headers['Sec-Fetch-Site']) headers['Sec-Fetch-Site'] = 'none';
-    if (!headers['Sec-Fetch-Mode']) headers['Sec-Fetch-Mode'] = 'navigate';
-    if (!headers['Sec-Fetch-User']) headers['Sec-Fetch-User'] = '?1';
-    if (!headers['Sec-Fetch-Dest']) headers['Sec-Fetch-Dest'] = 'document';
+    // Remove DNT (it actually helps fingerprinting)
+    delete headers['DNT'];
 
     callback({ requestHeaders: headers });
   });
@@ -266,71 +191,6 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // --- Right-click Context Menu ---
-  browserView.webContents.on('context-menu', (event, params) => {
-    const menuTemplate = [];
-
-    if (params.isEditable) {
-      menuTemplate.push(
-        { label: 'Cut', enabled: params.editFlags.canCut, click: () => browserView.webContents.cut() },
-        { label: 'Copy', enabled: params.editFlags.canCopy, click: () => browserView.webContents.copy() },
-        { label: 'Paste', enabled: params.editFlags.canPaste, click: () => browserView.webContents.paste() },
-        { type: 'separator' },
-        { label: 'Select All', click: () => browserView.webContents.selectAll() }
-      );
-    } else {
-      if (params.selectionText) {
-        menuTemplate.push(
-          { label: 'Copy', click: () => clipboard.writeText(params.selectionText) },
-          { type: 'separator' }
-        );
-      }
-
-      if (params.linkURL) {
-        menuTemplate.push(
-          { label: 'Copy Link Address', click: () => clipboard.writeText(params.linkURL) },
-          { label: 'Open Link', click: () => browserView.webContents.loadURL(params.linkURL) },
-          { type: 'separator' }
-        );
-      }
-
-      if (params.hasImageContents) {
-        menuTemplate.push(
-          { label: 'Save Image As...', click: () => browserView.webContents.downloadURL(params.srcURL) },
-          { label: 'Copy Image', click: () => {
-            browserView.webContents.copyImageAt(params.x, params.y);
-          }},
-          { type: 'separator' }
-        );
-      }
-
-      if (!params.selectionText && !params.linkURL && !params.hasImageContents) {
-        menuTemplate.push(
-          { label: 'Back', enabled: browserView.webContents.canGoBack(), click: () => browserView.webContents.goBack() },
-          { label: 'Forward', enabled: browserView.webContents.canGoForward(), click: () => browserView.webContents.goForward() },
-          { label: 'Reload', click: () => browserView.webContents.reload() },
-          { type: 'separator' }
-        );
-      }
-
-      menuTemplate.push(
-        { label: 'View Page Source', click: () => {
-          const url = browserView.webContents.getURL();
-          browserView.webContents.loadURL('view-source:' + url);
-        }},
-        { label: 'Inspect Element', click: () => {
-          if (!browserView.webContents.isDevToolsOpened()) {
-            browserView.webContents.openDevTools({ mode: 'detach' });
-          }
-          browserView.webContents.inspectElement(params.x, params.y);
-        }}
-      );
-    }
-
-    const contextMenu = Menu.buildFromTemplate(menuTemplate);
-    contextMenu.popup({ window: mainWindow });
-  });
-
   // --- Download Manager ---
   ses.on('will-download', (event, item) => {
     const id = Date.now();
@@ -364,16 +224,14 @@ function createWindow() {
   // Load the search engine as homepage
   browserView.webContents.loadFile('search.html');
 
-  // Clear all browsing data on window close (conditional)
-  if (settings.clearOnExit !== false) {
-    mainWindow.on('close', async () => {
-      try {
-        await ses.clearStorageData();
-        await ses.clearCache();
-        await ses.clearAuthCache();
-      } catch {}
-    });
-  }
+  // Clear all browsing data on window close
+  mainWindow.on('close', async () => {
+    try {
+      await ses.clearStorageData();
+      await ses.clearCache();
+      await ses.clearAuthCache();
+    } catch {}
+  });
 }
 
 // Check if an .onion version of the current site exists
@@ -588,90 +446,6 @@ ipcMain.on('show-download', (_, filePath) => {
 // Download manager: get all downloads
 ipcMain.handle('get-downloads', () => downloads);
 
-// --- Settings IPC ---
-ipcMain.handle('get-settings', () => settings);
-
-ipcMain.handle('save-settings', (_, newSettings) => {
-  settings = { ...settings, ...newSettings };
-  saveJSON(settingsPath, settings);
-  return true;
-});
-
-ipcMain.handle('get-speed-dial', () => settings.speedDial || []);
-
-ipcMain.handle('save-speed-dial', (_, sd) => {
-  settings.speedDial = sd;
-  saveJSON(settingsPath, settings);
-  return true;
-});
-
-// --- Bookmarks IPC ---
-ipcMain.handle('get-bookmarks', () => bookmarks);
-
-ipcMain.handle('add-bookmark', (_, data) => {
-  if (!bookmarks.find(b => b.url === data.url)) {
-    bookmarks.push({ title: data.title, url: data.url, added: Date.now() });
-    saveJSON(bookmarksPath, bookmarks);
-    if (mainWindow) mainWindow.webContents.send('bookmark-added', data);
-  }
-  return true;
-});
-
-ipcMain.handle('remove-bookmark', (_, url) => {
-  bookmarks = bookmarks.filter(b => b.url !== url);
-  saveJSON(bookmarksPath, bookmarks);
-  return true;
-});
-
-ipcMain.on('open-bookmark', (_, url) => {
-  if (browserView) {
-    if (/^https?:\/\//i.test(url)) {
-      browserView.webContents.loadURL(url);
-    } else {
-      browserView.webContents.loadURL('https://' + url);
-    }
-  }
-});
-
-// --- PIN lock IPC ---
-ipcMain.handle('get-pin-state', () => pinData);
-
-ipcMain.handle('set-pin', (_, data) => {
-  pinData = { ...pinData, ...data, asked: true };
-  saveJSON(pinPath, pinData);
-  return true;
-});
-
-ipcMain.handle('verify-pin', (_, pin) => {
-  return pinData.pin === pin;
-});
-
-ipcMain.handle('skip-pin-setup', () => {
-  pinData.asked = true;
-  saveJSON(pinPath, pinData);
-  return true;
-});
-
-// --- PIN lock: hide/show BrowserView ---
-ipcMain.on('pin-lock', (_, locked) => {
-  if (!browserView || !mainWindow) return;
-  if (locked) {
-    browserView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-  } else {
-    const bounds = mainWindow.getContentBounds();
-    browserView.setBounds({ x: 0, y: 48, width: bounds.width, height: bounds.height - 48 });
-  }
-});
-
-// --- Navigation IPC ---
-ipcMain.on('open-settings', () => {
-  if (browserView) browserView.webContents.loadFile('settings.html');
-});
-
-ipcMain.on('open-irc', () => {
-  if (browserView) browserView.webContents.loadFile('irc.html');
-});
-
 // --- Auto-updater (electron-updater) ---
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
@@ -723,9 +497,8 @@ ipcMain.on('install-update', () => {
   autoUpdater.quitAndInstall(false, true);
 });
 
-// Privacy: clear data when quitting (conditional)
+// Privacy: clear data when quitting
 app.on('before-quit', async () => {
-  if (settings.clearOnExit === false) return;
   try {
     const ses = session.defaultSession;
     await ses.clearStorageData();

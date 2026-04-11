@@ -1,6 +1,6 @@
 {
   "name": "wizard-browser",
-  "version": "2.0.1",
+  "version": "1.6.0",
   "description": "Libre, privacy-focused browser powered by Wizard Search",
   "author": {
     "name": "NaniIsNano",
@@ -10,9 +10,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win nsis --linux AppImage deb rpm pacman tar.gz",
+    "build": "electron-builder --win nsis --linux AppImage",
     "build:win": "electron-builder --win nsis",
-    "build:linux": "electron-builder --linux AppImage deb rpm pacman tar.gz"
+    "build:linux": "electron-builder --linux AppImage deb"
   },
   "contributors": [
     "MrBlight (https://github.com/MrBlight)"
@@ -39,10 +39,7 @@
     "linux": {
       "target": [
         "AppImage",
-        "deb",
-        "rpm",
-        "pacman",
-        "tar.gz"
+        "deb"
       ],
       "category": "Network"
     },
@@ -60,8 +57,6 @@
       "preload-search.js",
       "browser.html",
       "search.html",
-      "settings.html",
-      "irc.html",
       "tracker-list.json"
     ]
   }
