@@ -2159,7 +2159,8 @@ function offlineFetchPage() {
       fetch(proxyUrl)
         .then(r => r.json())
         .then(data => {
-          const content = data.contents || data;
+          let content = data.contents || data;
+          if (typeof content !== 'string') content = JSON.stringify(content);
           cachePage(addr, content);
           offlineDisplayPageContent(addr, content);
           displayOfflineStatus(`Fetched and cached: ${fullUrl}`);
