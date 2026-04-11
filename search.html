@@ -824,6 +824,128 @@ body {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #333; }
+
+/* Offline TJR Browser Modal */
+#offline-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+#offline-container {
+  width: 95%;
+  max-width: 1000px;
+  background-color: #1a1a1a;
+  border: 2px solid var(--accent);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  border-radius: 12px;
+  padding: 25px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+#offline-header { text-align: center; margin-bottom: 20px; }
+#offline-title {
+  color: var(--accent2);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.8em;
+  font-weight: 700;
+  margin: 0;
+}
+.offline-button {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 8px 6px;
+  font-size: 0.9em;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.offline-button:hover { background: var(--accent2); }
+.offline-input {
+  width: calc(100% - 24px);
+  padding: 12px 14px;
+  margin: 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95em;
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  outline: none;
+}
+.offline-input:focus { border-color: var(--accent); }
+.offline-input::placeholder { color: var(--text2); }
+#offline-page-content {
+  margin-top: 20px;
+  min-height: 200px;
+}
+#offline-page-content iframe {
+  width: 100%;
+  height: 500px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.offline-cache-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+.offline-cache-list li {
+  background: var(--surface2);
+  margin-bottom: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9em;
+  color: var(--link);
+  transition: all 0.15s;
+}
+.offline-cache-list li:hover { background: #222; border-color: var(--accent); }
+#offline-status {
+  color: var(--text2);
+  margin-top: 10px;
+  font-size: 0.85em;
+  min-height: 1.2em;
+}
+.close-offline {
+  position: absolute;
+  top: 12px; right: 18px;
+  font-size: 1.6em;
+  cursor: pointer;
+  color: var(--text2);
+  transition: color 0.15s;
+  line-height: 1;
+}
+.close-offline:hover { color: var(--text); }
+#offline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 12px;
+}
+#offline-btn:hover { color: var(--accent2); border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -847,6 +969,26 @@ body {
     No tracking. No cookies. No logs.
   </div>
   <div id="version-badge"></div>
+  <button id="offline-btn" onclick="showOfflineModal()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M24 14h-6v-2h6v2zm-8.03 0h-2.03V4.04h-3.94V14H7.97l4.01 6 4-6zm-14 2l6 6V18h6v-4h-6V9.97l-6 6.03z"/></svg>
+    Offline (tjr://)
+  </button>
+</div>
+
+<!-- Offline TJR Browser Modal -->
+<div id="offline-modal">
+  <div id="offline-container">
+    <span class="close-offline" onclick="hideOfflineModal()">&times;</span>
+    <div id="offline-header">
+      <h1 id="offline-title">Offline TJR Browser</h1>
+    </div>
+    <input type="text" id="offline-url-input" class="offline-input" placeholder="Enter tjr:// address (e.g., tjr://example.com)" />
+    <button class="offline-button" onclick="offlineFetchPage()">Fetch Page</button>
+    <button class="offline-button" onclick="offlineListCachedPages()">Cached Pages</button>
+    <div id="offline-status"></div>
+    <div id="offline-page-content"></div>
+    <ul id="offline-cached-pages" class="offline-cache-list"></ul>
+  </div>
 </div>
 
 <!-- RESULTS PAGE -->
@@ -1950,6 +2092,114 @@ function showTab(tab) {
   document.getElementById('pagination').style.display = tab === 'web' ? 'flex' : 'none';
   if (tab === 'images') renderImages();
 }
+
+// === Offline TJR Browser ===
+let offlineDB;
+function initOfflineDB() {
+  const request = indexedDB.open('TJRBrowserDB', 1);
+  request.onupgradeneeded = e => {
+    offlineDB = e.target.result;
+    offlineDB.createObjectStore('pages', { keyPath: 'addr' });
+  };
+  request.onsuccess = e => { offlineDB = e.target.result; };
+  request.onerror = e => { console.error('IndexedDB Error', e); };
+}
+function parseTJRAddress(addr) {
+  if (addr.startsWith("tjr://")) addr = addr.slice(6);
+  return `https://${addr}`;
+}
+function cachePage(addr, content) {
+  if (!offlineDB) return;
+  const tx = offlineDB.transaction('pages', 'readwrite');
+  tx.objectStore('pages').put({ addr, content });
+}
+function getPageFromCache(addr, callback) {
+  if (!offlineDB) return callback(null);
+  const tx = offlineDB.transaction('pages', 'readonly');
+  const req = tx.objectStore('pages').get(addr);
+  req.onsuccess = () => callback(req.result ? req.result.content : null);
+  req.onerror = () => callback(null);
+}
+function showOfflineModal() {
+  document.getElementById('offline-modal').style.display = 'flex';
+  document.getElementById('offline-page-content').innerHTML = '';
+  document.getElementById('offline-cached-pages').innerHTML = '';
+  document.getElementById('offline-status').textContent = '';
+  initOfflineDB();
+}
+function hideOfflineModal() {
+  document.getElementById('offline-modal').style.display = 'none';
+}
+function displayOfflineStatus(msg) {
+  document.getElementById('offline-status').textContent = msg;
+}
+function offlineDisplayPageContent(addr, content) {
+  const contentDiv = document.getElementById('offline-page-content');
+  const cacheList = document.getElementById('offline-cached-pages');
+  cacheList.style.display = 'none';
+  contentDiv.style.display = 'block';
+  let html = `<h3 style="color:var(--accent2);margin-bottom:10px;">Page: tjr://${addr}</h3>`;
+  html += `<iframe srcdoc="${content.replace(/"/g,'&quot;')}" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>`;
+  contentDiv.innerHTML = html;
+}
+function offlineFetchPage() {
+  const input = document.getElementById('offline-url-input');
+  let url = input.value.trim();
+  if (!url) return displayOfflineStatus("Please enter a tjr:// address.");
+  if (!url.startsWith("tjr://")) url = "tjr://" + url;
+  const addr = url.substring(6);
+  const fullUrl = parseTJRAddress(url);
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(fullUrl)}`;
+  getPageFromCache(addr, cached => {
+    if (cached) {
+      offlineDisplayPageContent(addr, cached);
+      displayOfflineStatus(`Loaded from cache: ${addr}`);
+    } else {
+      displayOfflineStatus(`Fetching ${fullUrl}...`);
+      fetch(proxyUrl)
+        .then(r => r.json())
+        .then(data => {
+          const content = data.contents || data;
+          cachePage(addr, content);
+          offlineDisplayPageContent(addr, content);
+          displayOfflineStatus(`Fetched and cached: ${fullUrl}`);
+        })
+        .catch(err => {
+          displayOfflineStatus(`Fetch error: ${err.message}. Trying cache...`);
+          getPageFromCache(addr, cached2 => {
+            if (cached2) {
+              offlineDisplayPageContent(addr, cached2);
+              displayOfflineStatus(`Showing cached version of ${addr}`);
+            } else {
+              displayOfflineStatus(`No cached content available for ${addr}.`);
+            }
+          });
+        });
+    }
+  });
+}
+function offlineListCachedPages() {
+  if (!offlineDB) { displayOfflineStatus("Database not ready yet."); return; }
+  const tx = offlineDB.transaction('pages', 'readonly');
+  const req = tx.objectStore('pages').openCursor();
+  const listDiv = document.getElementById('offline-cached-pages');
+  listDiv.innerHTML = '';
+  listDiv.style.display = 'block';
+  document.getElementById('offline-page-content').style.display = 'none';
+  req.onsuccess = e => {
+    const cursor = e.target.result;
+    if (cursor) {
+      const li = document.createElement('li');
+      li.textContent = `tjr://${cursor.value.addr}`;
+      li.onclick = () => { offlineDisplayPageContent(cursor.value.addr, cursor.value.content); };
+      listDiv.appendChild(li);
+      cursor.continue();
+    } else if (listDiv.children.length === 0) {
+      displayOfflineStatus("No cached pages yet.");
+    }
+  };
+}
+initOfflineDB();
 </script>
 </body>
 </html>
