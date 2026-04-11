@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Settings — Wizard Browser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #181818;
+  --border: #222;
+  --text: #e5e5e5;
+  --text2: #888;
+  --accent: #7c3aed;
+  --accent2: #a855f7;
+  --green: #22c55e;
+  --red: #ef4444;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.settings-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.4em;
+  font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  cursor: pointer;
+}
+
+.settings-title {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.back-link {
+  margin-left: auto;
+  color: var(--text2);
+  font-size: 0.85em;
+  cursor: pointer;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.back-link:hover { color: var(--accent2); border-color: var(--accent); }
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-weight: 600;
+  color: var(--accent2);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.8em;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.setting-info { flex: 1; }
+.setting-label { font-size: 0.9em; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.setting-desc { font-size: 0.75em; color: var(--text2); }
+.setting-warn { color: #f59e0b; font-size: 0.7em; margin-top: 2px; }
+
+/* Toggle switch */
+.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #333; border-radius: 12px; transition: 0.2s;
+}
+.toggle-slider:before {
+  content: ''; position: absolute;
+  height: 18px; width: 18px; left: 3px; bottom: 3px;
+  background: #888; border-radius: 50%; transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(20px); background: #fff; }
+
+/* Theme selector */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.theme-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.theme-card:hover { border-color: var(--accent); }
+.theme-card.active { border-color: var(--accent); background: #1a0a2e; }
+.theme-preview {
+  width: 100%; height: 60px;
+  border-radius: 6px; margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+.theme-name { font-size: 0.8em; font-weight: 500; color: var(--text); }
+.theme-desc { font-size: 0.65em; color: var(--text2); margin-top: 2px; }
+
+/* Speed dial editor */
+.speed-dial-list { margin-top: 8px; }
+.sd-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px;
+}
+.sd-icon {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--surface2); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: var(--accent2); flex-shrink: 0;
+}
+.sd-info { flex: 1; min-width: 0; }
+.sd-name { font-size: 0.85em; font-weight: 500; color: var(--text); }
+.sd-url { font-size: 0.7em; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sd-remove {
+  background: transparent; border: none; color: #555;
+  cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px;
+}
+.sd-remove:hover { color: var(--red); background: #1e1e1e; }
+.sd-add-form { display: flex; gap: 8px; margin-top: 10px; }
+.sd-add-form input {
+  flex: 1; height: 36px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 0 12px; font-size: 0.85em;
+  font-family: 'Inter', sans-serif; outline: none;
+}
+.sd-add-form input:focus { border-color: var(--accent); }
+.sd-add-form input::placeholder { color: #444; }
+
+.btn {
+  padding: 8px 16px; background: var(--accent); color: #fff;
+  border: none; border-radius: 8px; font-size: 0.85em; font-weight: 500;
+  font-family: 'Inter', sans-serif; cursor: pointer; transition: background 0.15s;
+}
+.btn:hover { background: var(--accent2); }
+.btn-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
+.btn-danger:hover { background: #2e0a0a; }
+
+.saved-toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--green); color: #fff; padding: 10px 20px;
+  border-radius: 8px; font-size: 0.85em; font-weight: 500;
+  display: none; z-index: 100;
+}
+.saved-toast.show { display: block; }
+
+/* PIN section */
+.pin-section { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.pin-section input {
+  width: 120px; height: 36px; text-align: center;
+  font-size: 18px; letter-spacing: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px; outline: none;
+  font-family: 'Inter', sans-serif;
+}
+.pin-section input:focus { border-color: var(--accent); }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+</style>
+</head>
+<body>
+
+<div class="settings-container">
+  <div class="settings-header">
+    <div class="settings-logo" onclick="window.location='search.html'">Wizard</div>
+    <div class="settings-title">Settings</div>
+    <a class="back-link" onclick="window.location='search.html'">← Home</a>
+  </div>
+
+  <!-- THEME -->
+  <div class="section">
+    <div class="section-title">Appearance</div>
+    <div class="theme-grid" id="theme-grid">
+      <div class="theme-card" data-theme="dark">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #0a0a0a, #111, #1a0a2e);"></div>
+        <div class="theme-name">Dark</div>
+        <div class="theme-desc">Default dark theme</div>
+      </div>
+      <div class="theme-card" data-theme="midnight">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #0d1117, #161b22, #1f2937);"></div>
+        <div class="theme-name">Midnight</div>
+        <div class="theme-desc">Deep blue dark</div>
+      </div>
+      <div class="theme-card" data-theme="frutiger-aero">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #e8f4f8, #b3e0ee, #87ceeb); border-color: #87ceeb;"></div>
+        <div class="theme-name">Frutiger Aero</div>
+        <div class="theme-desc">Glossy, translucent Y2K</div>
+      </div>
+      <div class="theme-card" data-theme="classic">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);"></div>
+        <div class="theme-name">Classic</div>
+        <div class="theme-desc">Old-school search vibe</div>
+      </div>
+      <div class="theme-card" data-theme="light">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #fff, #f5f5f5, #e5e5e5); border-color: #ccc;"></div>
+        <div class="theme-name">Light</div>
+        <div class="theme-desc">Clean light mode</div>
+      </div>
+      <div class="theme-card" data-theme="hacker">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #000, #001a00, #003300);"></div>
+        <div class="theme-name">Hacker</div>
+        <div class="theme-desc">Green terminal style</div>
+      </div>
+      <div class="theme-card" data-theme="mountains">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #1a3a5a, #4a7a9a, #8ab4d4);"></div>
+        <div class="theme-name">Mountains</div>
+        <div class="theme-desc">Rocky Mountain winter</div>
+      </div>
+      <div class="theme-card" data-theme="canola">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #6b8e23, #c8d84a, #87ceeb);"></div>
+        <div class="theme-name">Canola</div>
+        <div class="theme-desc">Prairie golden fields</div>
+      </div>
+      <div class="theme-card" data-theme="fortress">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #3a2a1a, #8a7a5a, #b0a080);"></div>
+        <div class="theme-name">Fortress</div>
+        <div class="theme-desc">Ancient stone ruins</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIVACY & SECURITY -->
+  <div class="section">
+    <div class="section-title">Privacy & Security</div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">Do Not Track / Global Privacy Control</div>
+        <div class="setting-desc">Send DNT and Sec-GPC headers requesting sites not track you</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-dnt" /><span class="toggle-slider"></span></label>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">Canvas Fingerprint Protection</div>
+        <div class="setting-desc">Block sites from reading canvas data for fingerprinting</div>
+        <div class="setting-warn">May break some image/video features. Requires restart.</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-canvas" /><span class="toggle-slider"></span></label>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">WebRTC IP Leak Protection</div>
+        <div class="setting-desc">Prevent WebRTC from exposing your real IP address</div>
+        <div class="setting-warn">May break video/voice calls. Requires restart.</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-webrtc" /><span class="toggle-slider"></span></label>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">Referrer Stripping</div>
+        <div class="setting-desc">Only send referrer to same-origin requests</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-referrer" /><span class="toggle-slider"></span></label>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">Tracker & Ad Blocking</div>
+        <div class="setting-desc">Block known trackers and advertising domains</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-trackers" /><span class="toggle-slider"></span></label>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">Clear Data on Exit</div>
+        <div class="setting-desc">Automatically clear all browsing data when closing the browser</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-clearexit" /><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <!-- PIN LOCK -->
+  <div class="section">
+    <div class="section-title">Security</div>
+
+    <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+      <div class="setting-info">
+        <div class="setting-label">PIN Lock</div>
+        <div class="setting-desc">Require a PIN code each time you open Wizard Browser</div>
+      </div>
+      <div class="pin-section">
+        <input type="password" id="pin-settings-input" maxlength="6" placeholder="----" />
+        <button class="btn" id="pin-set-btn">Set PIN</button>
+        <button class="btn btn-danger" id="pin-remove-btn">Remove PIN</button>
+      </div>
+      <div id="pin-settings-msg" style="font-size: 0.75em; min-height: 16px;"></div>
+    </div>
+  </div>
+
+  <!-- SPEED DIAL -->
+  <div class="section">
+    <div class="section-title">Speed Dial / Start Page Links</div>
+    <div class="speed-dial-list" id="speed-dial-list"></div>
+    <div class="sd-add-form">
+      <input type="text" id="sd-name" placeholder="Name (e.g. YouTube)" />
+      <input type="text" id="sd-url" placeholder="URL (e.g. https://youtube.com)" />
+      <button class="btn" id="sd-add-btn">Add</button>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="section">
+    <div class="section-title">About</div>
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">Wizard Browser</div>
+        <div class="setting-desc" id="about-version">Loading version...</div>
+        <div class="setting-desc" style="margin-top: 4px;">Libre, privacy-focused browser. Licensed under GPL-3.0.</div>
+        <div class="setting-desc" style="margin-top: 2px;">Inspired by GNU IceCat's privacy philosophy.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="saved-toast" id="saved-toast">Settings saved</div>
+
+<script>
+let currentSettings = {};
+
+function showToast(msg) {
+  const toast = document.getElementById('saved-toast');
+  toast.textContent = msg || 'Settings saved';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+async function loadSettings() {
+  currentSettings = await window.wizardBrowser.getSettings();
+
+  document.getElementById('opt-dnt').checked = currentSettings.doNotTrack !== false;
+  document.getElementById('opt-canvas').checked = currentSettings.canvasSpoofing !== false;
+  document.getElementById('opt-webrtc').checked = currentSettings.webrtcProtection !== false;
+  document.getElementById('opt-referrer').checked = currentSettings.referrerStripping !== false;
+  document.getElementById('opt-trackers').checked = currentSettings.trackerBlocking !== false;
+  document.getElementById('opt-clearexit').checked = currentSettings.clearOnExit !== false;
+
+  document.querySelectorAll('.theme-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.theme === (currentSettings.theme || 'dark'));
+  });
+
+  renderSpeedDial(currentSettings.speedDial || []);
+
+  if (window.wizardBrowser.getVersion) {
+    const v = await window.wizardBrowser.getVersion();
+    document.getElementById('about-version').textContent = `Version ${v}`;
+  }
+}
+
+document.querySelectorAll('.toggle input').forEach(toggle => {
+  toggle.addEventListener('change', async () => {
+    const newSettings = {
+      doNotTrack: document.getElementById('opt-dnt').checked,
+      canvasSpoofing: document.getElementById('opt-canvas').checked,
+      webrtcProtection: document.getElementById('opt-webrtc').checked,
+      referrerStripping: document.getElementById('opt-referrer').checked,
+      trackerBlocking: document.getElementById('opt-trackers').checked,
+      clearOnExit: document.getElementById('opt-clearexit').checked
+    };
+    await window.wizardBrowser.saveSettings(newSettings);
+    showToast();
+  });
+});
+
+document.querySelectorAll('.theme-card').forEach(card => {
+  card.addEventListener('click', async () => {
+    document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    await window.wizardBrowser.saveSettings({ theme: card.dataset.theme });
+    showToast('Theme saved (applies on next page load)');
+  });
+});
+
+function renderSpeedDial(items) {
+  const list = document.getElementById('speed-dial-list');
+  list.innerHTML = '';
+  items.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'sd-item';
+    div.innerHTML = `
+      <div class="sd-icon">${escapeHtml(item.icon || item.name.charAt(0).toUpperCase())}</div>
+      <div class="sd-info">
+        <div class="sd-name">${escapeHtml(item.name)}</div>
+        <div class="sd-url">${escapeHtml(item.url)}</div>
+      </div>
+      <button class="sd-remove" data-index="${i}" title="Remove">&times;</button>
+    `;
+    div.querySelector('.sd-remove').addEventListener('click', async () => {
+      const sd = await window.wizardBrowser.getSpeedDial();
+      sd.splice(i, 1);
+      await window.wizardBrowser.saveSpeedDial(sd);
+      renderSpeedDial(sd);
+      showToast('Speed dial updated');
+    });
+    list.appendChild(div);
+  });
+}
+
+document.getElementById('sd-add-btn').addEventListener('click', async () => {
+  const name = document.getElementById('sd-name').value.trim();
+  let url = document.getElementById('sd-url').value.trim();
+  if (!name || !url) return;
+  if (!/^https?:\/\//.test(url)) url = 'https://' + url;
+  const icon = name.charAt(0).toUpperCase();
+  const sd = await window.wizardBrowser.getSpeedDial();
+  sd.push({ name, url, icon });
+  await window.wizardBrowser.saveSpeedDial(sd);
+  renderSpeedDial(sd);
+  document.getElementById('sd-name').value = '';
+  document.getElementById('sd-url').value = '';
+  showToast('Speed dial updated');
+});
+
+document.getElementById('pin-set-btn').addEventListener('click', async () => {
+  const pin = document.getElementById('pin-settings-input').value;
+  const msg = document.getElementById('pin-settings-msg');
+  if (pin.length < 4) { msg.textContent = 'PIN must be at least 4 digits'; msg.style.color = '#ef4444'; return; }
+  await window.wizardBrowser.setPin({ pin, enabled: true });
+  msg.textContent = 'PIN set successfully'; msg.style.color = '#22c55e';
+  document.getElementById('pin-settings-input').value = '';
+});
+
+document.getElementById('pin-remove-btn').addEventListener('click', async () => {
+  await window.wizardBrowser.setPin({ pin: null, enabled: false });
+  const msg = document.getElementById('pin-settings-msg');
+  msg.textContent = 'PIN removed'; msg.style.color = '#22c55e';
+});
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+loadSettings();
+</script>
+</body>
+</html>

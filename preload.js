@@ -31,5 +31,24 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   onUrlChange: (cb) => ipcRenderer.on('url-changed', (_, url) => cb(url)),
   onTitleChange: (cb) => ipcRenderer.on('title-changed', (_, title) => cb(title)),
   onLoadingChange: (cb) => ipcRenderer.on('loading-changed', (_, loading) => cb(loading)),
-  onBlockedUpdate: (cb) => ipcRenderer.on('blocked-update', (_, count) => cb(count))
+  onBlockedUpdate: (cb) => ipcRenderer.on('blocked-update', (_, count) => cb(count)),
+  // Settings
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  saveSettings: (s) => ipcRenderer.invoke('save-settings', s),
+  getSpeedDial: () => ipcRenderer.invoke('get-speed-dial'),
+  saveSpeedDial: (sd) => ipcRenderer.invoke('save-speed-dial', sd),
+  // Navigation
+  openSettings: () => ipcRenderer.send('open-settings'),
+  openIRC: () => ipcRenderer.send('open-irc'),
+  // Bookmarks
+  getBookmarks: () => ipcRenderer.invoke('get-bookmarks'),
+  addBookmark: (data) => ipcRenderer.invoke('add-bookmark', data),
+  removeBookmark: (url) => ipcRenderer.invoke('remove-bookmark', url),
+  openBookmark: (url) => ipcRenderer.send('open-bookmark', url),
+  onBookmarkAdded: (cb) => ipcRenderer.on('bookmark-added', (_, data) => cb(data)),
+  // PIN lock
+  getPinState: () => ipcRenderer.invoke('get-pin-state'),
+  setPin: (data) => ipcRenderer.invoke('set-pin', data),
+  verifyPin: (pin) => ipcRenderer.invoke('verify-pin', pin),
+  skipPinSetup: () => ipcRenderer.invoke('skip-pin-setup')
 });
