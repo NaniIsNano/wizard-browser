@@ -153,17 +153,9 @@ function createWindow() {
   // --- ANTI-BOT: Hide Electron/automation signals before any page loads ---
   browserView.webContents.on('dom-ready', () => {
     browserView.webContents.executeJavaScript(`
-      // Hide navigator.webdriver (Electron sets this to true)
       Object.defineProperty(navigator, 'webdriver', { get: () => false });
-      // Ensure plugins array looks normal (empty in headless = bot signal)
-      Object.defineProperty(navigator, 'plugins', {
-        get: () => [1, 2, 3, 4, 5]
-      });
-      // Ensure languages look normal
-      Object.defineProperty(navigator, 'languages', {
-        get: () => ['en-US', 'en']
-      });
-      // Chrome runtime stub (missing in Electron = bot signal)
+      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+      Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
       if (!window.chrome) window.chrome = {};
       if (!window.chrome.runtime) window.chrome.runtime = {};
     `, true).catch(() => {});
@@ -172,17 +164,15 @@ function createWindow() {
   // --- PRIVACY: Block trackers & ads at network level ---
   const ses = browserView.webContents.session;
 
-  // Override user agent at session level — use a current, realistic Chrome UA
-  // Derive the real Chromium version from Electron's UA so headers stay consistent
+  // Override user agent — derive real Chromium version for consistent headers
   const realUA = ses.getUserAgent();
   const chromiumMatch = realUA.match(/Chrome\/([\d.]+)/);
   const chromiumVer = chromiumMatch ? chromiumMatch[1] : '134.0.0.0';
   const majorVer = chromiumVer.split('.')[0];
-  // Build a UA that looks like stock Chrome but keeps the real Chromium version
   const spoofedUA = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromiumVer} Safari/537.36`;
   ses.setUserAgent(spoofedUA);
 
-  // Tracker blocking
+  // Tracker blocking (conditional on settings)
   if (settings.trackerBlocking !== false) {
     ses.webRequest.onBeforeRequest((details, callback) => {
       const url = details.url.toLowerCase();
@@ -204,16 +194,15 @@ function createWindow() {
     callback({ responseHeaders: headers });
   });
 
-  // Strip referrer and tracking headers from outgoing requests
+  // Strip referrer and tracking headers, add anti-bot headers
   ses.webRequest.onBeforeSendHeaders((details, callback) => {
     const headers = details.requestHeaders;
 
-    // Referrer stripping
-    if (settings.referrerStripping && headers['Referer']) {
+    // Referrer stripping (conditional)
+    if (settings.referrerStripping !== false && headers['Referer']) {
       try {
         const refUrl = new URL(headers['Referer']);
         const reqUrl = new URL(details.url);
-        // Only send referrer to same origin
         if (refUrl.origin !== reqUrl.origin) {
           delete headers['Referer'];
         }
@@ -222,19 +211,18 @@ function createWindow() {
       }
     }
 
-    // DNT header — send if user opted in, otherwise remove (sending DNT=1 actually helps fingerprinting when few do it)
-    if (settings.doNotTrack) {
+    // DNT/GPC headers
+    if (settings.doNotTrack !== false) {
       headers['DNT'] = '1';
-      headers['Sec-GPC'] = '1'; // Global Privacy Control
+      headers['Sec-GPC'] = '1';
     } else {
       delete headers['DNT'];
     }
 
-    // Set Accept-Language to a common value to reduce fingerprinting
+    // Set Accept-Language to reduce fingerprinting
     headers['Accept-Language'] = 'en-US,en;q=0.9';
 
-    // Set Sec-CH-UA headers to match spoofed UA (use real Chromium version)
-    // Must include "Google Chrome" brand — omitting it is a bot fingerprint
+    // Anti-bot: Sec-CH-UA headers to match spoofed UA
     headers['Sec-CH-UA'] = `"Chromium";v="${majorVer}", "Google Chrome";v="${majorVer}", "Not_A Brand";v="24"`;
     headers['Sec-CH-UA-Mobile'] = '?0';
     headers['Sec-CH-UA-Platform'] = '"Windows"';
@@ -290,107 +278,62 @@ function createWindow() {
   browserView.webContents.on('context-menu', (event, params) => {
     const menuTemplate = [];
 
-    // Navigation
-    if (browserView.webContents.canGoBack()) {
-      menuTemplate.push({ label: 'Back', click: () => browserView.webContents.goBack() });
-    }
-    if (browserView.webContents.canGoForward()) {
-      menuTemplate.push({ label: 'Forward', click: () => browserView.webContents.goForward() });
-    }
-    menuTemplate.push({ label: 'Reload', click: () => browserView.webContents.reload() });
-    menuTemplate.push({ type: 'separator' });
-
-    // Text selection actions
-    if (params.selectionText) {
-      menuTemplate.push({
-        label: 'Copy',
-        click: () => browserView.webContents.copy()
-      });
-      menuTemplate.push({
-        label: `Search Wizard for "${params.selectionText.slice(0, 30)}${params.selectionText.length > 30 ? '...' : ''}"`,
-        click: () => {
-          const searchFileUrl = `file://${path.join(__dirname, 'search.html').replace(/\\/g, '/')}`;
-          browserView.webContents.loadURL(searchFileUrl).then(() => {
-            browserView.webContents.executeJavaScript(
-              `document.getElementById('searchbar').value = ${JSON.stringify(params.selectionText)}; search(${JSON.stringify(params.selectionText)});`
-            );
-          });
-        }
-      });
-      menuTemplate.push({ type: 'separator' });
-    }
-
-    // Editable field actions
     if (params.isEditable) {
-      menuTemplate.push({ label: 'Cut', click: () => browserView.webContents.cut() });
-      menuTemplate.push({ label: 'Copy', click: () => browserView.webContents.copy() });
-      menuTemplate.push({ label: 'Paste', click: () => browserView.webContents.paste() });
-      menuTemplate.push({ label: 'Select All', click: () => browserView.webContents.selectAll() });
-      menuTemplate.push({ type: 'separator' });
-    }
-
-    // Link actions
-    if (params.linkURL) {
-      menuTemplate.push({
-        label: 'Copy Link Address',
-        click: () => clipboard.writeText(params.linkURL)
-      });
-      menuTemplate.push({
-        label: 'Bookmark This Link',
-        click: () => {
-          const title = params.linkText || params.linkURL;
-          addBookmark(title, params.linkURL);
-          mainWindow.webContents.send('bookmark-added', { title, url: params.linkURL });
-        }
-      });
-      menuTemplate.push({ type: 'separator' });
-    }
-
-    // Image actions
-    if (params.hasImageContents) {
-      menuTemplate.push({
-        label: 'Copy Image',
-        click: () => browserView.webContents.copyImageAt(params.x, params.y)
-      });
-      menuTemplate.push({
-        label: 'Copy Image Address',
-        click: () => clipboard.writeText(params.srcURL)
-      });
-      menuTemplate.push({ type: 'separator' });
-    }
-
-    // Bookmark current page
-    menuTemplate.push({
-      label: 'Bookmark This Page',
-      click: () => {
-        const title = params.titleText || browserView.webContents.getTitle();
-        const url = browserView.webContents.getURL();
-        addBookmark(title, url);
-        mainWindow.webContents.send('bookmark-added', { title, url });
+      menuTemplate.push(
+        { label: 'Cut', enabled: params.editFlags.canCut, click: () => browserView.webContents.cut() },
+        { label: 'Copy', enabled: params.editFlags.canCopy, click: () => browserView.webContents.copy() },
+        { label: 'Paste', enabled: params.editFlags.canPaste, click: () => browserView.webContents.paste() },
+        { type: 'separator' },
+        { label: 'Select All', click: () => browserView.webContents.selectAll() }
+      );
+    } else {
+      if (params.selectionText) {
+        menuTemplate.push(
+          { label: 'Copy', click: () => clipboard.writeText(params.selectionText) },
+          { type: 'separator' }
+        );
       }
-    });
 
-    menuTemplate.push({ type: 'separator' });
-
-    // View source
-    menuTemplate.push({
-      label: 'View Page Source',
-      click: () => {
-        const url = browserView.webContents.getURL();
-        browserView.webContents.loadURL('view-source:' + url);
+      if (params.linkURL) {
+        menuTemplate.push(
+          { label: 'Copy Link Address', click: () => clipboard.writeText(params.linkURL) },
+          { label: 'Open Link', click: () => browserView.webContents.loadURL(params.linkURL) },
+          { type: 'separator' }
+        );
       }
-    });
 
-    // Inspect Element
-    menuTemplate.push({
-      label: 'Inspect Element',
-      click: () => {
-        if (!browserView.webContents.isDevToolsOpened()) {
-          browserView.webContents.openDevTools({ mode: 'detach' });
-        }
-        browserView.webContents.inspectElement(params.x, params.y);
+      if (params.hasImageContents) {
+        menuTemplate.push(
+          { label: 'Save Image As...', click: () => browserView.webContents.downloadURL(params.srcURL) },
+          { label: 'Copy Image', click: () => {
+            browserView.webContents.copyImageAt(params.x, params.y);
+          }},
+          { type: 'separator' }
+        );
       }
-    });
+
+      if (!params.selectionText && !params.linkURL && !params.hasImageContents) {
+        menuTemplate.push(
+          { label: 'Back', enabled: browserView.webContents.canGoBack(), click: () => browserView.webContents.goBack() },
+          { label: 'Forward', enabled: browserView.webContents.canGoForward(), click: () => browserView.webContents.goForward() },
+          { label: 'Reload', click: () => browserView.webContents.reload() },
+          { type: 'separator' }
+        );
+      }
+
+      menuTemplate.push(
+        { label: 'View Page Source', click: () => {
+          const url = browserView.webContents.getURL();
+          browserView.webContents.loadURL('view-source:' + url);
+        }},
+        { label: 'Inspect Element', click: () => {
+          if (!browserView.webContents.isDevToolsOpened()) {
+            browserView.webContents.openDevTools({ mode: 'detach' });
+          }
+          browserView.webContents.inspectElement(params.x, params.y);
+        }}
+      );
+    }
 
     const contextMenu = Menu.buildFromTemplate(menuTemplate);
     contextMenu.popup({ window: mainWindow });
@@ -429,8 +372,8 @@ function createWindow() {
   // Load the search engine as homepage
   browserView.webContents.loadFile('search.html');
 
-  // Clear all browsing data on window close
-  if (settings.clearOnExit) {
+  // Clear all browsing data on window close (conditional)
+  if (settings.clearOnExit !== false) {
     mainWindow.on('close', async () => {
       try {
         await ses.clearStorageData();
@@ -439,19 +382,6 @@ function createWindow() {
       } catch {}
     });
   }
-}
-
-// --- Bookmarks ---
-function addBookmark(title, url) {
-  // Avoid duplicates
-  if (bookmarks.some(b => b.url === url)) return;
-  bookmarks.push({ title, url, date: Date.now() });
-  saveJSON(bookmarksPath, bookmarks);
-}
-
-function removeBookmark(url) {
-  bookmarks = bookmarks.filter(b => b.url !== url);
-  saveJSON(bookmarksPath, bookmarks);
 }
 
 // Check if an .onion version of the current site exists
@@ -675,10 +605,10 @@ ipcMain.handle('save-settings', (_, newSettings) => {
   return true;
 });
 
-ipcMain.handle('get-speed-dial', () => settings.speedDial);
+ipcMain.handle('get-speed-dial', () => settings.speedDial || []);
 
-ipcMain.handle('save-speed-dial', (_, speedDial) => {
-  settings.speedDial = speedDial;
+ipcMain.handle('save-speed-dial', (_, sd) => {
+  settings.speedDial = sd;
   saveJSON(settingsPath, settings);
   return true;
 });
@@ -686,14 +616,19 @@ ipcMain.handle('save-speed-dial', (_, speedDial) => {
 // --- Bookmarks IPC ---
 ipcMain.handle('get-bookmarks', () => bookmarks);
 
-ipcMain.handle('add-bookmark', (_, { title, url }) => {
-  addBookmark(title, url);
-  return bookmarks;
+ipcMain.handle('add-bookmark', (_, data) => {
+  if (!bookmarks.find(b => b.url === data.url)) {
+    bookmarks.push({ title: data.title, url: data.url, added: Date.now() });
+    saveJSON(bookmarksPath, bookmarks);
+    if (mainWindow) mainWindow.webContents.send('bookmark-added', data);
+  }
+  return true;
 });
 
 ipcMain.handle('remove-bookmark', (_, url) => {
-  removeBookmark(url);
-  return bookmarks;
+  bookmarks = bookmarks.filter(b => b.url !== url);
+  saveJSON(bookmarksPath, bookmarks);
+  return true;
 });
 
 ipcMain.on('open-bookmark', (_, url) => {
@@ -706,16 +641,11 @@ ipcMain.on('open-bookmark', (_, url) => {
   }
 });
 
-// --- PIN Lock IPC ---
-ipcMain.handle('get-pin-state', () => ({
-  enabled: pinData.enabled,
-  asked: pinData.asked
-}));
+// --- PIN lock IPC ---
+ipcMain.handle('get-pin-state', () => pinData);
 
-ipcMain.handle('set-pin', (_, { pin, enabled }) => {
-  pinData.pin = pin;
-  pinData.enabled = enabled;
-  pinData.asked = true;
+ipcMain.handle('set-pin', (_, data) => {
+  pinData = { ...pinData, ...data, asked: true };
   saveJSON(pinPath, pinData);
   return true;
 });
@@ -730,18 +660,13 @@ ipcMain.handle('skip-pin-setup', () => {
   return true;
 });
 
-// --- Settings page navigation ---
+// --- Navigation IPC ---
 ipcMain.on('open-settings', () => {
-  if (browserView) {
-    browserView.webContents.loadFile('settings.html');
-  }
+  if (browserView) browserView.webContents.loadFile('settings.html');
 });
 
-// --- IRC page navigation ---
 ipcMain.on('open-irc', () => {
-  if (browserView) {
-    browserView.webContents.loadFile('irc.html');
-  }
+  if (browserView) browserView.webContents.loadFile('irc.html');
 });
 
 // --- Auto-updater (electron-updater) ---
@@ -795,15 +720,14 @@ ipcMain.on('install-update', () => {
   autoUpdater.quitAndInstall(false, true);
 });
 
-// Privacy: clear data when quitting
+// Privacy: clear data when quitting (conditional)
 app.on('before-quit', async () => {
-  if (settings.clearOnExit) {
-    try {
-      const ses = session.defaultSession;
-      await ses.clearStorageData();
-      await ses.clearCache();
-    } catch {}
-  }
+  if (settings.clearOnExit === false) return;
+  try {
+    const ses = session.defaultSession;
+    await ses.clearStorageData();
+    await ses.clearCache();
+  } catch {}
 });
 
 app.whenReady().then(() => {

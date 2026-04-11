@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <title>Settings — Wizard Browser</title>
-<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"></noscript>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
   --bg: #0a0a0a;
@@ -62,12 +61,26 @@ body {
   color: var(--text2);
 }
 
+.back-link {
+  margin-left: auto;
+  color: var(--text2);
+  font-size: 0.85em;
+  cursor: pointer;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.back-link:hover { color: var(--accent2); border-color: var(--accent); }
+
 .section {
   margin-bottom: 32px;
 }
 
 .section-title {
-  font-size: 1em;
   font-weight: 600;
   color: var(--accent2);
   margin-bottom: 16px;
@@ -87,71 +100,26 @@ body {
   margin-bottom: 8px;
 }
 
-.setting-info {
-  flex: 1;
-}
-
-.setting-label {
-  font-size: 0.9em;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-
-.setting-desc {
-  font-size: 0.75em;
-  color: var(--text2);
-}
-
-.setting-warn {
-  color: #f59e0b;
-  font-size: 0.7em;
-  margin-top: 2px;
-}
+.setting-info { flex: 1; }
+.setting-label { font-size: 0.9em; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.setting-desc { font-size: 0.75em; color: var(--text2); }
+.setting-warn { color: #f59e0b; font-size: 0.7em; margin-top: 2px; }
 
 /* Toggle switch */
-.toggle {
-  position: relative;
-  width: 44px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
+.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
 .toggle-slider {
-  position: absolute;
-  cursor: pointer;
+  position: absolute; cursor: pointer;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: #333;
-  border-radius: 12px;
-  transition: 0.2s;
+  background: #333; border-radius: 12px; transition: 0.2s;
 }
-
 .toggle-slider:before {
-  content: '';
-  position: absolute;
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background: #888;
-  border-radius: 50%;
-  transition: 0.2s;
+  content: ''; position: absolute;
+  height: 18px; width: 18px; left: 3px; bottom: 3px;
+  background: #888; border-radius: 50%; transition: 0.2s;
 }
-
-.toggle input:checked + .toggle-slider {
-  background: var(--accent);
-}
-
-.toggle input:checked + .toggle-slider:before {
-  transform: translateX(20px);
-  background: #fff;
-}
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(20px); background: #fff; }
 
 /* Theme selector */
 .theme-grid {
@@ -160,7 +128,6 @@ body {
   gap: 12px;
   margin-top: 8px;
 }
-
 .theme-card {
   background: var(--surface);
   border: 2px solid var(--border);
@@ -170,184 +137,75 @@ body {
   transition: all 0.2s;
   text-align: center;
 }
-
-.theme-card:hover {
-  border-color: var(--accent);
-}
-
-.theme-card.active {
-  border-color: var(--accent);
-  background: #1a0a2e;
-}
-
+.theme-card:hover { border-color: var(--accent); }
+.theme-card.active { border-color: var(--accent); background: #1a0a2e; }
 .theme-preview {
-  width: 100%;
-  height: 60px;
-  border-radius: 6px;
-  margin-bottom: 8px;
+  width: 100%; height: 60px;
+  border-radius: 6px; margin-bottom: 8px;
   border: 1px solid var(--border);
 }
-
-.theme-name {
-  font-size: 0.8em;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.theme-desc {
-  font-size: 0.65em;
-  color: var(--text2);
-  margin-top: 2px;
-}
+.theme-name { font-size: 0.8em; font-weight: 500; color: var(--text); }
+.theme-desc { font-size: 0.65em; color: var(--text2); margin-top: 2px; }
 
 /* Speed dial editor */
-.speed-dial-list {
-  margin-top: 8px;
-}
-
+.speed-dial-list { margin-top: 8px; }
 .sd-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px;
 }
-
 .sd-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: var(--surface2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--accent2);
-  flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--surface2); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: var(--accent2); flex-shrink: 0;
 }
-
-.sd-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.sd-name {
-  font-size: 0.85em;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.sd-url {
-  font-size: 0.7em;
-  color: var(--text2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
+.sd-info { flex: 1; min-width: 0; }
+.sd-name { font-size: 0.85em; font-weight: 500; color: var(--text); }
+.sd-url { font-size: 0.7em; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sd-remove {
-  background: transparent;
-  border: none;
-  color: #555;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 4px 8px;
-  border-radius: 4px;
+  background: transparent; border: none; color: #555;
+  cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 4px;
 }
-
 .sd-remove:hover { color: var(--red); background: #1e1e1e; }
-
-.sd-add-form {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-
+.sd-add-form { display: flex; gap: 8px; margin-top: 10px; }
 .sd-add-form input {
-  flex: 1;
-  height: 36px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  padding: 0 12px;
-  font-size: 0.85em;
-  font-family: 'Inter', sans-serif;
-  outline: none;
+  flex: 1; height: 36px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 0 12px; font-size: 0.85em;
+  font-family: 'Inter', sans-serif; outline: none;
 }
-
 .sd-add-form input:focus { border-color: var(--accent); }
-
 .sd-add-form input::placeholder { color: #444; }
 
 .btn {
-  padding: 8px 16px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.85em;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: background 0.15s;
+  padding: 8px 16px; background: var(--accent); color: #fff;
+  border: none; border-radius: 8px; font-size: 0.85em; font-weight: 500;
+  font-family: 'Inter', sans-serif; cursor: pointer; transition: background 0.15s;
 }
-
 .btn:hover { background: var(--accent2); }
-
-.btn-danger {
-  background: transparent;
-  border: 1px solid var(--red);
-  color: var(--red);
-}
-
+.btn-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
 .btn-danger:hover { background: #2e0a0a; }
 
 .saved-toast {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--green);
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 0.85em;
-  font-weight: 500;
-  display: none;
-  z-index: 100;
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--green); color: #fff; padding: 10px 20px;
+  border-radius: 8px; font-size: 0.85em; font-weight: 500;
+  display: none; z-index: 100;
 }
-
 .saved-toast.show { display: block; }
 
 /* PIN section */
-.pin-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 8px;
-}
-
+.pin-section { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
 .pin-section input {
-  width: 120px;
-  height: 36px;
-  text-align: center;
-  font-size: 18px;
-  letter-spacing: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 8px;
-  outline: none;
+  width: 120px; height: 36px; text-align: center;
+  font-size: 18px; letter-spacing: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px; outline: none;
   font-family: 'Inter', sans-serif;
 }
-
 .pin-section input:focus { border-color: var(--accent); }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
@@ -358,8 +216,9 @@ body {
 
 <div class="settings-container">
   <div class="settings-header">
-    <div class="settings-logo">Wizard</div>
+    <div class="settings-logo" onclick="window.location='search.html'">Wizard</div>
     <div class="settings-title">Settings</div>
+    <a class="back-link" onclick="window.location='search.html'">← Home</a>
   </div>
 
   <!-- THEME -->
@@ -524,11 +383,9 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('show'), 1500);
 }
 
-// Load settings
 async function loadSettings() {
   currentSettings = await window.wizardBrowser.getSettings();
 
-  // Apply toggles
   document.getElementById('opt-dnt').checked = currentSettings.doNotTrack !== false;
   document.getElementById('opt-canvas').checked = currentSettings.canvasSpoofing !== false;
   document.getElementById('opt-webrtc').checked = currentSettings.webrtcProtection !== false;
@@ -536,22 +393,18 @@ async function loadSettings() {
   document.getElementById('opt-trackers').checked = currentSettings.trackerBlocking !== false;
   document.getElementById('opt-clearexit').checked = currentSettings.clearOnExit !== false;
 
-  // Theme
   document.querySelectorAll('.theme-card').forEach(c => {
     c.classList.toggle('active', c.dataset.theme === (currentSettings.theme || 'dark'));
   });
 
-  // Speed dial
   renderSpeedDial(currentSettings.speedDial || []);
 
-  // Version
   if (window.wizardBrowser.getVersion) {
     const v = await window.wizardBrowser.getVersion();
     document.getElementById('about-version').textContent = `Version ${v}`;
   }
 }
 
-// Save on toggle change
 document.querySelectorAll('.toggle input').forEach(toggle => {
   toggle.addEventListener('change', async () => {
     const newSettings = {
@@ -567,7 +420,6 @@ document.querySelectorAll('.toggle input').forEach(toggle => {
   });
 });
 
-// Theme selection
 document.querySelectorAll('.theme-card').forEach(card => {
   card.addEventListener('click', async () => {
     document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
@@ -577,7 +429,6 @@ document.querySelectorAll('.theme-card').forEach(card => {
   });
 });
 
-// Speed dial
 function renderSpeedDial(items) {
   const list = document.getElementById('speed-dial-list');
   list.innerHTML = '';
@@ -618,26 +469,19 @@ document.getElementById('sd-add-btn').addEventListener('click', async () => {
   showToast('Speed dial updated');
 });
 
-// PIN management
 document.getElementById('pin-set-btn').addEventListener('click', async () => {
   const pin = document.getElementById('pin-settings-input').value;
   const msg = document.getElementById('pin-settings-msg');
-  if (pin.length < 4) {
-    msg.textContent = 'PIN must be at least 4 digits';
-    msg.style.color = '#ef4444';
-    return;
-  }
+  if (pin.length < 4) { msg.textContent = 'PIN must be at least 4 digits'; msg.style.color = '#ef4444'; return; }
   await window.wizardBrowser.setPin({ pin, enabled: true });
-  msg.textContent = 'PIN set successfully';
-  msg.style.color = '#22c55e';
+  msg.textContent = 'PIN set successfully'; msg.style.color = '#22c55e';
   document.getElementById('pin-settings-input').value = '';
 });
 
 document.getElementById('pin-remove-btn').addEventListener('click', async () => {
   await window.wizardBrowser.setPin({ pin: null, enabled: false });
   const msg = document.getElementById('pin-settings-msg');
-  msg.textContent = 'PIN removed';
-  msg.style.color = '#22c55e';
+  msg.textContent = 'PIN removed'; msg.style.color = '#22c55e';
 });
 
 function escapeHtml(str) {

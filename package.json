@@ -10,7 +10,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win nsis --linux AppImage",
+    "build": "electron-builder --win nsis --linux AppImage deb rpm pacman tar.gz",
     "build:win": "electron-builder --win nsis",
     "build:linux": "electron-builder --linux AppImage deb rpm pacman tar.gz"
   },
@@ -62,8 +62,7 @@
       "search.html",
       "settings.html",
       "irc.html",
-      "tracker-list.json",
-      "backgrounds/**"
+      "tracker-list.json"
     ]
   }
 }

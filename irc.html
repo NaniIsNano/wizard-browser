@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <title>IRC — #wizard-support</title>
-<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"></noscript>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
   --bg: #0a0a0a;
@@ -50,28 +49,19 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  cursor: pointer;
 }
 
-.irc-channel {
-  font-size: 0.95em;
-  font-weight: 600;
-  color: var(--text);
-}
+.irc-channel { font-size: 0.95em; font-weight: 600; color: var(--text); }
 
 .irc-status {
-  font-size: 0.75em;
-  color: var(--text2);
-  margin-left: auto;
+  font-size: 0.75em; color: var(--text2); margin-left: auto;
 }
 
 .irc-status .dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #555;
-  margin-right: 6px;
-  vertical-align: middle;
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; background: #555;
+  margin-right: 6px; vertical-align: middle;
 }
 
 .irc-status .dot.connected { background: var(--green); }
@@ -83,183 +73,95 @@ body {
   padding: 10px 20px;
   background: var(--surface2);
   border-bottom: 1px solid var(--border);
-  font-size: 0.78em;
-  color: var(--text2);
-  flex-shrink: 0;
+  font-size: 0.78em; color: var(--text2); flex-shrink: 0;
 }
-
-.irc-info a {
-  color: var(--accent2);
-  text-decoration: none;
-}
-
+.irc-info a { color: var(--accent2); text-decoration: none; }
 .irc-info a:hover { text-decoration: underline; }
 
-#messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.msg {
-  font-size: 0.85em;
-  line-height: 1.6;
-  padding: 2px 0;
-}
-
-.msg-time {
-  color: #444;
-  font-size: 0.8em;
-  margin-right: 8px;
-  font-family: 'Courier New', monospace;
-}
-
-.msg-nick {
-  font-weight: 600;
-  margin-right: 6px;
-}
-
-.msg-text {
-  color: var(--text);
-  word-break: break-word;
-}
-
-.msg-system {
+.home-link {
+  margin-left: 12px;
   color: var(--text2);
-  font-style: italic;
   font-size: 0.8em;
+  cursor: pointer;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.home-link:hover { color: var(--accent2); border-color: var(--accent); }
+
+#messages {
+  flex: 1; overflow-y: auto; padding: 12px 20px;
+  display: flex; flex-direction: column; gap: 2px;
 }
 
+.msg { font-size: 0.85em; line-height: 1.6; padding: 2px 0; }
+.msg-time { color: #444; font-size: 0.8em; margin-right: 8px; font-family: 'Courier New', monospace; }
+.msg-nick { font-weight: 600; margin-right: 6px; }
+.msg-text { color: var(--text); word-break: break-word; }
+.msg-system { color: var(--text2); font-style: italic; font-size: 0.8em; }
 .msg-system .msg-text { color: var(--text2); }
-
 .msg-join .msg-nick { color: var(--green); }
 .msg-part .msg-nick { color: var(--red); }
 .msg-action .msg-text { font-style: italic; color: var(--accent2); }
 
-/* Nick colors */
-.nick-0 { color: #e06c75; }
-.nick-1 { color: #98c379; }
-.nick-2 { color: #e5c07b; }
-.nick-3 { color: #61afef; }
-.nick-4 { color: #c678dd; }
-.nick-5 { color: #56b6c2; }
-.nick-6 { color: #d19a66; }
-.nick-7 { color: #be5046; }
+.nick-0 { color: #e06c75; } .nick-1 { color: #98c379; }
+.nick-2 { color: #e5c07b; } .nick-3 { color: #61afef; }
+.nick-4 { color: #c678dd; } .nick-5 { color: #56b6c2; }
+.nick-6 { color: #d19a66; } .nick-7 { color: #be5046; }
 
-/* Setup form */
 #setup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  gap: 16px;
-  padding: 40px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  flex: 1; gap: 16px; padding: 40px;
 }
-
 #setup h2 {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.5em;
+  font-family: 'Space Grotesk', sans-serif; font-size: 1.5em;
   background: linear-gradient(135deg, #7c3aed, #a855f7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-
-#setup p {
-  color: var(--text2);
-  font-size: 0.85em;
-  max-width: 400px;
-  text-align: center;
-  line-height: 1.6;
-}
-
+#setup p { color: var(--text2); font-size: 0.85em; max-width: 400px; text-align: center; line-height: 1.6; }
 #setup input {
-  width: 280px;
-  height: 40px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  padding: 0 14px;
-  font-size: 0.9em;
-  font-family: 'Inter', sans-serif;
-  outline: none;
+  width: 280px; height: 40px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 0 14px; font-size: 0.9em;
+  font-family: 'Inter', sans-serif; outline: none;
 }
-
 #setup input:focus { border-color: var(--accent); }
 #setup input::placeholder { color: #444; }
 
 .btn {
-  padding: 10px 24px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9em;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: background 0.15s;
+  padding: 10px 24px; background: var(--accent); color: #fff;
+  border: none; border-radius: 8px; font-size: 0.9em; font-weight: 500;
+  font-family: 'Inter', sans-serif; cursor: pointer; transition: background 0.15s;
 }
-
 .btn:hover { background: var(--accent2); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Chat area (hidden until connected) */
-#chat-area {
-  display: none;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-}
-
+#chat-area { display: none; flex: 1; flex-direction: column; min-height: 0; }
 #chat-area.show { display: flex; }
 
 #input-bar {
-  display: flex;
-  padding: 10px 16px;
-  gap: 8px;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
+  display: flex; padding: 10px 16px; gap: 8px;
+  background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0;
 }
-
 #msg-input {
-  flex: 1;
-  height: 36px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  padding: 0 14px;
-  font-size: 0.85em;
-  font-family: 'Inter', sans-serif;
-  outline: none;
+  flex: 1; height: 36px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 0 14px; font-size: 0.85em;
+  font-family: 'Inter', sans-serif; outline: none;
 }
-
 #msg-input:focus { border-color: var(--accent); }
 #msg-input::placeholder { color: #444; }
-
 #send-btn {
-  padding: 0 18px;
-  height: 36px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.85em;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
+  padding: 0 18px; height: 36px; background: var(--accent);
+  color: #fff; border: none; border-radius: 8px;
+  font-size: 0.85em; font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer;
 }
-
 #send-btn:hover { background: var(--accent2); }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
@@ -269,8 +171,9 @@ body {
 <body>
 
 <div class="irc-header">
-  <div class="irc-logo">Wizard</div>
+  <div class="irc-logo" onclick="window.location='search.html'">Wizard</div>
   <div class="irc-channel">#wizard-support</div>
+  <a class="home-link" onclick="window.location='search.html'">← Home</a>
   <div class="irc-status">
     <span class="dot" id="status-dot"></span>
     <span id="status-text">Disconnected</span>
@@ -282,7 +185,6 @@ body {
   You can also connect with any IRC client: <strong>irc.libera.chat #wizard-support</strong>
 </div>
 
-<!-- Setup: pick a nickname -->
 <div id="setup">
   <h2>Join #wizard-support</h2>
   <p>Connect to the Wizard Browser community IRC channel. Chat with other users and get support.</p>
@@ -291,7 +193,6 @@ body {
   <p style="font-size:0.72em; color:#555;">Connects to irc.libera.chat via the Kiwi IRC web gateway</p>
 </div>
 
-<!-- Chat area -->
 <div id="chat-area">
   <div id="messages"></div>
   <div id="input-bar">
@@ -318,7 +219,6 @@ let connected = false;
 const CHANNEL = '#wizard-support';
 const SERVER = 'irc.libera.chat';
 
-// Nick color hash
 function nickColor(nick) {
   let hash = 0;
   for (let i = 0; i < nick.length; i++) hash = nick.charCodeAt(i) + ((hash << 5) - hash);
@@ -333,7 +233,6 @@ function timestamp() {
 function addMessage(nick, text, type = '') {
   const div = document.createElement('div');
   div.className = 'msg' + (type ? ' msg-' + type : '');
-
   if (type === 'system') {
     div.innerHTML = `<span class="msg-time">${timestamp()}</span><span class="msg-text">${escapeHtml(text)}</span>`;
   } else if (type === 'action') {
@@ -341,7 +240,6 @@ function addMessage(nick, text, type = '') {
   } else {
     div.innerHTML = `<span class="msg-time">${timestamp()}</span><span class="msg-nick ${nickColor(nick)}">&lt;${escapeHtml(nick)}&gt;</span> <span class="msg-text">${escapeHtml(text)}</span>`;
   }
-
   messages.appendChild(div);
   messages.scrollTop = messages.scrollHeight;
 }
@@ -357,17 +255,15 @@ function setStatus(state, text) {
   statusText.textContent = text;
 }
 
-// Connect via WebSocket to Kiwi IRC web gateway
 function connectIRC(nick) {
   myNick = nick;
   setStatus('connecting', 'Connecting...');
   addMessage('', `Connecting to ${SERVER} as ${nick}...`, 'system');
 
-  // Use Kiwi IRC's WebSocket gateway to Libera.Chat
+  // Use Kiwi IRC's WebSocket gateway
   ws = new WebSocket('wss://kiwiirc.com/webirc/kiwiirc.com/');
 
   ws.onopen = () => {
-    // Send IRC registration
     ws.send(`CAP LS 302\r\n`);
     ws.send(`NICK ${nick}\r\n`);
     ws.send(`USER ${nick} 0 * :Wizard Browser User\r\n`);
@@ -375,9 +271,7 @@ function connectIRC(nick) {
 
   ws.onmessage = (event) => {
     const lines = event.data.split('\r\n').filter(l => l.length > 0);
-    for (const line of lines) {
-      handleIRC(line);
-    }
+    for (const line of lines) handleIRC(line);
   };
 
   ws.onclose = () => {
@@ -393,13 +287,11 @@ function connectIRC(nick) {
 }
 
 function handleIRC(line) {
-  // PING/PONG keepalive
   if (line.startsWith('PING')) {
     ws.send('PONG' + line.slice(4) + '\r\n');
     return;
   }
 
-  // Parse IRC message
   const match = line.match(/^(?::(\S+)\s)?(\S+)\s?(.*)?$/);
   if (!match) return;
 
@@ -409,44 +301,33 @@ function handleIRC(line) {
   const nick = prefix.split('!')[0];
 
   switch (command) {
-    case '001': // RPL_WELCOME — registered
+    case '001':
       connected = true;
       setStatus('connected', `Connected as ${myNick}`);
       addMessage('', `Connected to ${SERVER}!`, 'system');
       ws.send(`JOIN ${CHANNEL}\r\n`);
       break;
-
     case 'CAP':
-      // End capability negotiation
       ws.send(`CAP END\r\n`);
       break;
-
-    case '433': // Nickname in use
+    case '433':
       myNick = myNick + '_';
       ws.send(`NICK ${myNick}\r\n`);
       addMessage('', `Nickname in use, trying ${myNick}...`, 'system');
       break;
-
     case 'JOIN':
-      if (nick === myNick) {
-        addMessage('', `Joined ${CHANNEL}`, 'system');
-      } else {
-        addMessage(nick, `has joined ${CHANNEL}`, 'join');
-      }
+      if (nick === myNick) addMessage('', `Joined ${CHANNEL}`, 'system');
+      else addMessage(nick, `has joined ${CHANNEL}`, 'join');
       break;
-
     case 'PART':
       addMessage(nick, `has left ${CHANNEL}`, 'part');
       break;
-
     case 'QUIT':
       addMessage(nick, 'has quit', 'part');
       break;
-
     case 'PRIVMSG': {
       const target = params.split(' ')[0];
       let text = params.slice(params.indexOf(':') + 1);
-      // CTCP ACTION (/me)
       if (text.startsWith('\x01ACTION ') && text.endsWith('\x01')) {
         text = text.slice(8, -1);
         addMessage(nick, text, 'action');
@@ -455,31 +336,24 @@ function handleIRC(line) {
       }
       break;
     }
-
     case 'NOTICE': {
       const text = params.slice(params.indexOf(':') + 1);
       addMessage(nick || SERVER, text, 'system');
       break;
     }
-
-    case '332': // RPL_TOPIC
+    case '332': {
       const topic = params.slice(params.indexOf(':', params.indexOf(':') + 1) + 1);
       addMessage('', `Topic: ${topic}`, 'system');
       break;
-
-    case '353': // RPL_NAMREPLY
+    }
+    case '353': {
       const names = params.slice(params.lastIndexOf(':') + 1).trim();
       addMessage('', `Users: ${names}`, 'system');
       break;
-
-    case '366': // RPL_ENDOFNAMES
-      break;
-
-    case '372': case '375': case '376': // MOTD
-      break;
-
+    }
+    case '366': break;
+    case '372': case '375': case '376': break;
     default:
-      // Numeric errors
       if (/^4\d\d$/.test(command) || /^5\d\d$/.test(command)) {
         const text = params.slice(params.indexOf(':') + 1);
         addMessage('', text, 'system');
@@ -491,7 +365,6 @@ function handleIRC(line) {
 function sendMessage() {
   const text = msgInput.value.trim();
   if (!text || !connected || !ws) return;
-
   if (text.startsWith('/me ')) {
     const action = text.slice(4);
     ws.send(`PRIVMSG ${CHANNEL} :\x01ACTION ${action}\x01\r\n`);
@@ -507,18 +380,13 @@ function sendMessage() {
     ws.send(`PRIVMSG ${CHANNEL} :${text}\r\n`);
     addMessage(myNick, text);
   }
-
   msgInput.value = '';
   msgInput.focus();
 }
 
-// Connect button
 connectBtn.addEventListener('click', () => {
   const nick = nickInput.value.trim().replace(/[^a-zA-Z0-9_\-\[\]\\^{}|`]/g, '');
-  if (!nick || nick.length < 2) {
-    nickInput.style.borderColor = '#ef4444';
-    return;
-  }
+  if (!nick || nick.length < 2) { nickInput.style.borderColor = '#ef4444'; return; }
   setup.style.display = 'none';
   chatArea.classList.add('show');
   connectIRC(nick);
@@ -529,13 +397,11 @@ nickInput.addEventListener('keydown', (e) => {
   nickInput.style.borderColor = '';
 });
 
-// Send
 sendBtn.addEventListener('click', sendMessage);
 msgInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendMessage();
 });
 
-// Generate a random default nickname
 nickInput.value = 'Wizard' + Math.floor(Math.random() * 9000 + 1000);
 </script>
 </body>

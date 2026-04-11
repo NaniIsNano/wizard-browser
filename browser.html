@@ -610,6 +610,49 @@ document.getElementById('irc-btn').addEventListener('click', () => {
   window.wizardBrowser.openIRC();
 });
 
+// --- PIN Lock ---
+(async () => {
+  const pinState = await window.wizardBrowser.getPinState();
+  const overlay = document.getElementById('pin-overlay');
+  const pinInput = document.getElementById('pin-input');
+  const pinSubmit = document.getElementById('pin-submit');
+  const pinSkip = document.getElementById('pin-skip');
+  const pinTitle = document.getElementById('pin-title');
+  const pinDesc = document.getElementById('pin-desc');
+  const pinError = document.getElementById('pin-error');
+
+  if (pinState.enabled) {
+    overlay.classList.add('show');
+    pinTitle.textContent = 'Enter PIN';
+    pinDesc.textContent = 'Enter your PIN to unlock Wizard Browser.';
+    pinSubmit.textContent = 'Unlock';
+    pinSkip.style.display = 'none';
+    pinInput.focus();
+    pinSubmit.onclick = async () => {
+      const pin = pinInput.value;
+      if (pin.length < 4) { pinError.textContent = 'PIN must be at least 4 digits'; return; }
+      const ok = await window.wizardBrowser.verifyPin(pin);
+      if (ok) { overlay.classList.remove('show'); }
+      else { pinError.textContent = 'Incorrect PIN'; pinInput.value = ''; pinInput.focus(); }
+    };
+    pinInput.onkeydown = (e) => { if (e.key === 'Enter') pinSubmit.click(); };
+  } else if (!pinState.asked) {
+    overlay.classList.add('show');
+    pinInput.focus();
+    pinSubmit.onclick = async () => {
+      const pin = pinInput.value;
+      if (pin.length < 4) { pinError.textContent = 'PIN must be at least 4 digits'; return; }
+      await window.wizardBrowser.setPin({ pin, enabled: true });
+      overlay.classList.remove('show');
+    };
+    pinSkip.onclick = async () => {
+      await window.wizardBrowser.skipPinSetup();
+      overlay.classList.remove('show');
+    };
+    pinInput.onkeydown = (e) => { if (e.key === 'Enter') pinSubmit.click(); };
+  }
+})();
+
 // --- Bookmark this page ---
 let currentUrl = '';
 let currentTitle = '';
