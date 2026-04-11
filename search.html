@@ -4,9 +4,8 @@
 <meta charset="UTF-8" />
 <title>Wizard Search</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"></noscript>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
   --bg: #0a0a0a;
@@ -24,101 +23,6 @@
   --url-color: #555;
   --snippet: #999;
 }
-
-/* Theme: Midnight */
-body.theme-midnight {
-  --bg: #0d1117; --surface: #161b22; --surface2: #1f2937; --border: #30363d;
-  --text: #c9d1d9; --text2: #8b949e; --accent: #58a6ff; --accent2: #79c0ff;
-  --link: #58a6ff; --link-hover: #79c0ff; --url-color: #6e7681; --snippet: #8b949e;
-}
-
-/* Theme: Frutiger Aero */
-body.theme-frutiger-aero {
-  --bg: #e0f2f7; --surface: rgba(255,255,255,0.75); --surface2: rgba(255,255,255,0.5); --border: rgba(135,206,235,0.4);
-  --text: #1a3a4a; --text2: #5a8a9a; --accent: #0097b2; --accent2: #00bcd4;
-  --green: #2e7d32; --red: #c62828;
-  --link: #0077aa; --link-hover: #005580; --url-color: #6a9aaa; --snippet: #4a7a8a;
-}
-body.theme-frutiger-aero { background: linear-gradient(135deg, #e8f4f8, #b3e0ee, #87ceeb) !important; }
-body.theme-frutiger-aero .result { background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); }
-body.theme-frutiger-aero #search-form { background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); }
-body.theme-frutiger-aero .shortcut { background: rgba(255,255,255,0.6); backdrop-filter: blur(6px); }
-body.theme-frutiger-aero #knowledge-panel { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); }
-
-/* Theme: Classic (old search engine) */
-body.theme-classic {
-  --bg: #1a1a2e; --surface: #16213e; --surface2: #0f3460; --border: #1a3a6e;
-  --text: #e0e0ff; --text2: #8888bb; --accent: #e94560; --accent2: #ff6b81;
-  --link: #64b5f6; --link-hover: #90caf9; --url-color: #6a6a9a; --snippet: #9999bb;
-}
-
-/* Theme: Light */
-body.theme-light {
-  --bg: #ffffff; --surface: #f5f5f5; --surface2: #eeeeee; --border: #ddd;
-  --text: #1a1a1a; --text2: #666; --accent: #7c3aed; --accent2: #9333ea;
-  --green: #16a34a; --red: #dc2626;
-  --link: #6d28d9; --link-hover: #7c3aed; --url-color: #888; --snippet: #555;
-}
-
-/* Theme: Hacker */
-body.theme-hacker {
-  --bg: #000; --surface: #0a0f0a; --surface2: #0f1a0f; --border: #1a3a1a;
-  --text: #00ff41; --text2: #00aa2a; --accent: #00ff41; --accent2: #33ff66;
-  --link: #00ff41; --link-hover: #66ff88; --url-color: #005500; --snippet: #00aa2a;
-}
-body.theme-hacker { font-family: 'Courier New', monospace !important; }
-body.theme-hacker * { font-family: inherit !important; }
-
-/* Theme: Mountains (background image) */
-body.theme-mountains {
-  --bg: #0a0a0a; --surface: rgba(10,10,10,0.75); --surface2: rgba(20,20,20,0.7); --border: rgba(255,255,255,0.12);
-  --text: #f0f0f0; --text2: #bbb; --accent: #7cb9e8; --accent2: #a8d4f0;
-  --link: #a8d4f0; --link-hover: #cde8f7; --url-color: #8aa; --snippet: #bbb;
-}
-body.theme-mountains {
-  background: url('backgrounds/mountains.jpg') center/cover fixed !important;
-}
-body.theme-mountains #home { background: rgba(0,0,0,0.45); min-height: 100vh; }
-body.theme-mountains .result { background: rgba(10,10,10,0.7); backdrop-filter: blur(12px); }
-body.theme-mountains #search-form { background: rgba(10,10,10,0.7); backdrop-filter: blur(10px); }
-body.theme-mountains .shortcut { background: rgba(10,10,10,0.6); backdrop-filter: blur(8px); }
-body.theme-mountains #knowledge-panel { background: rgba(10,10,10,0.7); backdrop-filter: blur(10px); }
-body.theme-mountains #results-page { background: rgba(0,0,0,0.5); min-height: 100vh; }
-
-/* Theme: Canola (background image) */
-body.theme-canola {
-  --bg: #0a0a0a; --surface: rgba(255,255,255,0.7); --surface2: rgba(255,255,255,0.5); --border: rgba(200,200,100,0.3);
-  --text: #1a2a0a; --text2: #556b2f; --accent: #4a7c10; --accent2: #6b8e23;
-  --green: #2e7d32; --red: #c62828;
-  --link: #2e5a00; --link-hover: #3a7000; --url-color: #6a8a4a; --snippet: #4a6a2a;
-}
-body.theme-canola {
-  background: url('backgrounds/canola.jpg') center/cover fixed !important;
-}
-body.theme-canola #home { background: rgba(255,255,255,0.25); min-height: 100vh; }
-body.theme-canola .result { background: rgba(255,255,255,0.65); backdrop-filter: blur(12px); }
-body.theme-canola #search-form { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); }
-body.theme-canola .shortcut { background: rgba(255,255,255,0.6); backdrop-filter: blur(8px); }
-body.theme-canola #knowledge-panel { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); }
-body.theme-canola #results-page { background: rgba(255,255,255,0.3); min-height: 100vh; }
-body.theme-canola #logo { background: linear-gradient(135deg, #2e5a00, #6b8e23, #8fbc3a); -webkit-background-clip: text; background-clip: text; }
-
-/* Theme: Fortress (background image) */
-body.theme-fortress {
-  --bg: #0a0a0a; --surface: rgba(15,12,10,0.8); --surface2: rgba(25,20,15,0.7); --border: rgba(180,160,130,0.2);
-  --text: #e8e0d0; --text2: #a89878; --accent: #c9a84c; --accent2: #dabb66;
-  --link: #dabb66; --link-hover: #eedd88; --url-color: #8a7a5a; --snippet: #b0a080;
-}
-body.theme-fortress {
-  background: url('backgrounds/fortress.jpg') center/cover fixed !important;
-}
-body.theme-fortress #home { background: rgba(0,0,0,0.5); min-height: 100vh; }
-body.theme-fortress .result { background: rgba(15,12,10,0.75); backdrop-filter: blur(12px); }
-body.theme-fortress #search-form { background: rgba(15,12,10,0.75); backdrop-filter: blur(10px); }
-body.theme-fortress .shortcut { background: rgba(15,12,10,0.65); backdrop-filter: blur(8px); }
-body.theme-fortress #knowledge-panel { background: rgba(15,12,10,0.75); backdrop-filter: blur(10px); }
-body.theme-fortress #results-page { background: rgba(0,0,0,0.5); min-height: 100vh; }
-body.theme-fortress #logo { background: linear-gradient(135deg, #c9a84c, #dabb66, #eedd88); -webkit-background-clip: text; background-clip: text; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1047,7 +951,12 @@ body.theme-fortress #logo { background: linear-gradient(135deg, #c9a84c, #dabb66
     <input type="text" id="searchbar" placeholder="Search the web privately..." autofocus />
     <button type="submit" id="search-btn">Search</button>
   </form>
-  <div id="shortcuts"></div>
+  <div id="shortcuts">
+    <a class="shortcut" href="https://youtube.com" target="_blank"><span class="shortcut-icon">Y</span> YouTube</a>
+    <a class="shortcut" href="https://github.com" target="_blank"><span class="shortcut-icon">G</span> GitHub</a>
+    <a class="shortcut" href="https://reddit.com" target="_blank"><span class="shortcut-icon">R</span> Reddit</a>
+    <a class="shortcut" href="https://wikipedia.org" target="_blank"><span class="shortcut-icon">W</span> Wikipedia</a>
+  </div>
   <div id="privacy-badge">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
     No tracking. No cookies. No logs.
@@ -1797,7 +1706,7 @@ function capitalize(str) {
 (async () => {
   const badge = document.getElementById('version-badge');
   if (!badge) return;
-  let currentVersion = '2.0.0';
+  let currentVersion = '1.1.0';
   // Get version from Electron (single source of truth: package.json)
   if (window.wizardBrowser && window.wizardBrowser.getVersion) {
     try { currentVersion = await window.wizardBrowser.getVersion(); } catch {}

@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <title>Wizard Browser</title>
-<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"></noscript>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: 'Inter', 'Segoe UI', sans-serif;
-  background: #1e1e1e;
+  background: #0d0d0d;
   color: #e0e0e0;
   overflow: hidden;
   height: 48px;
@@ -18,10 +17,10 @@ body {
   display: flex;
   align-items: center;
   height: 48px;
-  background: #2b2b2b;
+  background: #0d0d0d;
   padding: 0 10px;
   gap: 6px;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid #1e1e1e;
   -webkit-app-region: drag;
 }
 #toolbar > * { -webkit-app-region: no-drag; }
@@ -39,15 +38,15 @@ body {
   border-radius: 6px;
   transition: all 0.15s;
 }
-.nav-btn:hover { background: #3a3a3a; color: #fff; }
-.nav-btn:active { background: #444; }
+.nav-btn:hover { background: #1a1a1a; color: #fff; }
+.nav-btn:active { background: #252525; }
 .nav-btn svg { width: 16px; height: 16px; fill: currentColor; }
 #url-bar {
   flex: 1;
   height: 32px;
-  border: 1px solid #3a3a3a;
-  background: #1e1e1e;
-  color: #ddd;
+  border: 1px solid #252525;
+  background: #141414;
+  color: #ccc;
   padding: 0 14px;
   font-size: 13px;
   font-family: 'Inter', sans-serif;
@@ -55,14 +54,14 @@ body {
   outline: none;
   transition: all 0.2s;
 }
-#url-bar:focus { border-color: #7c3aed; background: #252525; color: #fff; }
-#url-bar::placeholder { color: #666; }
+#url-bar:focus { border-color: #7c3aed; background: #1a1a1a; color: #fff; }
+#url-bar::placeholder { color: #555; }
 #shield {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #1e1e1e;
-  border: 1px solid #3a3a3a;
+  background: #141414;
+  border: 1px solid #252525;
   border-radius: 8px;
   padding: 0 10px;
   height: 32px;
@@ -75,9 +74,9 @@ body {
 #shield svg { width: 14px; height: 14px; fill: #22c55e; }
 #clear-btn {
   height: 32px;
-  border: 1px solid #3a3a3a;
-  background: #1e1e1e;
-  color: #999;
+  border: 1px solid #252525;
+  background: #141414;
+  color: #888;
   padding: 0 12px;
   font-size: 11px;
   font-weight: 500;
@@ -87,15 +86,15 @@ body {
   transition: all 0.15s;
   letter-spacing: 0.3px;
 }
-#clear-btn:hover { background: #3a3a3a; color: #ef4444; border-color: #ef4444; }
+#clear-btn:hover { background: #1a1a1a; color: #ef4444; border-color: #ef4444; }
 .toolbar-btn {
   display: flex;
   align-items: center;
   gap: 5px;
   height: 32px;
-  border: 1px solid #3a3a3a;
-  background: #1e1e1e;
-  color: #999;
+  border: 1px solid #252525;
+  background: #141414;
+  color: #888;
   padding: 0 10px;
   font-size: 11px;
   font-weight: 500;
@@ -105,7 +104,7 @@ body {
   transition: all 0.15s;
   letter-spacing: 0.3px;
 }
-.toolbar-btn:hover { background: #3a3a3a; color: #a855f7; border-color: #a855f7; }
+.toolbar-btn:hover { background: #1a1a1a; color: #a855f7; border-color: #a855f7; }
 .toolbar-btn.active { background: #1a0a2e; color: #a855f7; border-color: #a855f7; }
 .toolbar-btn.active:hover { background: #250e3f; }
 #loading-bar {
@@ -529,58 +528,6 @@ const urlBar = document.getElementById('url-bar');
 const blockedSpan = document.getElementById('blocked-count');
 const loadingBar = document.getElementById('loading-bar');
 
-// --- PIN Lock ---
-(async () => {
-  const pinState = await window.wizardBrowser.getPinState();
-  const overlay = document.getElementById('pin-overlay');
-  const pinInput = document.getElementById('pin-input');
-  const pinSubmit = document.getElementById('pin-submit');
-  const pinSkip = document.getElementById('pin-skip');
-  const pinTitle = document.getElementById('pin-title');
-  const pinDesc = document.getElementById('pin-desc');
-  const pinError = document.getElementById('pin-error');
-
-  if (pinState.enabled) {
-    // PIN is set — require verification
-    overlay.classList.add('show');
-    pinTitle.textContent = 'Enter PIN';
-    pinDesc.textContent = 'Enter your PIN to unlock Wizard Browser.';
-    pinSubmit.textContent = 'Unlock';
-    pinSkip.style.display = 'none';
-    pinInput.focus();
-
-    pinSubmit.onclick = async () => {
-      const pin = pinInput.value;
-      if (pin.length < 4) { pinError.textContent = 'PIN must be at least 4 digits'; return; }
-      const ok = await window.wizardBrowser.verifyPin(pin);
-      if (ok) {
-        overlay.classList.remove('show');
-      } else {
-        pinError.textContent = 'Incorrect PIN';
-        pinInput.value = '';
-        pinInput.focus();
-      }
-    };
-    pinInput.onkeydown = (e) => { if (e.key === 'Enter') pinSubmit.click(); };
-  } else if (!pinState.asked) {
-    // First launch — ask if they want to set a PIN
-    overlay.classList.add('show');
-    pinInput.focus();
-
-    pinSubmit.onclick = async () => {
-      const pin = pinInput.value;
-      if (pin.length < 4) { pinError.textContent = 'PIN must be at least 4 digits'; return; }
-      await window.wizardBrowser.setPin({ pin, enabled: true });
-      overlay.classList.remove('show');
-    };
-    pinSkip.onclick = async () => {
-      await window.wizardBrowser.skipPinSetup();
-      overlay.classList.remove('show');
-    };
-    pinInput.onkeydown = (e) => { if (e.key === 'Enter') pinSubmit.click(); };
-  }
-})();
-
 urlBar.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -886,8 +833,6 @@ document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'b') { bmPanel.classList.toggle('show'); if (bmPanel.classList.contains('show')) renderBookmarks(); e.preventDefault(); }
   if (e.ctrlKey && e.key === 'd') { document.getElementById('bookmark-btn').click(); e.preventDefault(); }
 });
-
-
 </script>
 </body>
 </html>
