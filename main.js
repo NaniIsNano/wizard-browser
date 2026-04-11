@@ -46,7 +46,7 @@ let settings = loadJSON(settingsPath, {
 });
 
 let bookmarks = loadJSON(bookmarksPath, []);
-let pinData = loadJSON(pinPath, { enabled: false, pin: null, asked: false });
+let pinData = loadJSON(pinPath, { enabled: false, pin: null, asked: true });
 
 // Privacy: disable canvas fingerprinting (WebGL left enabled for video playback)
 if (settings.canvasSpoofing) {
@@ -650,6 +650,17 @@ ipcMain.handle('skip-pin-setup', () => {
   pinData.asked = true;
   saveJSON(pinPath, pinData);
   return true;
+});
+
+// --- PIN lock: hide/show BrowserView ---
+ipcMain.on('pin-lock', (_, locked) => {
+  if (!browserView || !mainWindow) return;
+  if (locked) {
+    browserView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+  } else {
+    const bounds = mainWindow.getContentBounds();
+    browserView.setBounds({ x: 0, y: 48, width: bounds.width, height: bounds.height - 48 });
+  }
 });
 
 // --- Navigation IPC ---
