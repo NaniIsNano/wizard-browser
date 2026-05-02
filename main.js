@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, ipcMain, session, dialog } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, session, dialog, Menu, clipboard, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -14,10 +14,48 @@ let browserView;
 let blockedCount = 0;
 let downloads = []; // Download manager state
 
+// --- Settings persistence ---
+const settingsPath = path.join(app.getPath('userData'), 'wizard-settings.json');
+const bookmarksPath = path.join(app.getPath('userData'), 'wizard-bookmarks.json');
+const pinPath = path.join(app.getPath('userData'), 'wizard-pin.json');
+
+function loadJSON(filePath, fallback) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  } catch { return fallback; }
+}
+
+function saveJSON(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+let settings = loadJSON(settingsPath, {
+  theme: 'dark',
+  doNotTrack: true,
+  canvasSpoofing: true,
+  webrtcProtection: true,
+  referrerStripping: true,
+  trackerBlocking: true,
+  clearOnExit: true,
+  speedDial: [
+    { name: 'YouTube', url: 'https://youtube.com', icon: 'Y' },
+    { name: 'GitHub', url: 'https://github.com', icon: 'G' },
+    { name: 'Reddit', url: 'https://reddit.com', icon: 'R' },
+    { name: 'Wikipedia', url: 'https://wikipedia.org', icon: 'W' }
+  ]
+});
+
+let bookmarks = loadJSON(bookmarksPath, []);
+let pinData = loadJSON(pinPath, { enabled: false, pin: null, asked: false });
+
 // Privacy: disable canvas fingerprinting (WebGL left enabled for video playback)
-app.commandLine.appendSwitch('disable-reading-from-canvas');
+if (settings.canvasSpoofing) {
+  app.commandLine.appendSwitch('disable-reading-from-canvas');
+}
 // Disable WebRTC IP leak
-app.commandLine.appendSwitch('force-webrtc-ip-handling-policy', 'disable_non_proxied_udp');
+if (settings.webrtcProtection) {
+  app.commandLine.appendSwitch('force-webrtc-ip-handling-policy', 'disable_non_proxied_udp');
+}
 // Disable background networking
 app.commandLine.appendSwitch('disable-background-networking');
 // Disable various Chrome features that phone home
@@ -61,6 +99,9 @@ function createWindow() {
     }
   });
 
+  // Remove the default menu bar entirely
+  Menu.setApplicationMenu(null);
+
   // Load the browser UI shell
   mainWindow.loadFile('browser.html');
 
@@ -81,16 +122,20 @@ function createWindow() {
 
   // Position the BrowserView below the toolbar (48px), or fullscreen
   let isFullscreen = false;
+  const TOOLBAR_HEIGHT = 48;
   const updateBounds = () => {
     const bounds = mainWindow.getContentBounds();
     if (isFullscreen) {
       browserView.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
     } else {
-      browserView.setBounds({ x: 0, y: 48, width: bounds.width, height: bounds.height - 48 });
+      browserView.setBounds({ x: 0, y: TOOLBAR_HEIGHT, width: bounds.width, height: bounds.height - TOOLBAR_HEIGHT });
     }
+    browserView.setAutoResize({ width: true, height: true, horizontal: false, vertical: false });
   };
   updateBounds();
   mainWindow.on('resize', updateBounds);
+  // Ensure bounds are correct after window fully renders
+  mainWindow.webContents.on('did-finish-load', updateBounds);
 
   // Handle HTML5 fullscreen (e.g. YouTube video player)
   browserView.webContents.on('enter-html-full-screen', () => {
@@ -107,21 +152,24 @@ function createWindow() {
   // --- PRIVACY: Block trackers & ads at network level ---
   const ses = browserView.webContents.session;
 
-  // Override user agent at session level to fully match real Chrome
+  // Override user agent at session level — use a current, realistic Chrome UA
   const spoofedUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
   ses.setUserAgent(spoofedUA);
 
-  ses.webRequest.onBeforeRequest((details, callback) => {
-    const url = details.url.toLowerCase();
-    const blocked = trackerList.some(tracker => url.includes(tracker));
-    if (blocked) {
-      blockedCount++;
-      mainWindow.webContents.send('blocked-update', blockedCount);
-      callback({ cancel: true });
-    } else {
-      callback({});
-    }
-  });
+  // Tracker blocking
+  if (settings.trackerBlocking) {
+    ses.webRequest.onBeforeRequest((details, callback) => {
+      const url = details.url.toLowerCase();
+      const blocked = trackerList.some(tracker => url.includes(tracker));
+      if (blocked) {
+        blockedCount++;
+        mainWindow.webContents.send('blocked-update', blockedCount);
+        callback({ cancel: true });
+      } else {
+        callback({});
+      }
+    });
+  }
 
   // Strip tracking cookies from third-party responses only
   // First-party cookies are allowed so users can log into sites
@@ -134,8 +182,8 @@ function createWindow() {
   ses.webRequest.onBeforeSendHeaders((details, callback) => {
     const headers = details.requestHeaders;
 
-    // Remove or genericize referrer
-    if (headers['Referer']) {
+    // Referrer stripping
+    if (settings.referrerStripping && headers['Referer']) {
       try {
         const refUrl = new URL(headers['Referer']);
         const reqUrl = new URL(details.url);
@@ -148,8 +196,21 @@ function createWindow() {
       }
     }
 
-    // Remove DNT (it actually helps fingerprinting)
-    delete headers['DNT'];
+    // DNT header — send if user opted in, otherwise remove (sending DNT=1 actually helps fingerprinting when few do it)
+    if (settings.doNotTrack) {
+      headers['DNT'] = '1';
+      headers['Sec-GPC'] = '1'; // Global Privacy Control
+    } else {
+      delete headers['DNT'];
+    }
+
+    // Set Accept-Language to a common value to reduce fingerprinting
+    headers['Accept-Language'] = 'en-US,en;q=0.9';
+
+    // Set Sec-CH-UA headers to match spoofed UA
+    headers['Sec-CH-UA'] = '"Chromium";v="131", "Not_A Brand";v="24"';
+    headers['Sec-CH-UA-Mobile'] = '?0';
+    headers['Sec-CH-UA-Platform'] = '"Windows"';
 
     callback({ requestHeaders: headers });
   });
@@ -191,6 +252,113 @@ function createWindow() {
     return { action: 'deny' };
   });
 
+  // --- Right-click Context Menu ---
+  browserView.webContents.on('context-menu', (event, params) => {
+    const menuTemplate = [];
+
+    // Navigation
+    if (browserView.webContents.canGoBack()) {
+      menuTemplate.push({ label: 'Back', click: () => browserView.webContents.goBack() });
+    }
+    if (browserView.webContents.canGoForward()) {
+      menuTemplate.push({ label: 'Forward', click: () => browserView.webContents.goForward() });
+    }
+    menuTemplate.push({ label: 'Reload', click: () => browserView.webContents.reload() });
+    menuTemplate.push({ type: 'separator' });
+
+    // Text selection actions
+    if (params.selectionText) {
+      menuTemplate.push({
+        label: 'Copy',
+        click: () => browserView.webContents.copy()
+      });
+      menuTemplate.push({
+        label: `Search Wizard for "${params.selectionText.slice(0, 30)}${params.selectionText.length > 30 ? '...' : ''}"`,
+        click: () => {
+          const searchFileUrl = `file://${path.join(__dirname, 'search.html').replace(/\\/g, '/')}`;
+          browserView.webContents.loadURL(searchFileUrl).then(() => {
+            browserView.webContents.executeJavaScript(
+              `document.getElementById('searchbar').value = ${JSON.stringify(params.selectionText)}; search(${JSON.stringify(params.selectionText)});`
+            );
+          });
+        }
+      });
+      menuTemplate.push({ type: 'separator' });
+    }
+
+    // Editable field actions
+    if (params.isEditable) {
+      menuTemplate.push({ label: 'Cut', click: () => browserView.webContents.cut() });
+      menuTemplate.push({ label: 'Copy', click: () => browserView.webContents.copy() });
+      menuTemplate.push({ label: 'Paste', click: () => browserView.webContents.paste() });
+      menuTemplate.push({ label: 'Select All', click: () => browserView.webContents.selectAll() });
+      menuTemplate.push({ type: 'separator' });
+    }
+
+    // Link actions
+    if (params.linkURL) {
+      menuTemplate.push({
+        label: 'Copy Link Address',
+        click: () => clipboard.writeText(params.linkURL)
+      });
+      menuTemplate.push({
+        label: 'Bookmark This Link',
+        click: () => {
+          const title = params.linkText || params.linkURL;
+          addBookmark(title, params.linkURL);
+          mainWindow.webContents.send('bookmark-added', { title, url: params.linkURL });
+        }
+      });
+      menuTemplate.push({ type: 'separator' });
+    }
+
+    // Image actions
+    if (params.hasImageContents) {
+      menuTemplate.push({
+        label: 'Copy Image',
+        click: () => browserView.webContents.copyImageAt(params.x, params.y)
+      });
+      menuTemplate.push({
+        label: 'Copy Image Address',
+        click: () => clipboard.writeText(params.srcURL)
+      });
+      menuTemplate.push({ type: 'separator' });
+    }
+
+    // Bookmark current page
+    menuTemplate.push({
+      label: 'Bookmark This Page',
+      click: () => {
+        const title = params.titleText || browserView.webContents.getTitle();
+        const url = browserView.webContents.getURL();
+        addBookmark(title, url);
+        mainWindow.webContents.send('bookmark-added', { title, url });
+      }
+    });
+
+    menuTemplate.push({ type: 'separator' });
+
+    // View source
+    menuTemplate.push({
+      label: 'View Page Source',
+      click: () => {
+        const url = browserView.webContents.getURL();
+        browserView.webContents.loadURL('view-source:' + url);
+      }
+    });
+
+    // Inspect Element
+    menuTemplate.push({
+      label: 'Inspect Element',
+      click: () => {
+        browserView.webContents.inspectElement(params.x, params.y);
+      }
+    });
+
+    const contextMenu = Menu.buildFromTemplate(menuTemplate);
+    contextMenu.popup({ window: mainWindow });
+  });
+
   // --- Download Manager ---
   ses.on('will-download', (event, item) => {
     const id = Date.now();
@@ -225,13 +393,28 @@ function createWindow() {
   browserView.webContents.loadFile('search.html');
 
   // Clear all browsing data on window close
-  mainWindow.on('close', async () => {
-    try {
-      await ses.clearStorageData();
-      await ses.clearCache();
-      await ses.clearAuthCache();
-    } catch {}
-  });
+  if (settings.clearOnExit) {
+    mainWindow.on('close', async () => {
+      try {
+        await ses.clearStorageData();
+        await ses.clearCache();
+        await ses.clearAuthCache();
+      } catch {}
+    });
+  }
+}
+
+// --- Bookmarks ---
+function addBookmark(title, url) {
+  // Avoid duplicates
+  if (bookmarks.some(b => b.url === url)) return;
+  bookmarks.push({ title, url, date: Date.now() });
+  saveJSON(bookmarksPath, bookmarks);
+}
+
+function removeBookmark(url) {
+  bookmarks = bookmarks.filter(b => b.url !== url);
+  saveJSON(bookmarksPath, bookmarks);
 }
 
 // Check if an .onion version of the current site exists
@@ -446,6 +629,84 @@ ipcMain.on('show-download', (_, filePath) => {
 // Download manager: get all downloads
 ipcMain.handle('get-downloads', () => downloads);
 
+// --- Settings IPC ---
+ipcMain.handle('get-settings', () => settings);
+
+ipcMain.handle('save-settings', (_, newSettings) => {
+  settings = { ...settings, ...newSettings };
+  saveJSON(settingsPath, settings);
+  return true;
+});
+
+ipcMain.handle('get-speed-dial', () => settings.speedDial);
+
+ipcMain.handle('save-speed-dial', (_, speedDial) => {
+  settings.speedDial = speedDial;
+  saveJSON(settingsPath, settings);
+  return true;
+});
+
+// --- Bookmarks IPC ---
+ipcMain.handle('get-bookmarks', () => bookmarks);
+
+ipcMain.handle('add-bookmark', (_, { title, url }) => {
+  addBookmark(title, url);
+  return bookmarks;
+});
+
+ipcMain.handle('remove-bookmark', (_, url) => {
+  removeBookmark(url);
+  return bookmarks;
+});
+
+ipcMain.on('open-bookmark', (_, url) => {
+  if (browserView) {
+    if (/^https?:\/\//i.test(url)) {
+      browserView.webContents.loadURL(url);
+    } else {
+      browserView.webContents.loadURL('https://' + url);
+    }
+  }
+});
+
+// --- PIN Lock IPC ---
+ipcMain.handle('get-pin-state', () => ({
+  enabled: pinData.enabled,
+  asked: pinData.asked
+}));
+
+ipcMain.handle('set-pin', (_, { pin, enabled }) => {
+  pinData.pin = pin;
+  pinData.enabled = enabled;
+  pinData.asked = true;
+  saveJSON(pinPath, pinData);
+  return true;
+});
+
+ipcMain.handle('verify-pin', (_, pin) => {
+  return pinData.pin === pin;
+});
+
+ipcMain.handle('skip-pin-setup', () => {
+  pinData.asked = true;
+  saveJSON(pinPath, pinData);
+  return true;
+});
+
+// --- Settings page navigation ---
+ipcMain.on('open-settings', () => {
+  if (browserView) {
+    browserView.webContents.loadFile('settings.html');
+  }
+});
+
+// --- IRC page navigation ---
+ipcMain.on('open-irc', () => {
+  if (browserView) {
+    browserView.webContents.loadFile('irc.html');
+  }
+});
+
 // --- Auto-updater (electron-updater) ---
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
@@ -499,11 +760,13 @@ ipcMain.on('install-update', () => {
 
 // Privacy: clear data when quitting
 app.on('before-quit', async () => {
-  try {
-    const ses = session.defaultSession;
-    await ses.clearStorageData();
-    await ses.clearCache();
-  } catch {}
+  if (settings.clearOnExit) {
+    try {
+      const ses = session.defaultSession;
+      await ses.clearStorageData();
+      await ses.clearCache();
+    } catch {}
+  }
 });
 
 app.whenReady().then(() => {

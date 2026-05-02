@@ -1,6 +1,6 @@
 {
   "name": "wizard-browser",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Libre, privacy-focused browser powered by Wizard Search",
   "author": {
     "name": "NaniIsNano",
@@ -57,7 +57,10 @@
       "preload-search.js",
       "browser.html",
       "search.html",
-      "tracker-list.json"
+      "settings.html",
+      "irc.html",
+      "tracker-list.json",
+      "backgrounds/**/*"
     ]
   }
 }
