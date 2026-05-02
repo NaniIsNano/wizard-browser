@@ -9,8 +9,11 @@
   [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-a855f7?style=flat-square)](#install)
   [![Built with Electron](https://img.shields.io/badge/Built%20with-Electron-47848f?style=flat-square&logo=electron)](https://www.electronjs.org/)
   [![Free Software](https://img.shields.io/badge/Free%20Software-Free%20as%20in%20Freedom-22c55e?style=flat-square)](#license)
+  [![Website](https://img.shields.io/badge/Website-wizardbrowser.netlify.app-7c3aed?style=flat-square&logo=netlify)](https://wizardbrowser.netlify.app/)
 
   *No tracking. No cookies. No logs.*
+
+  **[🌐 wizardbrowser.netlify.app](https://wizardbrowser.netlify.app/)**
 
   <br/>
 
