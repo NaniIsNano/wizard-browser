@@ -108,5 +108,4 @@ Click **"More info"** → **"Run anyway"** to proceed. The full source code is o
 
 ## License
 
-**GPL-3.0** — Free software, free as in freedom.  
-See [`LICENSE`](./LICENSE) for the full text.
+**GPL-3.0** — Free software, free as in freedom.
