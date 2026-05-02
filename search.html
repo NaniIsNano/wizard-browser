@@ -2369,6 +2369,22 @@ function offlineListCachedPages() {
   };
 }
 initOfflineDB();
+
+// Allow the shell to trigger a search via location hash (#q=...)
+function runHashSearch() {
+  const m = (location.hash || '').match(/^#q=(.+)$/);
+  if (!m) return;
+  try {
+    const term = decodeURIComponent(m[1].replace(/\+/g, ' '));
+    if (term) {
+      const sb = document.getElementById('searchbar');
+      if (sb) sb.value = term;
+      startSearch(term);
+    }
+  } catch {}
+}
+window.addEventListener('hashchange', runHashSearch);
+runHashSearch();
 </script>
 </body>
 </html>

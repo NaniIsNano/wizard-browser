@@ -5,15 +5,23 @@
 <title>Wizard Browser</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
 body {
   font-family: 'Inter', 'Segoe UI', sans-serif;
-  background: #0d0d0d;
+  background: #0a0a0a;
   color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  height: 48px;
 }
+
+/* Toolbar — fixed 48px row at the top, always visible */
 #toolbar {
+  flex: 0 0 48px;
   display: flex;
   align-items: center;
   height: 48px;
@@ -21,62 +29,87 @@ body {
   padding: 0 10px;
   gap: 6px;
   border-bottom: 1px solid #1e1e1e;
-  -webkit-app-region: drag;
+  position: relative;
+  z-index: 10;
 }
-#toolbar > * { -webkit-app-region: no-drag; }
+
 .nav-btn {
   width: 30px;
   height: 30px;
   border: none;
   background: transparent;
-  color: #888;
-  font-size: 14px;
+  color: #aaa;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 .nav-btn:hover { background: #1a1a1a; color: #fff; }
 .nav-btn:active { background: #252525; }
+.nav-btn:disabled { opacity: 0.35; cursor: default; }
+.nav-btn:disabled:hover { background: transparent; color: #aaa; }
 .nav-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
 #url-bar {
   flex: 1;
   height: 32px;
-  border: 1px solid #252525;
+  border: 1px solid #2a2a2a;
   background: #141414;
-  color: #ccc;
+  color: #ddd;
   padding: 0 14px;
   font-size: 13px;
   font-family: 'Inter', sans-serif;
   border-radius: 8px;
   outline: none;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background 0.2s;
 }
 #url-bar:focus { border-color: #7c3aed; background: #1a1a1a; color: #fff; }
 #url-bar::placeholder { color: #555; }
+
 #shield {
   display: flex;
   align-items: center;
   gap: 5px;
   background: #141414;
-  border: 1px solid #252525;
+  border: 1px solid #2a2a2a;
   border-radius: 8px;
   padding: 0 10px;
   height: 32px;
   font-size: 12px;
   font-weight: 500;
   color: #22c55e;
-  cursor: default;
   user-select: none;
 }
 #shield svg { width: 14px; height: 14px; fill: #22c55e; }
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  border: 1px solid #2a2a2a;
+  background: #141414;
+  color: #aaa;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+.toolbar-btn:hover { background: #1a1a1a; color: #c084fc; border-color: #7c3aed; }
+.toolbar-btn.active { background: #1a0a2e; color: #c084fc; border-color: #7c3aed; }
+.toolbar-btn svg { width: 14px; height: 14px; fill: currentColor; }
+
 #clear-btn {
   height: 32px;
-  border: 1px solid #252525;
+  border: 1px solid #2a2a2a;
   background: #141414;
-  color: #888;
+  color: #aaa;
   padding: 0 12px;
   font-size: 11px;
   font-weight: 500;
@@ -87,31 +120,13 @@ body {
   letter-spacing: 0.3px;
 }
 #clear-btn:hover { background: #1a1a1a; color: #ef4444; border-color: #ef4444; }
-.toolbar-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 32px;
-  border: 1px solid #252525;
-  background: #141414;
-  color: #888;
-  padding: 0 10px;
-  font-size: 11px;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.15s;
-  letter-spacing: 0.3px;
-}
-.toolbar-btn:hover { background: #1a1a1a; color: #a855f7; border-color: #a855f7; }
-.toolbar-btn.active { background: #1a0a2e; color: #a855f7; border-color: #a855f7; }
-.toolbar-btn.active:hover { background: #250e3f; }
+
+/* Loading bar */
 #loading-bar {
   position: absolute;
-  top: 0;
+  bottom: -1px;
   left: 0;
-  height: 3px;
+  height: 2px;
   background: linear-gradient(90deg, #7c3aed, #a855f7, #c084fc);
   width: 0%;
   transition: width 0.4s ease;
@@ -119,24 +134,36 @@ body {
   box-shadow: 0 0 8px rgba(124, 58, 237, 0.6);
 }
 
-/* Onion banner */
-#onion-banner {
-  display: none;
-  position: fixed;
-  top: 48px;
+/* Main content holds the webview */
+#content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0a0a0a;
+}
+
+webview {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background: #0a0a0a;
+}
+
+/* Banners (onion / update) */
+.banner {
+  position: absolute;
+  top: 0;
   left: 0;
   right: 0;
-  background: #1a0a2e;
-  border-bottom: 1px solid #7c3aed;
   padding: 8px 16px;
   z-index: 100;
   font-size: 13px;
-  color: #d4b5ff;
+  display: none;
   align-items: center;
   gap: 10px;
 }
-#onion-banner.show { display: flex; }
-#onion-banner button {
+.banner.show { display: flex; }
+.banner button {
   background: #7c3aed;
   color: #fff;
   border: none;
@@ -147,168 +174,57 @@ body {
   cursor: pointer;
   font-weight: 500;
 }
-#onion-banner button:hover { background: #9333ea; }
-#onion-banner .dismiss {
+.banner button:hover { background: #9333ea; }
+.banner .dismiss {
   background: transparent;
   color: #888;
   margin-left: auto;
   font-size: 16px;
   padding: 2px 6px;
 }
-#onion-banner .dismiss:hover { color: #fff; }
+.banner .dismiss:hover { color: #fff; }
 
-/* Download manager panel */
-#download-panel {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  right: 16px;
-  width: 360px;
-  max-height: 300px;
-  background: #141414;
-  border: 1px solid #252525;
-  border-bottom: none;
-  border-radius: 10px 10px 0 0;
-  z-index: 1000;
-  overflow: hidden;
-  flex-direction: column;
+#onion-banner {
+  background: #1a0a2e;
+  border-bottom: 1px solid #7c3aed;
+  color: #d4b5ff;
 }
-#download-panel.show { display: flex; }
-#dl-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid #252525;
-  font-size: 13px;
-  font-weight: 600;
-  color: #e0e0e0;
-}
-#dl-header button {
-  background: transparent;
-  border: none;
-  color: #888;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-#dl-header button:hover { color: #fff; background: #252525; }
-#dl-list {
-  overflow-y: auto;
-  flex: 1;
-  max-height: 250px;
-}
-.dl-item {
-  padding: 10px 14px;
-  border-bottom: 1px solid #1e1e1e;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.dl-item:last-child { border-bottom: none; }
-.dl-filename {
-  font-size: 12px;
-  font-weight: 500;
-  color: #e0e0e0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.dl-progress-bar {
-  height: 4px;
-  background: #252525;
-  border-radius: 2px;
-  overflow: hidden;
-}
-.dl-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #7c3aed, #a855f7);
-  border-radius: 2px;
-  transition: width 0.3s;
-}
-.dl-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: #888;
-}
-.dl-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 2px;
-}
-.dl-actions button {
-  background: transparent;
-  border: none;
-  color: #7c3aed;
-  cursor: pointer;
-  font-size: 11px;
-  font-family: 'Inter', sans-serif;
-  padding: 0;
-}
-.dl-actions button:hover { color: #a855f7; text-decoration: underline; }
-
-/* Update banner */
 #update-banner {
-  display: none;
-  position: fixed;
-  top: 48px;
-  left: 0;
-  right: 0;
   background: #0a2e1a;
   border-bottom: 1px solid #22c55e;
-  padding: 8px 16px;
-  z-index: 99;
-  font-size: 13px;
   color: #b5ffd4;
-  align-items: center;
-  gap: 10px;
+  top: 36px;
 }
-#update-banner.show { display: flex; }
-#update-banner a {
-  color: #22c55e;
-  text-decoration: underline;
-  cursor: pointer;
-}
-#update-banner .dismiss {
-  background: transparent;
-  border: none;
-  color: #888;
-  margin-left: auto;
-  font-size: 16px;
-  padding: 2px 6px;
-  cursor: pointer;
-}
-#update-banner .dismiss:hover { color: #fff; }
+#update-banner button:not(.dismiss) { background: #22c55e; }
 
 /* Bookmarks panel */
 #bookmarks-panel {
   display: none;
-  position: fixed;
-  top: 48px;
+  position: absolute;
+  top: 8px;
   right: 16px;
   width: 360px;
   max-height: 400px;
   background: #141414;
-  border: 1px solid #252525;
-  border-radius: 0 0 10px 10px;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
   z-index: 1000;
   overflow: hidden;
   flex-direction: column;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
 }
 #bookmarks-panel.show { display: flex; }
-#bm-header {
+#bm-header, #dl-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid #252525;
+  border-bottom: 1px solid #2a2a2a;
   font-size: 13px;
   font-weight: 600;
   color: #e0e0e0;
 }
-#bm-header button {
+#bm-header button, #dl-header button {
   background: transparent;
   border: none;
   color: #888;
@@ -317,12 +233,8 @@ body {
   padding: 2px 6px;
   border-radius: 4px;
 }
-#bm-header button:hover { color: #fff; background: #252525; }
-#bm-list {
-  overflow-y: auto;
-  flex: 1;
-  max-height: 350px;
-}
+#bm-header button:hover, #dl-header button:hover { color: #fff; background: #252525; }
+#bm-list { overflow-y: auto; flex: 1; max-height: 350px; }
 .bm-item {
   padding: 8px 14px;
   border-bottom: 1px solid #1e1e1e;
@@ -333,7 +245,6 @@ body {
   transition: background 0.15s;
 }
 .bm-item:hover { background: #1a1a1a; }
-.bm-item:last-child { border-bottom: none; }
 .bm-title {
   flex: 1;
   font-size: 12px;
@@ -349,7 +260,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 140px;
+  max-width: 160px;
 }
 .bm-remove {
   background: transparent;
@@ -359,17 +270,75 @@ body {
   font-size: 14px;
   padding: 2px 4px;
   border-radius: 4px;
-  flex-shrink: 0;
 }
 .bm-remove:hover { color: #ef4444; background: #1e1e1e; }
-.bm-empty {
-  padding: 20px;
-  text-align: center;
-  color: #555;
-  font-size: 12px;
-}
+.bm-empty { padding: 20px; text-align: center; color: #555; font-size: 12px; }
 
-/* PIN lock overlay */
+/* Downloads panel */
+#download-panel {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  right: 16px;
+  width: 360px;
+  max-height: 300px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  z-index: 1000;
+  overflow: hidden;
+  flex-direction: column;
+  box-shadow: 0 -8px 30px rgba(0,0,0,0.5);
+}
+#download-panel.show { display: flex; }
+#dl-list { overflow-y: auto; flex: 1; max-height: 250px; }
+.dl-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dl-filename {
+  font-size: 12px;
+  font-weight: 500;
+  color: #e0e0e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dl-progress-bar {
+  height: 4px;
+  background: #2a2a2a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.dl-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.dl-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #888;
+}
+.dl-actions { display: flex; gap: 8px; margin-top: 2px; }
+.dl-actions button {
+  background: transparent;
+  border: none;
+  color: #c084fc;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'Inter', sans-serif;
+  padding: 0;
+}
+.dl-actions button:hover { color: #d8b4fe; text-decoration: underline; }
+
+/* PIN overlay */
 #pin-overlay {
   display: none;
   position: fixed;
@@ -382,17 +351,8 @@ body {
   gap: 16px;
 }
 #pin-overlay.show { display: flex; }
-#pin-overlay h2 {
-  font-size: 1.4em;
-  font-weight: 600;
-  color: #e0e0e0;
-}
-#pin-overlay p {
-  color: #888;
-  font-size: 13px;
-  max-width: 350px;
-  text-align: center;
-}
+#pin-overlay h2 { font-size: 1.4em; font-weight: 600; color: #e0e0e0; }
+#pin-overlay p { color: #888; font-size: 13px; max-width: 350px; text-align: center; }
 #pin-input {
   width: 200px;
   height: 40px;
@@ -400,7 +360,7 @@ body {
   font-size: 24px;
   letter-spacing: 8px;
   background: #141414;
-  border: 1px solid #252525;
+  border: 1px solid #2a2a2a;
   color: #e0e0e0;
   border-radius: 8px;
   outline: none;
@@ -417,7 +377,6 @@ body {
   font-weight: 500;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
-  transition: background 0.15s;
 }
 .pin-btn:hover { background: #9333ea; }
 .pin-skip {
@@ -430,15 +389,12 @@ body {
   padding: 4px 8px;
 }
 .pin-skip:hover { color: #888; }
-#pin-error {
-  color: #ef4444;
-  font-size: 12px;
-  min-height: 16px;
-}
+#pin-error { color: #ef4444; font-size: 12px; min-height: 16px; }
 </style>
 </head>
 <body>
-<!-- PIN lock overlay -->
+
+<!-- PIN lock overlay (above everything) -->
 <div id="pin-overlay">
   <h2 id="pin-title">Set Up PIN Lock</h2>
   <p id="pin-desc">Protect your browser with a PIN code. You'll need to enter it each time you open Wizard Browser.</p>
@@ -448,11 +404,12 @@ body {
   <button class="pin-skip" id="pin-skip">Skip</button>
 </div>
 
+<!-- Toolbar (always 48px tall, always visible) -->
 <div id="toolbar">
-  <button class="nav-btn" id="btn-back" title="Back">
+  <button class="nav-btn" id="btn-back" title="Back" disabled>
     <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
   </button>
-  <button class="nav-btn" id="btn-forward" title="Forward">
+  <button class="nav-btn" id="btn-forward" title="Forward" disabled>
     <svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>
   </button>
   <button class="nav-btn" id="btn-reload" title="Reload">
@@ -461,75 +418,93 @@ body {
   <button class="nav-btn" id="btn-home" title="Home">
     <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
   </button>
-  <input type="text" id="url-bar" placeholder="Search or enter URL..." spellcheck="false" />
+  <input type="text" id="url-bar" placeholder="Search the web or enter a URL..." spellcheck="false" />
   <div id="shield" title="Trackers blocked this session">
     <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
     <span id="blocked-count">0</span>
   </div>
-  <button class="toolbar-btn" id="bookmark-btn" title="Bookmark this page">
-    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" fill="currentColor"/></svg>
+  <button class="toolbar-btn" id="bookmark-btn" title="Bookmark this page (Ctrl+D)">
+    <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
   </button>
-  <button class="toolbar-btn" id="bookmarks-toggle" title="Bookmarks">
-    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z" fill="currentColor"/></svg>
+  <button class="toolbar-btn" id="bookmarks-toggle" title="Bookmarks (Ctrl+B)">
+    <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
   </button>
-  <button class="toolbar-btn" id="tor-btn" title="Connect via Tor (SOCKS5 proxy on 127.0.0.1:9050)">
-    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/></svg>
+  <button class="toolbar-btn" id="tor-btn" title="Connect via Tor (SOCKS5 on 127.0.0.1:9050)">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
     <span>TOR</span>
   </button>
   <button class="toolbar-btn" id="irc-btn" title="IRC #wizard-support">
-    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" fill="currentColor"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
     <span>IRC</span>
   </button>
-  <button class="toolbar-btn" id="dl-btn" title="Downloads">
-    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/></svg>
+  <button class="toolbar-btn" id="dl-btn" title="Downloads (Ctrl+J)">
+    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
   </button>
   <button class="toolbar-btn" id="settings-btn" title="Settings">
-    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
   </button>
   <button id="clear-btn" title="Clear all browsing data">CLEAR</button>
   <div id="loading-bar"></div>
 </div>
 
-<!-- Onion site available banner -->
-<div id="onion-banner">
-  <svg viewBox="0 0 24 24" width="16" height="16" style="fill: #a855f7; flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-  <span id="onion-text">.onion version available</span>
-  <button id="onion-go">Switch to .onion</button>
-  <button class="dismiss" id="onion-dismiss">&times;</button>
-</div>
-
-<!-- Update available banner -->
-<div id="update-banner">
-  <span id="update-text">A new version is available!</span>
-  <button id="update-install" style="background:#22c55e;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;font-weight:500;">Restart & Update</button>
-  <button class="dismiss" id="update-dismiss">&times;</button>
-</div>
-
-<!-- Download manager -->
-<div id="download-panel">
-  <div id="dl-header">
-    <span>Downloads</span>
-    <button id="dl-close">&times;</button>
+<!-- The browser content -->
+<div id="content">
+  <!-- Onion banner -->
+  <div id="onion-banner" class="banner">
+    <svg viewBox="0 0 24 24" width="16" height="16" style="fill:#a855f7;flex-shrink:0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+    <span id="onion-text">.onion version available</span>
+    <button id="onion-go">Switch to .onion</button>
+    <button class="dismiss" id="onion-dismiss">&times;</button>
   </div>
-  <div id="dl-list"></div>
-</div>
 
-<!-- Bookmarks panel -->
-<div id="bookmarks-panel">
-  <div id="bm-header">
-    <span>Bookmarks</span>
-    <button id="bm-close">&times;</button>
+  <!-- Update banner -->
+  <div id="update-banner" class="banner">
+    <span id="update-text">A new version is available!</span>
+    <button id="update-install">Restart &amp; Update</button>
+    <button class="dismiss" id="update-dismiss">&times;</button>
   </div>
-  <div id="bm-list"></div>
+
+  <!-- The webview -->
+  <webview id="wv" src="search.html" partition="persist:wizard" allowpopups></webview>
+
+  <!-- Bookmarks panel -->
+  <div id="bookmarks-panel">
+    <div id="bm-header">
+      <span>Bookmarks</span>
+      <button id="bm-close">&times;</button>
+    </div>
+    <div id="bm-list"></div>
+  </div>
+
+  <!-- Downloads panel -->
+  <div id="download-panel">
+    <div id="dl-header">
+      <span>Downloads</span>
+      <button id="dl-close">&times;</button>
+    </div>
+    <div id="dl-list"></div>
+  </div>
 </div>
 
 <script>
+const wv = document.getElementById('wv');
 const urlBar = document.getElementById('url-bar');
 const blockedSpan = document.getElementById('blocked-count');
 const loadingBar = document.getElementById('loading-bar');
+const btnBack = document.getElementById('btn-back');
+const btnForward = document.getElementById('btn-forward');
+
+// Compute file:// URLs for our local pages
+const HOME_URL     = new URL('search.html',   location.href).href;
+const SETTINGS_URL = new URL('settings.html', location.href).href;
+const IRC_URL      = new URL('irc.html',      location.href).href;
+
+let currentUrl = '';
+let currentTitle = '';
 
 // --- PIN Lock ---
 (async () => {
+  if (!window.wizardBrowser) return;
   const pinState = await window.wizardBrowser.getPinState();
   const overlay = document.getElementById('pin-overlay');
   const pinInput = document.getElementById('pin-input');
@@ -540,32 +515,23 @@ const loadingBar = document.getElementById('loading-bar');
   const pinError = document.getElementById('pin-error');
 
   if (pinState.enabled) {
-    // PIN is set — require verification
     overlay.classList.add('show');
     pinTitle.textContent = 'Enter PIN';
     pinDesc.textContent = 'Enter your PIN to unlock Wizard Browser.';
     pinSubmit.textContent = 'Unlock';
     pinSkip.style.display = 'none';
     pinInput.focus();
-
     pinSubmit.onclick = async () => {
       const pin = pinInput.value;
       if (pin.length < 4) { pinError.textContent = 'PIN must be at least 4 digits'; return; }
       const ok = await window.wizardBrowser.verifyPin(pin);
-      if (ok) {
-        overlay.classList.remove('show');
-      } else {
-        pinError.textContent = 'Incorrect PIN';
-        pinInput.value = '';
-        pinInput.focus();
-      }
+      if (ok) overlay.classList.remove('show');
+      else { pinError.textContent = 'Incorrect PIN'; pinInput.value = ''; pinInput.focus(); }
     };
     pinInput.onkeydown = (e) => { if (e.key === 'Enter') pinSubmit.click(); };
   } else if (!pinState.asked) {
-    // First launch — ask if they want to set a PIN
     overlay.classList.add('show');
     pinInput.focus();
-
     pinSubmit.onclick = async () => {
       const pin = pinInput.value;
       if (pin.length < 4) { pinError.textContent = 'PIN must be at least 4 digits'; return; }
@@ -580,49 +546,57 @@ const loadingBar = document.getElementById('loading-bar');
   }
 })();
 
-urlBar.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    const val = urlBar.value.trim();
-    if (val) window.wizardBrowser.navigate(val);
-    urlBar.blur();
+// --- Navigation helpers ---
+function navigate(input) {
+  const target = (input || '').trim();
+  if (!target) return;
+  if (/^https?:\/\//i.test(target)) {
+    wv.loadURL(target);
+  } else if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(target) && !target.includes(' ')) {
+    wv.loadURL('https://' + target);
+  } else {
+    wv.loadURL(HOME_URL + '#q=' + encodeURIComponent(target));
   }
+}
+
+urlBar.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); navigate(urlBar.value); urlBar.blur(); }
 });
 urlBar.addEventListener('focus', () => urlBar.select());
 
-document.getElementById('btn-back').addEventListener('click', () => window.wizardBrowser.goBack());
-document.getElementById('btn-forward').addEventListener('click', () => window.wizardBrowser.goForward());
-document.getElementById('btn-reload').addEventListener('click', () => window.wizardBrowser.reload());
-document.getElementById('btn-home').addEventListener('click', () => window.wizardBrowser.goHome());
+btnBack.addEventListener('click',    () => { try { if (wv.canGoBack())    wv.goBack();    } catch {} });
+btnForward.addEventListener('click', () => { try { if (wv.canGoForward()) wv.goForward(); } catch {} });
+document.getElementById('btn-reload').addEventListener('click', () => { try { wv.reload(); } catch {} });
+document.getElementById('btn-home').addEventListener('click',   () => wv.loadURL(HOME_URL));
+document.getElementById('settings-btn').addEventListener('click', () => wv.loadURL(SETTINGS_URL));
+document.getElementById('irc-btn').addEventListener('click',      () => wv.loadURL(IRC_URL));
+
 document.getElementById('clear-btn').addEventListener('click', async () => {
   await window.wizardBrowser.clearAllData();
   blockedSpan.textContent = '0';
 });
 
-// Settings button
-document.getElementById('settings-btn').addEventListener('click', () => {
-  window.wizardBrowser.openSettings();
+// --- Tor toggle ---
+const torBtn = document.getElementById('tor-btn');
+let torActive = false;
+torBtn.addEventListener('click', async () => {
+  torActive = !torActive;
+  const ok = await window.wizardBrowser.toggleTor(torActive);
+  if (ok) torBtn.classList.toggle('active', torActive);
+  else { torActive = false; torBtn.classList.remove('active'); }
 });
 
-// IRC button
-document.getElementById('irc-btn').addEventListener('click', () => {
-  window.wizardBrowser.openIRC();
-});
+// --- Bookmarks ---
+const bmToggle = document.getElementById('bookmarks-toggle');
+const bmPanel = document.getElementById('bookmarks-panel');
+const bmList = document.getElementById('bm-list');
+const bmClose = document.getElementById('bm-close');
 
-// --- Bookmark this page ---
-let currentUrl = '';
-let currentTitle = '';
 document.getElementById('bookmark-btn').addEventListener('click', async () => {
   if (!currentUrl || currentUrl.startsWith('file://')) return;
   await window.wizardBrowser.addBookmark({ title: currentTitle || currentUrl, url: currentUrl });
   renderBookmarks();
 });
-
-// --- Bookmarks panel ---
-const bmToggle = document.getElementById('bookmarks-toggle');
-const bmPanel = document.getElementById('bookmarks-panel');
-const bmList = document.getElementById('bm-list');
-const bmClose = document.getElementById('bm-close');
 
 bmToggle.addEventListener('click', () => {
   bmPanel.classList.toggle('show');
@@ -630,10 +604,12 @@ bmToggle.addEventListener('click', () => {
 });
 bmClose.addEventListener('click', () => bmPanel.classList.remove('show'));
 
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
 async function renderBookmarks() {
   const bms = await window.wizardBrowser.getBookmarks();
   bmList.innerHTML = '';
-  if (bms.length === 0) {
+  if (!bms.length) {
     bmList.innerHTML = '<div class="bm-empty">No bookmarks yet. Click the bookmark icon to add pages.</div>';
     return;
   }
@@ -648,7 +624,7 @@ async function renderBookmarks() {
       <button class="bm-remove" title="Remove">&times;</button>
     `;
     div.querySelector('.bm-title').addEventListener('click', () => {
-      window.wizardBrowser.openBookmark(bm.url);
+      wv.loadURL(bm.url);
       bmPanel.classList.remove('show');
     });
     div.querySelector('.bm-remove').addEventListener('click', async (e) => {
@@ -660,48 +636,21 @@ async function renderBookmarks() {
   });
 }
 
-function escapeHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str || '';
-  return d.innerHTML;
-}
+window.wizardBrowser.onBookmarkAdded(() => renderBookmarks());
 
-window.wizardBrowser.onBookmarkAdded(() => {
-  renderBookmarks();
-});
-
-// Tor toggle
-const torBtn = document.getElementById('tor-btn');
-let torActive = false;
-torBtn.addEventListener('click', async () => {
-  torActive = !torActive;
-  const result = await window.wizardBrowser.toggleTor(torActive);
-  if (result) {
-    torBtn.classList.toggle('active', torActive);
-  } else {
-    torActive = false;
-    torBtn.classList.remove('active');
-  }
-});
-
-// --- Download Manager ---
+// --- Downloads ---
 const dlBtn = document.getElementById('dl-btn');
 const dlPanel = document.getElementById('download-panel');
 const dlList = document.getElementById('dl-list');
 const dlClose = document.getElementById('dl-close');
-let dlItems = {};
 
-dlBtn.addEventListener('click', () => {
-  dlPanel.classList.toggle('show');
-});
-dlClose.addEventListener('click', () => {
-  dlPanel.classList.remove('show');
-});
+dlBtn.addEventListener('click', () => dlPanel.classList.toggle('show'));
+dlClose.addEventListener('click', () => dlPanel.classList.remove('show'));
 
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '0 B';
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ['B','KB','MB','GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
@@ -717,107 +666,78 @@ function renderDownload(dl) {
     el.className = 'dl-item';
     el.id = 'dl-' + dl.id;
     dlList.prepend(el);
-    // Auto-show panel
     dlPanel.classList.add('show');
   }
 
   el.innerHTML = `
-    <div class="dl-filename" title="${dl.filename}">${dl.filename}</div>
-    ${!isDone && !isFailed ? `
-    <div class="dl-progress-bar"><div class="dl-progress-fill" style="width:${pct}%"></div></div>
-    ` : ''}
+    <div class="dl-filename" title="${escapeHtml(dl.filename)}">${escapeHtml(dl.filename)}</div>
+    ${!isDone && !isFailed ? `<div class="dl-progress-bar"><div class="dl-progress-fill" style="width:${pct}%"></div></div>` : ''}
     <div class="dl-info">
       <span>${isDone ? 'Completed' : isFailed ? 'Failed' : formatBytes(dl.receivedBytes) + ' / ' + formatBytes(dl.totalBytes)}</span>
       <span>${isDone ? formatBytes(dl.totalBytes) : pct + '%'}</span>
     </div>
     ${isDone ? `
-    <div class="dl-actions">
-      <button onclick="window.wizardBrowser.openDownload('${dl.path.replace(/\\/g, '\\\\')}')">Open</button>
-      <button onclick="window.wizardBrowser.showDownload('${dl.path.replace(/\\/g, '\\\\')}')">Show in folder</button>
-    </div>
-    ` : ''}
+      <div class="dl-actions">
+        <button data-act="open">Open</button>
+        <button data-act="show">Show in folder</button>
+      </div>` : ''}
   `;
+  if (isDone) {
+    el.querySelector('[data-act="open"]').addEventListener('click', () => window.wizardBrowser.openDownload(dl.path));
+    el.querySelector('[data-act="show"]').addEventListener('click', () => window.wizardBrowser.showDownload(dl.path));
+  }
 }
 
-window.wizardBrowser.onDownloadStarted((dl) => {
-  dlItems[dl.id] = dl;
-  renderDownload(dl);
-});
-window.wizardBrowser.onDownloadUpdated((dl) => {
-  dlItems[dl.id] = dl;
-  renderDownload(dl);
-});
-window.wizardBrowser.onDownloadDone((dl) => {
-  dlItems[dl.id] = dl;
-  renderDownload(dl);
-});
+window.wizardBrowser.onDownloadStarted(renderDownload);
+window.wizardBrowser.onDownloadUpdated(renderDownload);
+window.wizardBrowser.onDownloadDone(renderDownload);
 
-// --- Onion detection ---
+// --- Onion banner ---
 const onionBanner = document.getElementById('onion-banner');
 const onionText = document.getElementById('onion-text');
-const onionGo = document.getElementById('onion-go');
-const onionDismiss = document.getElementById('onion-dismiss');
 let currentOnion = null;
 
 window.wizardBrowser.onOnionAvailable((data) => {
-  if (!torActive) return; // Only show when Tor is active
+  if (!torActive) return;
   currentOnion = data.onion;
   onionText.textContent = `.onion version available for ${data.clearnet}`;
   onionBanner.classList.add('show');
 });
-
-onionGo.addEventListener('click', () => {
-  if (currentOnion) window.wizardBrowser.navigateOnion(currentOnion);
+document.getElementById('onion-go').addEventListener('click', () => {
+  if (currentOnion) wv.loadURL(currentOnion);
   onionBanner.classList.remove('show');
 });
-onionDismiss.addEventListener('click', () => {
-  onionBanner.classList.remove('show');
-});
-
-// Hide onion banner on navigation
-window.wizardBrowser.onUrlChange((url) => {
-  currentUrl = url;
-  urlBar.value = url.startsWith('file://') ? '' : url;
+document.getElementById('onion-dismiss').addEventListener('click', () => {
   onionBanner.classList.remove('show');
 });
 
-// --- Auto-update (electron-updater) ---
-if (window.wizardBrowser.onUpdateStatus) {
-  window.wizardBrowser.onUpdateStatus((data) => {
-    const banner = document.getElementById('update-banner');
-    const text = document.getElementById('update-text');
-    const installBtn = document.getElementById('update-install');
+// --- Auto-update banner ---
+const updateBanner = document.getElementById('update-banner');
+const updateText = document.getElementById('update-text');
+const updateInstall = document.getElementById('update-install');
 
-    if (data.status === 'downloading') {
-      text.textContent = `Downloading update v${data.version}...`;
-      installBtn.style.display = 'none';
-      banner.classList.add('show');
-    } else if (data.status === 'ready') {
-      text.textContent = `Update v${data.version} ready to install`;
-      installBtn.style.display = '';
-      banner.classList.add('show');
-    } else if (data.status === 'error') {
-      text.textContent = `Auto-update error: ${data.message}`;
-      installBtn.style.display = 'none';
-      banner.classList.add('show');
-      banner.style.background = '#2e0a0a';
-      banner.style.borderColor = '#ef4444';
-    }
-  });
-}
-document.getElementById('update-install').addEventListener('click', () => {
-  window.wizardBrowser.installUpdate();
+window.wizardBrowser.onUpdateStatus((data) => {
+  if (data.status === 'downloading') {
+    updateText.textContent = `Downloading update v${data.version}...`;
+    updateInstall.style.display = 'none';
+    updateBanner.classList.add('show');
+  } else if (data.status === 'ready') {
+    updateText.textContent = `Update v${data.version} ready to install`;
+    updateInstall.style.display = '';
+    updateBanner.classList.add('show');
+  } else if (data.status === 'error') {
+    updateText.textContent = `Auto-update error: ${data.message}`;
+    updateInstall.style.display = 'none';
+    updateBanner.classList.add('show');
+    updateBanner.style.background = '#2e0a0a';
+    updateBanner.style.borderColor = '#ef4444';
+  }
 });
-document.getElementById('update-dismiss').addEventListener('click', () => {
-  document.getElementById('update-banner').classList.remove('show');
-});
+updateInstall.addEventListener('click', () => window.wizardBrowser.installUpdate());
+document.getElementById('update-dismiss').addEventListener('click', () => updateBanner.classList.remove('show'));
 
-// --- Events ---
-window.wizardBrowser.onTitleChange((title) => {
-  currentTitle = title;
-  document.title = title + ' — Wizard';
-});
-window.wizardBrowser.onLoadingChange((loading) => {
+// --- Webview events ---
+function setLoading(loading) {
   if (loading) {
     loadingBar.style.width = '70%';
   } else {
@@ -825,21 +745,80 @@ window.wizardBrowser.onLoadingChange((loading) => {
     setTimeout(() => {
       loadingBar.style.transition = 'none';
       loadingBar.style.width = '0%';
-      setTimeout(() => { loadingBar.style.transition = 'width 0.3s'; }, 50);
-    }, 300);
+      setTimeout(() => { loadingBar.style.transition = 'width 0.4s ease'; }, 50);
+    }, 250);
   }
+}
+
+function updateNavButtons() {
+  try {
+    btnBack.disabled    = !wv.canGoBack();
+    btnForward.disabled = !wv.canGoForward();
+  } catch {}
+}
+
+wv.addEventListener('did-start-loading', () => setLoading(true));
+wv.addEventListener('did-stop-loading',  () => { setLoading(false); updateNavButtons(); });
+wv.addEventListener('did-finish-load',   () => updateNavButtons());
+
+wv.addEventListener('did-navigate', (e) => {
+  currentUrl = e.url;
+  urlBar.value = e.url.startsWith('file://') ? '' : e.url;
+  onionBanner.classList.remove('show');
+  updateNavButtons();
 });
+wv.addEventListener('did-navigate-in-page', (e) => {
+  currentUrl = e.url;
+  if (!e.url.startsWith('file://')) urlBar.value = e.url;
+  updateNavButtons();
+});
+wv.addEventListener('page-title-updated', (e) => {
+  currentTitle = e.title;
+  document.title = e.title + ' — Wizard';
+});
+
 window.wizardBrowser.onBlockedUpdate((count) => {
   blockedSpan.textContent = count;
 });
 
+if (window.wizardBrowser.onSearchSelection) {
+  window.wizardBrowser.onSearchSelection((text) => {
+    wv.loadURL(HOME_URL + '#q=' + encodeURIComponent(text));
+  });
+}
+
+if (window.wizardBrowser.onNavigateShell) {
+  window.wizardBrowser.onNavigateShell((where) => {
+    if (where === 'settings') wv.loadURL(SETTINGS_URL);
+    else if (where === 'irc') wv.loadURL(IRC_URL);
+    else if (where === 'home') wv.loadURL(HOME_URL);
+  });
+}
+if (window.wizardBrowser.onNavigateShellUrl) {
+  window.wizardBrowser.onNavigateShellUrl((url) => { try { wv.loadURL(url); } catch {} });
+}
+
+wv.addEventListener('dom-ready', () => {
+  updateNavButtons();
+  try {
+    const u = wv.getURL();
+    if (u && !u.startsWith('file://')) urlBar.value = u;
+  } catch {}
+});
+
+// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'l') { urlBar.focus(); e.preventDefault(); }
-  if (e.altKey && e.key === 'ArrowLeft') window.wizardBrowser.goBack();
-  if (e.altKey && e.key === 'ArrowRight') window.wizardBrowser.goForward();
-  if (e.key === 'F5') window.wizardBrowser.reload();
+  if (e.altKey  && e.key === 'ArrowLeft')  btnBack.click();
+  if (e.altKey  && e.key === 'ArrowRight') btnForward.click();
+  if (e.key === 'F5') { try { wv.reload(); } catch {} }
+  if (e.ctrlKey && e.key === 'r') { try { wv.reload(); } catch {} }
   if (e.ctrlKey && e.key === 'j') { dlPanel.classList.toggle('show'); e.preventDefault(); }
-  if (e.ctrlKey && e.key === 'b') { bmPanel.classList.toggle('show'); if (bmPanel.classList.contains('show')) renderBookmarks(); e.preventDefault(); }
+  if (e.ctrlKey && e.key === 'b') {
+    bmPanel.classList.toggle('show');
+    if (bmPanel.classList.contains('show')) renderBookmarks();
+    e.preventDefault();
+  }
   if (e.ctrlKey && e.key === 'd') { document.getElementById('bookmark-btn').click(); e.preventDefault(); }
 });
 </script>
