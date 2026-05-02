@@ -1,4 +1,3 @@
-[GITHUB_README (1).md](https://github.com/user-attachments/files/27299770/GITHUB_README.1.md)
 <div align="center">
   <img src="logo.png" width="140" alt="Wizard Browser Logo" />
 
