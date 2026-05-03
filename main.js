@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, Menu, clipboard, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, session, Menu, clipboard, shell, webContents } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
@@ -437,9 +437,13 @@ ipcMain.handle('get-settings',     () => settings);
 ipcMain.handle('save-settings',    (_, partial) => {
   settings = { ...settings, ...partial };
   saveJSON(settingsPath, settings);
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('settings-changed', settings);
-  }
+  // Broadcast to every renderer (shell + every webview tab) so the chrome,
+  // search.html homepage, and settings.html itself all re-skin live.
+  try {
+    webContents.getAllWebContents().forEach(wc => {
+      try { wc.send('settings-changed', settings); } catch {}
+    });
+  } catch {}
   return true;
 });
 ipcMain.handle('get-speed-dial',   () => settings.speedDial || []);
@@ -462,12 +466,25 @@ ipcMain.handle('set-pin',          (_, { pin, enabled }) => {
 ipcMain.handle('verify-pin',       (_, pin) => pinData.pin === pin);
 ipcMain.handle('skip-pin-setup',   () => { pinData.asked = true; saveJSON(pinPath, pinData); return true; });
 
-// Webview navigation requested from inside the inner page (search/settings/irc).
+// Webview navigation requested from inside the inner page (search/settings).
 // Forward to the shell so it can drive `<webview>.loadURL(...)`.
 ipcMain.on('open-settings', () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'settings'); });
-ipcMain.on('open-irc',      () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'irc'); });
 ipcMain.on('open-home',     () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'home'); });
 ipcMain.on('open-newtab',   () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'newtab'); });
+
+// Open a URL in a new browser tab (used by inner pages e.g. Support button).
+ipcMain.on('open-newtab-url', (_, url) => {
+  if (typeof url !== 'string' || !mainWindow) return;
+  mainWindow.webContents.send('open-newtab-url', url);
+});
+
+// Open a URL in the user's default OS browser (used for Tawk.to support chat —
+// Tawk's CSP blocks iframe/webview embeds, so we hand off to the OS).
+ipcMain.on('open-external', (_, url) => {
+  if (typeof url !== 'string') return;
+  if (!/^https?:\/\//i.test(url)) return;
+  try { shell.openExternal(url); } catch {}
+});
 ipcMain.on('open-url',      (_, url) => {
   if (mainWindow && typeof url === 'string') mainWindow.webContents.send('navigate-shell-url', url);
 });
