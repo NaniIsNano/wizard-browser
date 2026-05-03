@@ -891,6 +891,7 @@ webview.active { display: flex; }
     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
     <span>TOR</span>
   </button>
+
   <button class="toolbar-btn" id="dl-btn" title="Downloads (Ctrl+J)">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
   </button>
@@ -948,7 +949,6 @@ webview.active { display: flex; }
 <script>
 const HOME_URL     = new URL('search.html',   location.href).href;
 const SETTINGS_URL = new URL('settings.html', location.href).href;
-const IRC_URL      = new URL('irc.html',      location.href).href;
 
 const $ = (s) => document.querySelector(s);
 const tabBar    = $('#tab-bar');
@@ -1351,6 +1351,9 @@ if (window.wizardBrowser.onNavigateShell) {
 }
 if (window.wizardBrowser.onNavigateShellUrl) {
   window.wizardBrowser.onNavigateShellUrl((url) => { const wv = activeView(); try { wv && wv.loadURL(url); } catch {} });
+}
+if (window.wizardBrowser.onOpenNewTabUrl) {
+  window.wizardBrowser.onOpenNewTabUrl((url) => newTab({ url }));
 }
 if (window.wizardBrowser.onSettingsChanged) {
   window.wizardBrowser.onSettingsChanged((s) => applyAppearance(s));

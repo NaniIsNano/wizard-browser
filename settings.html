@@ -430,9 +430,9 @@ body[data-glossy="1"] .toggle input:checked + .toggle-slider {
         <div class="theme-desc">1980s neon, vaporwave</div>
       </div>
       <div class="theme-card" data-theme="custom">
-        <div class="theme-preview" id="custom-bg-preview" style="background: linear-gradient(135deg, #444, #222); display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;">Upload an image</div>
+        <div class="theme-preview" id="custom-bg-preview" style="background: linear-gradient(135deg, #444, #222); display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;cursor:pointer;" title="Click to upload / change image">Click to upload</div>
         <div class="theme-name">Custom Wallpaper</div>
-        <div class="theme-desc">Use your own background image</div>
+        <div class="theme-desc">Click preview to change image</div>
         <input type="file" id="custom-bg-upload" accept="image/*" style="display:none" />
       </div>
     </div>
@@ -646,11 +646,18 @@ document.querySelectorAll('#layout-grid .theme-card').forEach(card => {
   });
 });
 
-// Theme selection
+// Theme selection — clicking the card activates the theme
 document.querySelectorAll('#theme-grid .theme-card').forEach(card => {
-  card.addEventListener('click', async () => {
+  card.addEventListener('click', async (e) => {
+    // Clicks on the preview thumbnail of the custom card should open the
+    // file picker instead of just activating the theme — so the user can
+    // re-upload at any time.
+    if (card.dataset.theme === 'custom' && e.target.id === 'custom-bg-preview') {
+      // file input change handler will activate the theme after upload
+      return;
+    }
     if (card.dataset.theme === 'custom') {
-      // Custom: open file picker; if user already has a customBg, just activate it
+      // First-time custom selection without a saved bg — open the picker.
       const cur = await window.wizardBrowser.getSettings();
       if (!cur.customBg) {
         document.getElementById('custom-bg-upload').click();
@@ -664,7 +671,17 @@ document.querySelectorAll('#theme-grid .theme-card').forEach(card => {
   });
 });
 
-// Custom wallpaper upload (theme="custom")
+// Clicking the preview thumbnail ALWAYS opens the file picker so the user can
+// upload or replace the wallpaper image even after they've already set one.
+const customPrev = document.getElementById('custom-bg-preview');
+if (customPrev) {
+  customPrev.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('custom-bg-upload').click();
+  });
+}
+
+// File input change handler — saves the image and activates the custom theme.
 const upload = document.getElementById('custom-bg-upload');
 if (upload) {
   upload.addEventListener('change', async (e) => {
@@ -680,6 +697,9 @@ if (upload) {
       showToast('Custom wallpaper saved');
     };
     reader.readAsDataURL(file);
+    // Clear the file input value so picking the same file again still fires
+    // the change event next time.
+    upload.value = '';
   });
 }
 

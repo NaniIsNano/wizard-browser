@@ -93,9 +93,7 @@ body[data-sharp="1"] #offline-container,
 body[data-sharp="1"] #offline-btn,
 body[data-sharp="1"] .offline-button,
 body[data-sharp="1"] .offline-input,
-body[data-sharp="1"] .offline-cache-list li,
-body[data-sharp="1"] #support-drawer,
-body[data-sharp="1"] #support-drawer-close { border-radius: 0 !important; }
+body[data-sharp="1"] .offline-cache-list li { border-radius: 0 !important; }
 
 /* Glossy UI modifier — adds a soft highlight gradient to surfaces */
 body[data-glossy="1"] #search-form,
@@ -110,14 +108,70 @@ body[data-glossy="1"] .offline-button {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
 }
 
-/* Win 7 layout — denser look on the homepage */
+/* ============================================================
+   WIN 7 LAYOUT — restyles the homepage to match the collaborator's
+   design (big bold "Wizard Browser" title, glossy beveled chrome,
+   Segoe UI everywhere). Theme/colors still come from the chosen
+   theme — Win 7 + Frutiger gives the exact collab look.
+   ============================================================ */
 body[data-layout="win7"] {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
 }
-body[data-layout="win7"] #logo { font-family: 'Segoe UI', Tahoma, sans-serif; font-weight: 700; }
-body[data-layout="win7"] #search-form { border-radius: 4px; }
-body[data-layout="win7"] #search-btn { border-radius: 0 4px 4px 0; }
-body[data-layout="win7"] .shortcut { border-radius: 4px; }
+body[data-layout="win7"] #home { padding: 2em; }
+body[data-layout="win7"] #logo {
+  font-family: 'Segoe UI', Tahoma, sans-serif !important;
+  font-size: 3em !important;
+  font-weight: 900 !important;
+  letter-spacing: -1px !important;
+  margin-bottom: 0.15em !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  -webkit-text-fill-color: initial;
+  background: none;
+  color: #fff;
+}
+/* In win7+frutiger keep the gradient text; in other themes the title is white */
+body[data-layout="win7"].theme-frutiger-aero #logo,
+body[data-layout="win7"].theme-canola #logo,
+body[data-layout="win7"].theme-mountains #logo,
+body[data-layout="win7"].theme-fortress #logo,
+body[data-layout="win7"].theme-retrowave #logo {
+  color: #fff;
+}
+body[data-layout="win7"] #logo-sub {
+  font-size: 0.95em !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  margin-bottom: 1.6em !important;
+  opacity: 0.85;
+}
+body[data-layout="win7"] #search-form {
+  max-width: 580px;
+  border-radius: 4px !important;
+  border-width: 2px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.15);
+}
+body[data-layout="win7"] #searchbar {
+  font-family: 'Segoe UI', Tahoma, sans-serif !important;
+  padding: 10px 16px !important;
+  font-size: 0.98em;
+}
+body[data-layout="win7"] #search-btn {
+  border-radius: 0 4px 4px 0 !important;
+  font-weight: 600 !important;
+  font-family: 'Segoe UI', Tahoma, sans-serif !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+}
+body[data-layout="win7"] .shortcut {
+  border-radius: 4px !important;
+  padding: 6px 14px !important;
+  font-size: 0.78em !important;
+  border-width: 1px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+}
+body[data-layout="win7"] #shortcuts { gap: 8px; }
+body[data-layout="win7"] #privacy-badge { margin-top: 1.6em; }
+body[data-layout="win7"] #version-badge { margin-top: 0.6em; }
+body[data-layout="win7"] #home-links a { font-size: 0.82em; }
 
 /* Theme: Retrowave / 1980s neon */
 body.theme-retrowave {
@@ -1134,80 +1188,9 @@ body {
 }
 #offline-btn:hover { color: var(--accent2); border-color: var(--accent); }
 
-/* Support drawer (slides in from right on the homepage only) */
-#support-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(2px);
-  z-index: 9998;
-  animation: fadeIn 0.18s ease;
-}
-#support-overlay.show { display: block; }
-#support-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 420px;
-  max-width: 92vw;
-  height: 100vh;
-  background: var(--surface, #141414);
-  color: var(--text, #e0e0e0);
-  border-left: 1px solid var(--border, #2a2a2a);
-  z-index: 9999;
-  transform: translateX(100%);
-  transition: transform 0.22s ease;
-  display: flex;
-  flex-direction: column;
-  box-shadow: -8px 0 32px rgba(0,0,0,0.5);
-}
-#support-drawer.show { transform: translateX(0); }
-#support-drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border, #2a2a2a);
-  font-size: 14px;
-  font-weight: 600;
-}
-#support-drawer-close {
-  background: transparent;
-  border: none;
-  color: var(--text2, #888);
-  font-size: 22px;
-  cursor: pointer;
-  padding: 0 6px;
-  border-radius: 6px;
-}
-#support-drawer-close:hover { color: var(--text, #fff); background: var(--surface2, #1a1a1a); }
-#support-drawer-body {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
-#support-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: #fff;
-  display: block;
-}
-#support-loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text2, #888);
-  font-style: italic;
-  background: var(--surface, #141414);
-  pointer-events: none;
-  font-size: 13px;
-}
-#support-loading.hide { display: none; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* (Support drawer removed — Tawk.to refuses to load inside iframes/webviews
+   due to its CSP. The Support button now hands off to the user's default OS
+   browser via shell.openExternal.) */
 </style>
 </head>
 <body>
@@ -1242,20 +1225,8 @@ body {
   </div>
 </div>
 
-<!-- Support drawer (homepage-only, opens on click) -->
-<div id="support-drawer">
-  <div id="support-drawer-header">
-    <span id="support-drawer-title">Support</span>
-    <button id="support-drawer-close" title="Close">&times;</button>
-  </div>
-  <div id="support-drawer-body">
-    <!-- An iframe with srcdoc containing the Tawk.to bootstrap so the chat
-         renders inside this drawer (rather than as a floating widget). -->
-    <iframe id="support-iframe" title="Support chat" allow="microphone; camera; clipboard-read; clipboard-write"></iframe>
-    <div id="support-loading">Loading support chat…</div>
-  </div>
-</div>
-<div id="support-overlay"></div>
+<!-- Support button now hands off to the user's OS default browser via
+     shell.openExternal — Tawk.to refuses to load inside iframes/webviews. -->
 
 <!-- Offline TJR Browser Modal -->
 <div id="offline-modal">
@@ -1377,6 +1348,18 @@ function applyThemeFromSettings(s) {
     document.body.style.background = `url(${s.customBg}) center/cover fixed`;
   } else {
     document.body.style.background = '';
+  }
+  // Swap the homepage heading + subtitle to the collab phrasing on Win 7
+  const logo = document.getElementById('logo');
+  const sub  = document.getElementById('logo-sub');
+  if (logo && sub) {
+    if (layout === 'win7') {
+      logo.textContent = 'Wizard Browser';
+      sub.textContent  = 'Private. Uncensored. Free.';
+    } else {
+      logo.textContent = 'Wizard';
+      sub.textContent  = 'Private Search';
+    }
   }
 }
 if (window.wizardBrowser && window.wizardBrowser.onSettingsChanged) {
@@ -2480,70 +2463,16 @@ function showOfflineModal() {
   initOfflineDB();
 }
 
-// Support drawer (homepage-only). Tawk.to is loaded inside an iframe so the
-// chat renders inside the drawer instead of as a floating widget on the page.
-let _tawkInjected = false;
-const TAWK_PROPERTY = '69f5c452b4a1331c31f06f29';
-const TAWK_WIDGET   = '1jnk0do91';
+// Support: Tawk.to refuses to load inside iframes/webviews due to its CSP, so
+// we hand off to the user's default OS browser via shell.openExternal.
+const TAWK_CHAT_URL = 'https://tawk.to/chat/69f5c452b4a1331c31f06f29/1jnk0do91';
 function openSupportDrawer() {
-  const home = document.getElementById('home');
-  if (home && home.style.display === 'none') return;
-  document.getElementById('support-overlay').classList.add('show');
-  document.getElementById('support-drawer').classList.add('show');
-  if (!_tawkInjected) {
-    _tawkInjected = true;
-    const iframe = document.getElementById('support-iframe');
-    const loading = document.getElementById('support-loading');
-    // srcdoc bootstraps Tawk.to inside the iframe with the widget shown
-    // by default (no hideWidget call), so it fills the drawer.
-    iframe.srcdoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-html,body{margin:0;padding:0;height:100%;background:#fff;font-family:system-ui,sans-serif;}
-#fallback{padding:18px;color:#444;font-size:13px;}
-#fallback a{color:#1a73e8;}
-</style></head><body>
-<div id="fallback">Connecting to support…</div>
-<script>
-window.Tawk_API = window.Tawk_API || {};
-window.Tawk_LoadStart = new Date();
-window.Tawk_API.onLoad = function(){
-  try { window.Tawk_API.maximize && window.Tawk_API.maximize(); } catch(e){}
-  var f = document.getElementById('fallback'); if (f) f.style.display='none';
-};
-(function(){
-  var s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://embed.tawk.to/${TAWK_PROPERTY}/${TAWK_WIDGET}';
-  s.charset = 'UTF-8';
-  s.setAttribute('crossorigin','*');
-  s.onerror = function(){
-    var f = document.getElementById('fallback');
-    if (f) f.innerHTML = 'Could not load support chat. Check your connection or try the IRC link in the toolbar.';
-  };
-  document.head.appendChild(s);
-  // Safety timeout: if widget isn't visible after 8s, show fallback message
-  setTimeout(function(){
-    var f = document.getElementById('fallback');
-    if (f && f.style.display !== 'none') {
-      f.innerHTML = 'Support chat is taking longer than usual to connect. <a href="https://tawk.to/chat/${TAWK_PROPERTY}/${TAWK_WIDGET}" target="_blank">Open in browser tab</a>.';
-    }
-  }, 8000);
-})();
-<\/script></body></html>`;
-    // Hide our outer "Loading…" placeholder once the iframe doc loads
-    iframe.addEventListener('load', () => { if (loading) loading.classList.add('hide'); }, { once: true });
+  if (window.wizardBrowser && window.wizardBrowser.openExternal) {
+    window.wizardBrowser.openExternal(TAWK_CHAT_URL);
+  } else {
+    window.open(TAWK_CHAT_URL, '_blank', 'noopener,noreferrer');
   }
 }
-function closeSupportDrawer() {
-  document.getElementById('support-overlay').classList.remove('show');
-  document.getElementById('support-drawer').classList.remove('show');
-}
-document.addEventListener('DOMContentLoaded', () => {
-  const c = document.getElementById('support-drawer-close');
-  const o = document.getElementById('support-overlay');
-  if (c) c.addEventListener('click', closeSupportDrawer);
-  if (o) o.addEventListener('click', closeSupportDrawer);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSupportDrawer(); });
-});
 function hideOfflineModal() {
   document.getElementById('offline-modal').style.display = 'none';
 }

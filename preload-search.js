@@ -19,9 +19,12 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   skipPinSetup: () => ipcRenderer.invoke('skip-pin-setup'),
   // Shell navigation (asks browser.html shell to drive the active webview)
   openSettings: () => ipcRenderer.send('open-settings'),
-  openIRC: () => ipcRenderer.send('open-irc'),
   openHome: () => ipcRenderer.send('open-home'),
   openNewTab: () => ipcRenderer.send('open-newtab'),
+  openInNewTab: (url) => ipcRenderer.send('open-newtab-url', url),
+  // Open in the user's default OS browser (for chat widgets / docs that
+  // refuse to load inside an embedded webview)
+  openExternal: (url) => ipcRenderer.send('open-external', url),
   // Settings live-change (so search/settings can re-render when changed elsewhere)
   onSettingsChanged: (cb) => ipcRenderer.on('settings-changed', (_, s) => cb(s))
 });
