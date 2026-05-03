@@ -26,6 +26,13 @@ function saveJSON(p, data) {
 }
 
 let settings = loadJSON(settingsPath, {
+  // Theme system v2: themeMode + sub-options
+  themeMode: 'default',          // 'default' | 'aero' | 'retrowave'
+  sharpEdges: false,             // default theme toggle
+  glossyUI: false,               // default theme toggle
+  aeroBackground: 'fruiter',     // 'fruiter' | 'canola' | 'mountains' | 'fortress' | 'custom'
+  customBg: '',                  // data URL for aero custom bg
+  // Legacy theme key (kept for migration; ignored if themeMode set)
   theme: 'dark',
   doNotTrack: true,
   canvasSpoofing: true,
@@ -40,6 +47,22 @@ let settings = loadJSON(settingsPath, {
     { name: 'Wikipedia', url: 'https://wikipedia.org', icon: 'W' }
   ]
 });
+
+// Migrate legacy theme -> themeMode if needed
+if (!settings.themeMode) {
+  const legacy = settings.theme || 'dark';
+  if (['frutiger-aero','aero','mountains','canola','fortress'].includes(legacy)) {
+    settings.themeMode = 'aero';
+    if (legacy === 'mountains') settings.aeroBackground = 'mountains';
+    else if (legacy === 'canola') settings.aeroBackground = 'canola';
+    else if (legacy === 'fortress') settings.aeroBackground = 'fortress';
+    else settings.aeroBackground = 'fruiter';
+  } else if (legacy === 'retrowave') {
+    settings.themeMode = 'retrowave';
+  } else {
+    settings.themeMode = 'default';
+  }
+}
 let bookmarks = loadJSON(bookmarksPath, []);
 let pinData   = loadJSON(pinPath, { enabled: false, pin: null, asked: false });
 
@@ -410,6 +433,9 @@ ipcMain.handle('get-settings',     () => settings);
 ipcMain.handle('save-settings',    (_, partial) => {
   settings = { ...settings, ...partial };
   saveJSON(settingsPath, settings);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('settings-changed', settings);
+  }
   return true;
 });
 ipcMain.handle('get-speed-dial',   () => settings.speedDial || []);
@@ -437,6 +463,7 @@ ipcMain.handle('skip-pin-setup',   () => { pinData.asked = true; saveJSON(pinPat
 ipcMain.on('open-settings', () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'settings'); });
 ipcMain.on('open-irc',      () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'irc'); });
 ipcMain.on('open-home',     () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'home'); });
+ipcMain.on('open-newtab',   () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'newtab'); });
 ipcMain.on('open-url',      (_, url) => {
   if (mainWindow && typeof url === 'string') mainWindow.webContents.send('navigate-shell-url', url);
 });
