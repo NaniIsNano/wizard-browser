@@ -5,7 +5,7 @@
 
   **A libre, privacy-focused browser with a built-in search engine that doesn't track you.**
 
-  [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-7c3aed?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
+  [![License: WPL-1.0](https://img.shields.io/badge/License-WPL--1.0-7c3aed?style=flat-square)](./LICENSE)
   [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-a855f7?style=flat-square)](#install)
   [![Built with Electron](https://img.shields.io/badge/Built%20with-Electron-47848f?style=flat-square&logo=electron)](https://www.electronjs.org/)
   [![Free Software](https://img.shields.io/badge/Free%20Software-Free%20as%20in%20Freedom-22c55e?style=flat-square)](#license)
@@ -111,4 +111,6 @@ Click **"More info"** → **"Run anyway"** to proceed. The full source code is o
 
 ## License
 
-**GPL-3.0** — Free software, free as in freedom.
+Licensed under the **[Wizard Public License 1.0 (WPL-1.0)](./LICENSE)** — free as in freedom, not free for profit.
+
+> Based on Wizard Browser — originally created by NaniIsNano.
