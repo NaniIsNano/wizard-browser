@@ -26,14 +26,15 @@ function saveJSON(p, data) {
 }
 
 let settings = loadJSON(settingsPath, {
-  // Theme system v2: themeMode + sub-options
-  themeMode: 'default',          // 'default' | 'aero' | 'retrowave'
-  sharpEdges: false,             // default theme toggle
-  glossyUI: false,               // default theme toggle
-  aeroBackground: 'fruiter',     // 'fruiter' | 'canola' | 'mountains' | 'fortress' | 'custom'
-  customBg: '',                  // data URL for aero custom bg
-  // Legacy theme key (kept for migration; ignored if themeMode set)
-  theme: 'dark',
+  // Theme system v3: layout + theme + modifiers all independent
+  layout: 'default',             // 'default' | 'win7'
+  theme: 'default',              // 'default' | 'frutiger' | 'canola' | 'mountains' | 'fortress' | 'retrowave' | 'custom'
+  sharpEdges: false,             // applies to every layout/theme
+  glossyUI: false,               // applies to every layout/theme
+  customBg: '',                  // data URL — used by 'custom' theme, available under any layout
+  // Legacy keys (kept for migration; ignored once layout/theme set)
+  themeMode: 'default',
+  aeroBackground: 'fruiter',
   doNotTrack: true,
   canvasSpoofing: true,
   webrtcProtection: true,
@@ -48,21 +49,24 @@ let settings = loadJSON(settingsPath, {
   ]
 });
 
-// Migrate legacy theme -> themeMode if needed
-if (!settings.themeMode) {
-  const legacy = settings.theme || 'dark';
-  if (['frutiger-aero','aero','mountains','canola','fortress'].includes(legacy)) {
-    settings.themeMode = 'aero';
-    if (legacy === 'mountains') settings.aeroBackground = 'mountains';
-    else if (legacy === 'canola') settings.aeroBackground = 'canola';
-    else if (legacy === 'fortress') settings.aeroBackground = 'fortress';
-    else settings.aeroBackground = 'fruiter';
-  } else if (legacy === 'retrowave') {
-    settings.themeMode = 'retrowave';
+// Migrate previous theme system to layout + theme
+(function migrateTheme() {
+  // If new keys missing, derive from old themeMode/aeroBackground
+  if (settings.layout && settings.theme && settings.theme !== 'default-needs-migration') return;
+  const tm = settings.themeMode || 'default';
+  const ab = settings.aeroBackground || 'fruiter';
+  if (tm === 'aero') {
+    settings.layout = settings.layout || 'default';
+    settings.theme  = ab === 'fruiter' ? 'frutiger' : ab; // canola | mountains | fortress | custom
+  } else if (tm === 'retrowave') {
+    settings.layout = settings.layout || 'default';
+    settings.theme  = 'retrowave';
   } else {
-    settings.themeMode = 'default';
+    settings.layout = settings.layout || 'default';
+    settings.theme  = settings.theme  || 'default';
   }
-}
+  saveJSON(settingsPath, settings);
+})();
 let bookmarks = loadJSON(bookmarksPath, []);
 let pinData   = loadJSON(pinPath, { enabled: false, pin: null, asked: false });
 
