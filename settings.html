@@ -351,6 +351,23 @@ body {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #333; }
+
+/* Modifier preview on the settings page itself */
+body[data-sharp="1"] .setting-row,
+body[data-sharp="1"] .theme-card,
+body[data-sharp="1"] .btn,
+body[data-sharp="1"] .pin-section input,
+body[data-sharp="1"] .toggle-slider,
+body[data-sharp="1"] .sd-item,
+body[data-sharp="1"] .sd-add-form input,
+body[data-sharp="1"] .theme-preview { border-radius: 0 !important; }
+
+body[data-glossy="1"] .btn,
+body[data-glossy="1"] .theme-card.active,
+body[data-glossy="1"] .toggle input:checked + .toggle-slider {
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.04) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+}
 </style>
 </head>
 <body>
@@ -361,81 +378,85 @@ body {
     <div class="settings-title">Settings</div>
   </div>
 
-  <!-- THEME -->
+  <!-- LAYOUT -->
   <div class="section">
-    <div class="section-title">Appearance</div>
-    <div class="theme-grid" id="theme-grid">
-      <div class="theme-card" data-mode="default">
-        <div class="theme-preview" style="background: linear-gradient(135deg, #0a0a0a, #1a0a2e);"></div>
+    <div class="section-title">Layout / Browser Design</div>
+    <div class="theme-grid" id="layout-grid">
+      <div class="theme-card" data-layout="default">
+        <div class="theme-preview" style="background: linear-gradient(180deg, #0d0d0d 0%, #0d0d0d 30%, #1a1a1a 100%);"></div>
         <div class="theme-name">Default</div>
-        <div class="theme-desc">Dark purple — Wizard's signature look</div>
+        <div class="theme-desc">Modern Wizard chrome (current look)</div>
       </div>
-      <div class="theme-card" data-mode="aero">
-        <div class="theme-preview" style="background: linear-gradient(180deg,#c8e0f8,#88b8e8 30%,#60a0d8 60%,#4090c8); border-color: #87ceeb;"></div>
-        <div class="theme-name">Win 7 / Retro Aero</div>
-        <div class="theme-desc">Glossy Frutiger Aero (collaborator design)</div>
+      <div class="theme-card" data-layout="win7">
+        <div class="theme-preview" style="background: linear-gradient(180deg, #d4e8f8 0%, #92b8d8 50%, #b8d4eb 100%); border-color: #6898b8;"></div>
+        <div class="theme-name">Windows 7</div>
+        <div class="theme-desc">Old-style menubar + statusbar + glossy chrome</div>
       </div>
-      <div class="theme-card" data-mode="retrowave">
-        <div class="theme-preview" style="background: linear-gradient(180deg,#1a0a2e 0%,#ff2d95 50%,#00f0ff 100%); border-color: #ff2d95;"></div>
+    </div>
+  </div>
+
+  <!-- THEME / COLOR + BACKGROUND -->
+  <div class="section">
+    <div class="section-title">Theme &amp; Background</div>
+    <div class="theme-grid" id="theme-grid">
+      <div class="theme-card" data-theme="default">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #0a0a0a, #1a0a2e);"></div>
+        <div class="theme-name">Wizard Dark</div>
+        <div class="theme-desc">Dark purple — signature look</div>
+      </div>
+      <div class="theme-card" data-theme="frutiger">
+        <div class="theme-preview" style="background: linear-gradient(180deg,#c8e0f8,#88b8e8 30%,#60a0d8 60%,#4090c8); border-color:#87ceeb;"></div>
+        <div class="theme-name">Frutiger Aero</div>
+        <div class="theme-desc">Glossy Y2K sky</div>
+      </div>
+      <div class="theme-card" data-theme="canola">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #6b8e23, #c8d84a, #87ceeb);"></div>
+        <div class="theme-name">Canola Fields</div>
+        <div class="theme-desc">Golden fields + sky</div>
+      </div>
+      <div class="theme-card" data-theme="mountains">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #1a3a5a, #4a7a9a, #8ab4d4);"></div>
+        <div class="theme-name">Mountains</div>
+        <div class="theme-desc">Rocky winter peaks</div>
+      </div>
+      <div class="theme-card" data-theme="fortress">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #3a2a1a, #8a7a5a, #b0a080);"></div>
+        <div class="theme-name">Fortress</div>
+        <div class="theme-desc">Ancient stone ruins</div>
+      </div>
+      <div class="theme-card" data-theme="retrowave">
+        <div class="theme-preview" style="background: linear-gradient(180deg,#1a0a2e 0%,#ff2d95 50%,#00f0ff 100%); border-color:#ff2d95;"></div>
         <div class="theme-name">Retrowave</div>
-        <div class="theme-desc">1980s neon, vaporwave gradients</div>
+        <div class="theme-desc">1980s neon, vaporwave</div>
+      </div>
+      <div class="theme-card" data-theme="custom">
+        <div class="theme-preview" id="custom-bg-preview" style="background: linear-gradient(135deg, #444, #222); display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;">Upload an image</div>
+        <div class="theme-name">Custom Wallpaper</div>
+        <div class="theme-desc">Use your own background image</div>
+        <input type="file" id="custom-bg-upload" accept="image/*" style="display:none" />
       </div>
     </div>
-
-    <!-- Sub-options for the Default theme -->
-    <div id="default-suboptions" style="display:none; margin-top: 16px;">
-      <div class="setting-row">
-        <div class="setting-info">
-          <div class="setting-label">Sharp Edges</div>
-          <div class="setting-desc">Remove all rounded corners on UI chrome</div>
-        </div>
-        <label class="toggle"><input type="checkbox" id="opt-sharp" /><span class="toggle-slider"></span></label>
-      </div>
-      <div class="setting-row">
-        <div class="setting-info">
-          <div class="setting-label">Glossy UI</div>
-          <div class="setting-desc">Add a subtle glass highlight to buttons + toolbar</div>
-        </div>
-        <label class="toggle"><input type="checkbox" id="opt-glossy" /><span class="toggle-slider"></span></label>
-      </div>
+    <div style="font-size:11px;color:var(--text2);margin-top:10px;font-style:italic;">
+      Themes work with any layout. Pick a layout above, then a theme here.
     </div>
+  </div>
 
-    <!-- Sub-options for the Aero theme: pick a background -->
-    <div id="aero-suboptions" style="display:none; margin-top: 16px;">
-      <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 12px;">
-        <div class="setting-info">
-          <div class="setting-label">Aero Background</div>
-          <div class="setting-desc">Pick which wallpaper layers under the Aero chrome</div>
-        </div>
-        <div class="theme-grid" id="aero-bg-grid">
-          <div class="theme-card" data-aero-bg="fruiter">
-            <div class="theme-preview" style="background: linear-gradient(180deg,#c8e0f8,#88b8e8 30%,#60a0d8 60%,#4090c8); border-color:#87ceeb;"></div>
-            <div class="theme-name">Frutiger Aero</div>
-            <div class="theme-desc">Default sky gradient</div>
-          </div>
-          <div class="theme-card" data-aero-bg="canola">
-            <div class="theme-preview" style="background: linear-gradient(135deg, #6b8e23, #c8d84a, #87ceeb);"></div>
-            <div class="theme-name">Canola Fields</div>
-            <div class="theme-desc">Golden fields + sky</div>
-          </div>
-          <div class="theme-card" data-aero-bg="mountains">
-            <div class="theme-preview" style="background: linear-gradient(135deg, #1a3a5a, #4a7a9a, #8ab4d4);"></div>
-            <div class="theme-name">Mountains</div>
-            <div class="theme-desc">Rocky winter peaks</div>
-          </div>
-          <div class="theme-card" data-aero-bg="fortress">
-            <div class="theme-preview" style="background: linear-gradient(135deg, #3a2a1a, #8a7a5a, #b0a080);"></div>
-            <div class="theme-name">Fortress</div>
-            <div class="theme-desc">Ancient stone ruins</div>
-          </div>
-          <div class="theme-card" data-aero-bg="custom">
-            <div class="theme-preview" id="aero-bg-custom-preview" style="background: linear-gradient(135deg, #444, #222); display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;">Upload</div>
-            <div class="theme-name">Custom Wallpaper</div>
-            <div class="theme-desc">Use your own image</div>
-            <input type="file" id="aero-bg-upload" accept="image/*" style="display:none" />
-          </div>
-        </div>
+  <!-- MODIFIERS — apply to every layout/theme combo -->
+  <div class="section">
+    <div class="section-title">Modifiers</div>
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">Sharp Edges</div>
+        <div class="setting-desc">Remove rounded corners everywhere (toolbar, tabs, buttons, inputs, panels)</div>
       </div>
+      <label class="toggle"><input type="checkbox" id="opt-sharp" /><span class="toggle-slider"></span></label>
+    </div>
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">Glossy UI</div>
+        <div class="setting-desc">Add a glass highlight gradient to buttons, toolbar and surfaces</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-glossy" /><span class="toggle-slider"></span></label>
     </div>
   </div>
 
@@ -553,7 +574,13 @@ function showToast(msg) {
 async function loadSettings() {
   currentSettings = await window.wizardBrowser.getSettings();
 
-  // Apply toggles
+  // Reflect appearance on the settings page itself so the user sees changes live
+  document.body.dataset.layout = currentSettings.layout || 'default';
+  document.body.dataset.theme  = currentSettings.theme  || 'default';
+  document.body.dataset.sharp  = currentSettings.sharpEdges ? '1' : '0';
+  document.body.dataset.glossy = currentSettings.glossyUI   ? '1' : '0';
+
+  // Privacy + modifier toggles
   document.getElementById('opt-dnt').checked = currentSettings.doNotTrack !== false;
   document.getElementById('opt-canvas').checked = currentSettings.canvasSpoofing !== false;
   document.getElementById('opt-webrtc').checked = currentSettings.webrtcProtection !== false;
@@ -563,20 +590,21 @@ async function loadSettings() {
   document.getElementById('opt-sharp').checked = !!currentSettings.sharpEdges;
   document.getElementById('opt-glossy').checked = !!currentSettings.glossyUI;
 
-  // Theme mode + sub-options
-  const mode = currentSettings.themeMode || 'default';
-  document.querySelectorAll('#theme-grid > .theme-card').forEach(c => {
-    c.classList.toggle('active', c.dataset.mode === mode);
+  // Layout
+  const layout = currentSettings.layout || 'default';
+  document.querySelectorAll('#layout-grid .theme-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.layout === layout);
   });
-  document.getElementById('default-suboptions').style.display = (mode === 'default') ? 'block' : 'none';
-  document.getElementById('aero-suboptions').style.display    = (mode === 'aero')    ? 'block' : 'none';
 
-  const aeroBg = currentSettings.aeroBackground || 'fruiter';
-  document.querySelectorAll('#aero-bg-grid .theme-card').forEach(c => {
-    c.classList.toggle('active', c.dataset.aeroBg === aeroBg);
+  // Theme
+  const theme = currentSettings.theme || 'default';
+  document.querySelectorAll('#theme-grid .theme-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.theme === theme);
   });
+
+  // Custom-bg preview (always visible regardless of which theme is active)
   if (currentSettings.customBg) {
-    const prev = document.getElementById('aero-bg-custom-preview');
+    const prev = document.getElementById('custom-bg-preview');
     if (prev) { prev.style.background = `url(${currentSettings.customBg}) center/cover`; prev.textContent = ''; }
   }
 
@@ -590,7 +618,7 @@ async function loadSettings() {
   }
 }
 
-// Save on toggle change (privacy + theme sub-options)
+// Save on toggle change (privacy + modifiers)
 document.querySelectorAll('.toggle input').forEach(toggle => {
   toggle.addEventListener('change', async () => {
     const newSettings = {
@@ -608,36 +636,36 @@ document.querySelectorAll('.toggle input').forEach(toggle => {
   });
 });
 
-// Theme mode selection
-document.querySelectorAll('#theme-grid > .theme-card').forEach(card => {
+// Layout selection
+document.querySelectorAll('#layout-grid .theme-card').forEach(card => {
   card.addEventListener('click', async () => {
-    document.querySelectorAll('#theme-grid > .theme-card').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('#layout-grid .theme-card').forEach(c => c.classList.remove('active'));
     card.classList.add('active');
-    const mode = card.dataset.mode;
-    document.getElementById('default-suboptions').style.display = (mode === 'default') ? 'block' : 'none';
-    document.getElementById('aero-suboptions').style.display    = (mode === 'aero')    ? 'block' : 'none';
-    await window.wizardBrowser.saveSettings({ themeMode: mode });
+    await window.wizardBrowser.saveSettings({ layout: card.dataset.layout });
+    showToast('Layout applied');
+  });
+});
+
+// Theme selection
+document.querySelectorAll('#theme-grid .theme-card').forEach(card => {
+  card.addEventListener('click', async () => {
+    if (card.dataset.theme === 'custom') {
+      // Custom: open file picker; if user already has a customBg, just activate it
+      const cur = await window.wizardBrowser.getSettings();
+      if (!cur.customBg) {
+        document.getElementById('custom-bg-upload').click();
+        return;
+      }
+    }
+    document.querySelectorAll('#theme-grid .theme-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    await window.wizardBrowser.saveSettings({ theme: card.dataset.theme });
     showToast('Theme applied');
   });
 });
 
-// Aero background sub-option selection
-document.querySelectorAll('#aero-bg-grid .theme-card').forEach(card => {
-  card.addEventListener('click', async (e) => {
-    if (card.dataset.aeroBg === 'custom') {
-      // Trigger file picker
-      document.getElementById('aero-bg-upload').click();
-      return;
-    }
-    document.querySelectorAll('#aero-bg-grid .theme-card').forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
-    await window.wizardBrowser.saveSettings({ aeroBackground: card.dataset.aeroBg });
-    showToast('Background updated');
-  });
-});
-
-// Custom Aero background upload
-const upload = document.getElementById('aero-bg-upload');
+// Custom wallpaper upload (theme="custom")
+const upload = document.getElementById('custom-bg-upload');
 if (upload) {
   upload.addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
@@ -645,10 +673,10 @@ if (upload) {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       const dataUrl = ev.target.result;
-      await window.wizardBrowser.saveSettings({ aeroBackground: 'custom', customBg: dataUrl });
-      const prev = document.getElementById('aero-bg-custom-preview');
+      await window.wizardBrowser.saveSettings({ theme: 'custom', customBg: dataUrl });
+      const prev = document.getElementById('custom-bg-preview');
       if (prev) { prev.style.background = `url(${dataUrl}) center/cover`; prev.textContent = ''; }
-      document.querySelectorAll('#aero-bg-grid .theme-card').forEach(c => c.classList.toggle('active', c.dataset.aeroBg === 'custom'));
+      document.querySelectorAll('#theme-grid .theme-card').forEach(c => c.classList.toggle('active', c.dataset.theme === 'custom'));
       showToast('Custom wallpaper saved');
     };
     reader.readAsDataURL(file);
@@ -725,6 +753,17 @@ function escapeHtml(str) {
 }
 
 loadSettings();
+
+// Re-apply when settings change elsewhere (so the page reflects shell-driven changes)
+if (window.wizardBrowser && window.wizardBrowser.onSettingsChanged) {
+  window.wizardBrowser.onSettingsChanged((s) => {
+    currentSettings = s;
+    document.body.dataset.layout = s.layout || 'default';
+    document.body.dataset.theme  = s.theme  || 'default';
+    document.body.dataset.sharp  = s.sharpEdges ? '1' : '0';
+    document.body.dataset.glossy = s.glossyUI   ? '1' : '0';
+  });
+}
 </script>
 </body>
 </html>

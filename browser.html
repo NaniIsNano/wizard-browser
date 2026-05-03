@@ -10,10 +10,11 @@
 html, body { height: 100%; }
 
 /* =============================================================
-   THEME VARIABLES (defaults — overridden by theme classes below)
+   THEME TOKENS — set per-theme via [data-theme=…]
+   LAYOUT     — set via [data-layout=…]   (default | win7)
+   MODIFIERS  — [data-sharp=1] / [data-glossy=1]  (apply to anything)
    ============================================================= */
 body {
-  /* color tokens */
   --bg: #0a0a0a;
   --surface: #141414;
   --surface2: #1a1a1a;
@@ -27,7 +28,6 @@ body {
   --shield-bg: #141414;
   --danger: #ef4444;
 
-  /* tab tokens */
   --tab-bar-bg: #0d0d0d;
   --tab-bar-border: #1e1e1e;
   --tab-active-bg: #1a1a1a;
@@ -35,9 +35,7 @@ body {
   --tab-inactive-bg: transparent;
   --tab-inactive-text: #888;
   --tab-border: transparent;
-  --tab-radius: 6px 6px 0 0;
 
-  /* toolbar tokens */
   --toolbar-bg: #0d0d0d;
   --toolbar-border: #1e1e1e;
   --toolbar-btn-bg: #141414;
@@ -47,14 +45,19 @@ body {
   --toolbar-btn-hover-text: #c084fc;
   --toolbar-btn-hover-border: #7c3aed;
 
-  /* input + content */
+  --menubar-bg: #0d0d0d;
+  --menubar-border: #1e1e1e;
+  --menubar-text: #aaa;
+  --statusbar-bg: #0d0d0d;
+  --statusbar-text: #888;
+  --statusbar-border: #1e1e1e;
+
   --input-bg: #141414;
   --input-text: #ddd;
   --input-border: #2a2a2a;
   --input-focus: #7c3aed;
   --content-bg: #0a0a0a;
 
-  /* shape */
   --radius: 8px;
   --radius-tab: 6px 6px 0 0;
   --gloss-overlay: none;
@@ -69,25 +72,13 @@ body {
   overflow: hidden;
 }
 
-body[data-bgimage="1"] { background: var(--bg-image) center/cover fixed; }
+/* Background image hook — set by [data-bgimage=1] */
+body[data-bgimage="1"] { background: var(--bg-image) center/cover fixed, var(--bg); }
 
-/* =============================================================
-   THEME: default (sharp toggle changes radius, glossy adds gradient)
-   ============================================================= */
-body[data-theme="default"][data-sharp="1"] {
-  --radius: 0;
-  --radius-tab: 0;
-}
-body[data-theme="default"][data-glossy="1"] {
-  --gloss-overlay: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 50%);
-}
-
-/* =============================================================
-   THEME: aero (Frutiger Aero / Windows-7 inspired)
-   ============================================================= */
-body[data-theme="aero"] {
+/* ─── THEMES (color/background only, no layout) ───────────────── */
+body[data-theme="frutiger"] {
   --bg: #c8e0f8;
-  --surface: rgba(255,255,255,0.75);
+  --surface: rgba(255,255,255,0.78);
   --surface2: rgba(255,255,255,0.55);
   --border: rgba(120,152,176,0.55);
   --text: #1a3050;
@@ -97,7 +88,6 @@ body[data-theme="aero"] {
   --accent-on: #fff;
   --shield: #2a8a4a;
   --shield-bg: rgba(255,255,255,0.7);
-  --danger: #c62828;
 
   --tab-bar-bg: linear-gradient(180deg,#d4e8f8 0%,#a8cce8 60%,#92b8d8 100%);
   --tab-bar-border: #6898b8;
@@ -106,7 +96,6 @@ body[data-theme="aero"] {
   --tab-inactive-bg: linear-gradient(180deg,#d8e4f0,#c8d8e8);
   --tab-inactive-text: #4a6a8a;
   --tab-border: #6898b8;
-  --tab-radius: 8px 8px 0 0;
 
   --toolbar-bg: linear-gradient(180deg,#d4e8f8 0%,#a8cce8 40%,#92b8d8 60%,#b8d4eb 100%);
   --toolbar-border: #6898b8;
@@ -117,35 +106,162 @@ body[data-theme="aero"] {
   --toolbar-btn-hover-text: #003060;
   --toolbar-btn-hover-border: #3a80c8;
 
+  --menubar-bg: linear-gradient(180deg,#e0ecf8,#d0e0f0);
+  --menubar-border: #a0b8d0;
+  --menubar-text: #3a5a7a;
+  --statusbar-bg: linear-gradient(180deg,#d8e8f4,#c0d4e4);
+  --statusbar-text: #3a5a7a;
+  --statusbar-border: #a0b8d0;
+
   --input-bg: rgba(255,255,255,0.85);
   --input-text: #1a3050;
   --input-border: #7898b0;
   --input-focus: #1878d8;
-
   --content-bg: linear-gradient(180deg,#eaf4ff,#d8e8f8);
-  --radius: 6px;
-  --radius-tab: 8px 8px 0 0;
-  --gloss-overlay: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 50%);
+  --bg-image: linear-gradient(180deg,#c8e0f8,#88b8e8 30%,#60a0d8 60%,#4090c8);
   --font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+body[data-theme="frutiger"] { background: var(--bg-image) center/cover fixed; }
 
-/* aero background variants */
-body[data-theme="aero"][data-aero-bg="fruiter"] {
-  --bg-image: linear-gradient(180deg,#c8e0f8,#88b8e8 30%,#60a0d8 60%,#4090c8);
-}
-body[data-theme="aero"][data-aero-bg="canola"] {
+body[data-theme="canola"] {
+  --bg: #6b8e23;
+  --surface: rgba(255,255,255,0.72);
+  --surface2: rgba(255,255,255,0.55);
+  --border: rgba(160,144,16,0.55);
+  --text: #1a2a0a;
+  --text2: #556b2f;
+  --accent: #4a7c10;
+  --accent2: #6b8e23;
+  --accent-on: #fff;
+  --shield: #2e7d32;
+  --shield-bg: rgba(255,255,255,0.7);
+
+  --tab-bar-bg: linear-gradient(180deg,#3a5a08,#1e3505);
+  --tab-bar-border: #c8b010;
+  --tab-active-bg: linear-gradient(180deg,#e8f0c8,#d8e0a8);
+  --tab-active-text: #1a2a0a;
+  --tab-inactive-bg: linear-gradient(180deg,#506e1a,#3a5210);
+  --tab-inactive-text: #d8d040;
+  --tab-border: #c8b010;
+
+  --toolbar-bg: linear-gradient(180deg,#3a5a08,#1e3505);
+  --toolbar-border: #c8b010;
+  --toolbar-btn-bg: linear-gradient(180deg,#506e1a,#3a5210);
+  --toolbar-btn-text: #f0e060;
+  --toolbar-btn-border: #c8b010;
+  --toolbar-btn-hover-bg: linear-gradient(180deg,#6b8e23,#4a7c10);
+  --toolbar-btn-hover-text: #fff;
+  --toolbar-btn-hover-border: #f0e060;
+
+  --menubar-bg: linear-gradient(180deg,#1e3505,#0a1a02);
+  --menubar-border: #c8b010;
+  --menubar-text: #f0e060;
+  --statusbar-bg: linear-gradient(180deg,#1e3505,#0a1a02);
+  --statusbar-text: #d8d040;
+  --statusbar-border: #c8b010;
+
+  --input-bg: rgba(255,255,255,0.85);
+  --input-text: #1a2a0a;
+  --input-border: #c8b010;
+  --input-focus: #4a7c10;
+  --content-bg: rgba(255,255,255,0.18);
   --bg-image: url('backgrounds/canola.jpg');
+  --font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-body[data-theme="aero"][data-aero-bg="mountains"] {
+body[data-theme="canola"] { background: var(--bg-image) center/cover fixed; }
+
+body[data-theme="mountains"] {
+  --bg: #1a3a5a;
+  --surface: rgba(10,20,35,0.85);
+  --surface2: rgba(20,35,50,0.7);
+  --border: rgba(160,200,224,0.4);
+  --text: #f0f0f0;
+  --text2: #c0d8f0;
+  --accent: #7cb9e8;
+  --accent2: #a8d4f0;
+  --accent-on: #0a1828;
+  --shield: #7cb9e8;
+  --shield-bg: rgba(20,30,40,0.85);
+
+  --tab-bar-bg: rgba(20,30,40,0.9);
+  --tab-bar-border: #80b0d0;
+  --tab-active-bg: linear-gradient(180deg,rgba(60,90,120,0.95),rgba(40,70,100,0.95));
+  --tab-active-text: #fff;
+  --tab-inactive-bg: rgba(20,35,50,0.78);
+  --tab-inactive-text: #a0c0e0;
+  --tab-border: #80b0d0;
+
+  --toolbar-bg: rgba(20,30,40,0.85);
+  --toolbar-border: #a0c0e0;
+  --toolbar-btn-bg: rgba(40,60,80,0.85);
+  --toolbar-btn-text: #d0e8f8;
+  --toolbar-btn-border: #80b0d0;
+  --toolbar-btn-hover-bg: rgba(60,90,120,0.95);
+  --toolbar-btn-hover-text: #fff;
+  --toolbar-btn-hover-border: #a8d4f0;
+
+  --menubar-bg: rgba(10,20,30,0.92);
+  --menubar-border: #a0c0e0;
+  --menubar-text: #d0e8f8;
+  --statusbar-bg: rgba(10,20,30,0.92);
+  --statusbar-text: #c0d8f0;
+  --statusbar-border: #a0c0e0;
+
+  --input-bg: rgba(10,20,30,0.85);
+  --input-text: #f0f0f0;
+  --input-border: #80b0d0;
+  --input-focus: #7cb9e8;
+  --content-bg: rgba(10,20,30,0.55);
   --bg-image: url('backgrounds/mountains.jpg');
 }
-body[data-theme="aero"][data-aero-bg="fortress"] {
+body[data-theme="mountains"] { background: var(--bg-image) center/cover fixed; }
+
+body[data-theme="fortress"] {
+  --bg: #3a2a1a;
+  --surface: rgba(15,10,5,0.85);
+  --surface2: rgba(30,20,10,0.75);
+  --border: rgba(192,160,96,0.5);
+  --text: #e8e0d0;
+  --text2: #a89878;
+  --accent: #c9a84c;
+  --accent2: #dabb66;
+  --accent-on: #1a0c00;
+  --shield: #c9a84c;
+  --shield-bg: rgba(15,10,5,0.85);
+
+  --tab-bar-bg: rgba(30,20,10,0.92);
+  --tab-bar-border: #c0a060;
+  --tab-active-bg: linear-gradient(180deg,rgba(80,55,25,0.95),rgba(60,40,20,0.95));
+  --tab-active-text: #f0d080;
+  --tab-inactive-bg: rgba(25,15,5,0.8);
+  --tab-inactive-text: #c0a060;
+  --tab-border: #c0a060;
+
+  --toolbar-bg: rgba(30,20,10,0.92);
+  --toolbar-border: #c0a060;
+  --toolbar-btn-bg: rgba(50,35,15,0.88);
+  --toolbar-btn-text: #f0d080;
+  --toolbar-btn-border: #c0a060;
+  --toolbar-btn-hover-bg: rgba(80,55,25,0.95);
+  --toolbar-btn-hover-text: #fff;
+  --toolbar-btn-hover-border: #dabb66;
+
+  --menubar-bg: rgba(15,10,5,0.94);
+  --menubar-border: #c0a060;
+  --menubar-text: #f0d080;
+  --statusbar-bg: rgba(15,10,5,0.94);
+  --statusbar-text: #c0a060;
+  --statusbar-border: #c0a060;
+
+  --input-bg: rgba(15,10,5,0.85);
+  --input-text: #f0d080;
+  --input-border: #c0a060;
+  --input-focus: #c9a84c;
+  --content-bg: rgba(0,0,0,0.55);
   --bg-image: url('backgrounds/fortress.jpg');
 }
+body[data-theme="fortress"] { background: var(--bg-image) center/cover fixed; }
 
-/* =============================================================
-   THEME: retrowave (1980s neon / vaporwave)
-   ============================================================= */
 body[data-theme="retrowave"] {
   --bg: #1a0a2e;
   --surface: rgba(40, 8, 60, 0.85);
@@ -158,7 +274,6 @@ body[data-theme="retrowave"] {
   --accent-on: #1a0a2e;
   --shield: #00f0ff;
   --shield-bg: rgba(40, 8, 60, 0.85);
-  --danger: #ff4070;
 
   --tab-bar-bg: linear-gradient(180deg, #2a0a4e 0%, #1a0a2e 100%);
   --tab-bar-border: #ff2d95;
@@ -167,7 +282,6 @@ body[data-theme="retrowave"] {
   --tab-inactive-bg: linear-gradient(180deg, #1a0a3e, #100828);
   --tab-inactive-text: #c896ff;
   --tab-border: #ff2d95;
-  --tab-radius: 4px 4px 0 0;
 
   --toolbar-bg: linear-gradient(180deg, #2a0a4e 0%, #1a0a2e 100%);
   --toolbar-border: #ff2d95;
@@ -178,29 +292,133 @@ body[data-theme="retrowave"] {
   --toolbar-btn-hover-text: #fff;
   --toolbar-btn-hover-border: #00f0ff;
 
+  --menubar-bg: linear-gradient(180deg, #2a0a4e 0%, #1a0a2e 100%);
+  --menubar-border: #ff2d95;
+  --menubar-text: #00f0ff;
+  --statusbar-bg: linear-gradient(180deg, #2a0a4e 0%, #1a0a2e 100%);
+  --statusbar-text: #c896ff;
+  --statusbar-border: #ff2d95;
+
   --input-bg: rgba(20, 5, 40, 0.85);
   --input-text: #f7e7ff;
   --input-border: #ff2d95;
   --input-focus: #00f0ff;
   --content-bg: #0a0420;
-
-  --radius: 4px;
-  --radius-tab: 4px 4px 0 0;
-  --gloss-overlay: linear-gradient(180deg, rgba(255,45,149,0.08) 0%, rgba(0,240,255,0.03) 100%);
   --bg-image: linear-gradient(180deg, #1a0a2e 0%, #2a0a4e 50%, #4a0a6e 100%);
-  --font: 'Inter', 'Segoe UI', sans-serif;
+}
+body[data-theme="retrowave"] { background: var(--bg-image) fixed; }
+
+/* "custom" theme — uses --bg-image which is set inline by JS from settings.customBg */
+body[data-theme="custom"] {
+  --bg: #0a0a0a;
+  --surface: rgba(15,15,15,0.82);
+  --surface2: rgba(30,30,30,0.7);
+  --border: rgba(170,170,170,0.4);
+  --text: #f0f0f0;
+  --text2: #ccc;
+  --accent: #888;
+  --accent2: #aaa;
+  --accent-on: #fff;
+  --shield: #22c55e;
+  --shield-bg: rgba(15,15,15,0.85);
+
+  --tab-bar-bg: rgba(20,20,20,0.92);
+  --tab-bar-border: #aaa;
+  --tab-active-bg: rgba(50,50,50,0.95);
+  --tab-active-text: #fff;
+  --tab-inactive-bg: rgba(20,20,20,0.78);
+  --tab-inactive-text: #ccc;
+  --tab-border: #aaa;
+
+  --toolbar-bg: rgba(20,20,20,0.92);
+  --toolbar-border: #aaa;
+  --toolbar-btn-bg: rgba(40,40,40,0.85);
+  --toolbar-btn-text: #eee;
+  --toolbar-btn-border: #aaa;
+  --toolbar-btn-hover-bg: rgba(60,60,60,0.95);
+  --toolbar-btn-hover-text: #fff;
+  --toolbar-btn-hover-border: #fff;
+
+  --menubar-bg: rgba(10,10,10,0.94);
+  --menubar-border: #aaa;
+  --menubar-text: #eee;
+  --statusbar-bg: rgba(10,10,10,0.94);
+  --statusbar-text: #ccc;
+  --statusbar-border: #aaa;
+
+  --input-bg: rgba(15,15,15,0.85);
+  --input-text: #eee;
+  --input-border: #aaa;
+  --input-focus: #fff;
+  --content-bg: rgba(0,0,0,0.55);
+}
+body[data-theme="custom"] { background: var(--bg-image) center/cover fixed, #0a0a0a; }
+
+/* ─── MODIFIERS ──────────────────────────────────────────────── */
+body[data-sharp="1"] {
+  --radius: 0 !important;
+  --radius-tab: 0 !important;
+}
+body[data-glossy="1"] {
+  --gloss-overlay: linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.04) 100%);
 }
 
 /* =============================================================
    STRUCTURE
    ============================================================= */
 
-/* Tab bar (above toolbar) */
+/* Menubar — only shown for Win 7 layout */
+#menubar {
+  flex: 0 0 24px;
+  display: none;
+  align-items: center;
+  height: 24px;
+  background: var(--menubar-bg);
+  background-image: var(--gloss-overlay), var(--menubar-bg);
+  border-bottom: 1px solid var(--menubar-border);
+  padding: 0 8px;
+  font-size: 11px;
+  color: var(--menubar-text);
+  z-index: 12;
+}
+body[data-layout="win7"] #menubar { display: flex; }
+#menubar .mb-brand { font-weight: 700; margin-right: 14px; font-size: 12px; }
+#menubar .mb-btn {
+  background: transparent;
+  border: none;
+  color: var(--menubar-text);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 10px;
+  font-family: var(--font);
+}
+#menubar .mb-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+/* Statusbar — only shown for Win 7 layout */
+#statusbar {
+  flex: 0 0 22px;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  height: 22px;
+  background: var(--statusbar-bg);
+  background-image: var(--gloss-overlay), var(--statusbar-bg);
+  border-top: 1px solid var(--statusbar-border);
+  padding: 0 10px;
+  font-size: 11px;
+  color: var(--statusbar-text);
+  z-index: 12;
+}
+body[data-layout="win7"] #statusbar { display: flex; }
+#statusbar .sb-spacer { flex: 1; }
+
+/* Tab bar */
 #tab-bar {
   flex: 0 0 32px;
   display: flex;
   align-items: flex-end;
   background: var(--tab-bar-bg);
+  background-image: var(--gloss-overlay), var(--tab-bar-bg);
   border-bottom: 1px solid var(--tab-bar-border);
   padding: 4px 4px 0;
   gap: 2px;
@@ -226,7 +444,7 @@ body[data-theme="retrowave"] {
   color: var(--tab-inactive-text);
   border: 1px solid var(--tab-border);
   border-bottom: none;
-  border-radius: var(--tab-radius);
+  border-radius: var(--radius-tab);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -273,7 +491,7 @@ body[data-theme="retrowave"] {
   background: transparent;
   color: var(--tab-inactive-text);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 18px;
   font-weight: 300;
@@ -318,6 +536,14 @@ body[data-theme="retrowave"] {
   z-index: 10;
 }
 
+/* Win 7 layout: tighter toolbar with text-prefixed buttons */
+body[data-layout="win7"] #toolbar {
+  flex: 0 0 36px;
+  height: 36px;
+  padding: 3px 6px;
+  gap: 3px;
+}
+
 .nav-btn {
   width: 30px; height: 30px;
   border: none;
@@ -332,6 +558,25 @@ body[data-theme="retrowave"] {
 .nav-btn:disabled { opacity: 0.35; cursor: default; }
 .nav-btn:disabled:hover { background: transparent; color: var(--toolbar-btn-text); }
 .nav-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+/* Win 7: navigation buttons get a glossy beveled look */
+body[data-layout="win7"] .nav-btn {
+  width: auto;
+  height: 26px;
+  padding: 0 10px;
+  background: var(--toolbar-btn-bg);
+  background-image: var(--gloss-overlay), var(--toolbar-btn-bg);
+  border: 1px solid var(--toolbar-btn-border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font);
+}
+body[data-layout="win7"] .nav-btn svg { display: none; }
+body[data-layout="win7"] #btn-back::before    { content: 'Back'; }
+body[data-layout="win7"] #btn-forward::before { content: 'Fwd'; }
+body[data-layout="win7"] #btn-reload::before  { content: 'Reload'; }
+body[data-layout="win7"] #btn-home::before    { content: 'Home'; }
 
 #url-bar {
   flex: 1;
@@ -348,12 +593,14 @@ body[data-theme="retrowave"] {
 }
 #url-bar:focus { border-color: var(--input-focus); }
 #url-bar::placeholder { color: var(--text2); opacity: 0.7; }
+body[data-layout="win7"] #url-bar { height: 26px; padding: 0 10px; font-size: 12px; }
 
 #shield {
   display: flex;
   align-items: center;
   gap: 5px;
   background: var(--shield-bg);
+  background-image: var(--gloss-overlay), var(--shield-bg);
   border: 1px solid var(--input-border);
   border-radius: var(--radius);
   padding: 0 10px;
@@ -364,6 +611,7 @@ body[data-theme="retrowave"] {
   user-select: none;
 }
 #shield svg { width: 14px; height: 14px; fill: var(--shield); }
+body[data-layout="win7"] #shield { height: 26px; font-size: 11px; }
 
 .toolbar-btn {
   display: flex;
@@ -385,6 +633,7 @@ body[data-theme="retrowave"] {
 }
 .toolbar-btn:hover {
   background: var(--toolbar-btn-hover-bg);
+  background-image: var(--gloss-overlay), var(--toolbar-btn-hover-bg);
   color: var(--toolbar-btn-hover-text);
   border-color: var(--toolbar-btn-hover-border);
 }
@@ -394,11 +643,13 @@ body[data-theme="retrowave"] {
   border-color: var(--accent);
 }
 .toolbar-btn svg { width: 14px; height: 14px; fill: currentColor; }
+body[data-layout="win7"] .toolbar-btn { height: 26px; font-size: 11px; padding: 0 8px; }
 
 #clear-btn {
   height: 32px;
   border: 1px solid var(--toolbar-btn-border);
   background: var(--toolbar-btn-bg);
+  background-image: var(--gloss-overlay), var(--toolbar-btn-bg);
   color: var(--toolbar-btn-text);
   padding: 0 12px;
   font-size: 11px;
@@ -410,6 +661,7 @@ body[data-theme="retrowave"] {
   letter-spacing: 0.3px;
 }
 #clear-btn:hover { background: rgba(239,68,68,0.15); color: var(--danger); border-color: var(--danger); }
+body[data-layout="win7"] #clear-btn { height: 26px; font-size: 11px; }
 
 #loading-bar {
   position: absolute;
@@ -473,7 +725,7 @@ webview.active { display: flex; }
 #update-banner { background: rgba(34, 197, 94, 0.15); border-bottom: 1px solid var(--shield); color: var(--text); top: 36px; }
 #update-banner button:not(.dismiss) { background: var(--shield); color: #fff; }
 
-/* Bookmarks panel */
+/* Bookmarks + Downloads panels */
 #bookmarks-panel, #download-panel {
   display: none;
   position: absolute;
@@ -501,7 +753,6 @@ webview.active { display: flex; }
   cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px;
 }
 #bm-header button:hover, #dl-header button:hover { color: var(--text); background: var(--surface2); }
-
 #bm-list, #dl-list { overflow-y: auto; flex: 1; max-height: 350px; }
 .bm-item {
   padding: 8px 14px;
@@ -588,7 +839,7 @@ webview.active { display: flex; }
 #pin-error { color: var(--danger); font-size: 12px; min-height: 16px; }
 </style>
 </head>
-<body data-theme="default" data-sharp="0" data-glossy="0" data-aero-bg="fruiter" data-bgimage="0">
+<body data-layout="default" data-theme="default" data-sharp="0" data-glossy="0" data-bgimage="0">
 
 <!-- PIN lock -->
 <div id="pin-overlay">
@@ -598,6 +849,14 @@ webview.active { display: flex; }
   <div id="pin-error"></div>
   <button class="pin-btn" id="pin-submit">Set PIN</button>
   <button class="pin-skip" id="pin-skip">Skip</button>
+</div>
+
+<!-- Menubar (Win 7 layout only) -->
+<div id="menubar">
+  <span class="mb-brand">Wizard Browser</span>
+  <button class="mb-btn" id="mb-tjr">TJR://</button>
+  <button class="mb-btn" id="mb-music" title="Coming soon">Music</button>
+  <button class="mb-btn" id="mb-settings">Settings</button>
 </div>
 
 <!-- Tab bar -->
@@ -629,7 +888,7 @@ webview.active { display: flex; }
     <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
   </button>
   <button class="toolbar-btn" id="tor-btn" title="Connect via Tor (SOCKS5 on 127.0.0.1:9050)">
-    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93z"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
     <span>TOR</span>
   </button>
   <button class="toolbar-btn" id="dl-btn" title="Downloads (Ctrl+J)">
@@ -655,8 +914,6 @@ webview.active { display: flex; }
     <button class="dismiss" id="update-dismiss">&times;</button>
   </div>
 
-  <!-- Webviews are appended here, one per tab -->
-
   <div id="bookmarks-panel">
     <div id="bm-header"><span>Bookmarks</span><button id="bm-close">&times;</button></div>
     <div id="bm-list"></div>
@@ -665,6 +922,14 @@ webview.active { display: flex; }
     <div id="dl-header"><span>Downloads</span><button id="dl-close">&times;</button></div>
     <div id="dl-list"></div>
   </div>
+</div>
+
+<!-- Statusbar (Win 7 layout only) -->
+<div id="statusbar">
+  <span id="sb-trackers">0 trackers blocked</span>
+  <span id="sb-tor"></span>
+  <div class="sb-spacer"></div>
+  <span id="sb-clock"></span>
 </div>
 
 <!-- Tab right-click context menu -->
@@ -681,9 +946,6 @@ webview.active { display: flex; }
 </div>
 
 <script>
-// =====================================================================
-// Wizard Browser shell — multi-tab + theming
-// =====================================================================
 const HOME_URL     = new URL('search.html',   location.href).href;
 const SETTINGS_URL = new URL('settings.html', location.href).href;
 const IRC_URL      = new URL('irc.html',      location.href).href;
@@ -698,60 +960,40 @@ const btnBack   = $('#btn-back');
 const btnForward = $('#btn-forward');
 const tabCtx    = $('#tab-ctx');
 
-// state
-let tabs = [];           // [{ id, title, view, ctxMenuTabId? }]
+let tabs = [];
 let activeTabId = null;
 let nextTabId   = 1;
 let ctxTabId    = null;
 
 function escHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 
-// ────────── Theme application ──────────
-let themeSettings = {
-  themeMode: 'default',
-  sharpEdges: false,
-  glossyUI: false,
-  aeroBackground: 'fruiter'
-};
-
-function applyTheme(t) {
-  if (!t) return;
-  themeSettings = { ...themeSettings, ...t };
+// ─────────── Theme + Layout + Modifiers application ───────────
+function applyAppearance(s) {
+  if (!s) return;
   const body = document.body;
-  body.dataset.theme = themeSettings.themeMode || 'default';
-  body.dataset.sharp = themeSettings.sharpEdges ? '1' : '0';
-  body.dataset.glossy = themeSettings.glossyUI ? '1' : '0';
-  body.dataset.aeroBg = themeSettings.aeroBackground || 'fruiter';
-  body.dataset.bgimage = (themeSettings.themeMode === 'aero' || themeSettings.themeMode === 'retrowave') ? '1' : '0';
-  if (themeSettings.themeMode === 'aero' && themeSettings.aeroBackground === 'custom' && themeSettings.customBg) {
-    body.style.setProperty('--bg-image', `url(${themeSettings.customBg})`);
+  body.dataset.layout = s.layout || 'default';
+  body.dataset.theme  = s.theme  || 'default';
+  body.dataset.sharp  = s.sharpEdges ? '1' : '0';
+  body.dataset.glossy = s.glossyUI   ? '1' : '0';
+  // bg-image: themed themes set their own; "custom" theme uses uploaded data URL
+  if (s.theme === 'custom' && s.customBg) {
+    body.style.setProperty('--bg-image', `url(${s.customBg})`);
+    body.dataset.bgimage = '1';
   } else {
     body.style.removeProperty('--bg-image');
+    body.dataset.bgimage = (s.theme && s.theme !== 'default') ? '1' : '0';
   }
 }
 
-async function loadInitialTheme() {
+async function loadInitialAppearance() {
   if (!window.wizardBrowser) return;
   try {
-    const settings = await window.wizardBrowser.getSettings();
-    applyTheme({
-      themeMode: settings.themeMode || (legacyToMode(settings.theme) || 'default'),
-      sharpEdges: !!settings.sharpEdges,
-      glossyUI: !!settings.glossyUI,
-      aeroBackground: settings.aeroBackground || 'fruiter',
-      customBg: settings.customBg || ''
-    });
+    const s = await window.wizardBrowser.getSettings();
+    applyAppearance(s);
   } catch {}
 }
-function legacyToMode(legacy) {
-  if (!legacy) return null;
-  if (['frutiger-aero','aero','mountains','canola','fortress'].includes(legacy)) return 'aero';
-  if (legacy === 'hacker' || legacy === 'classic' || legacy === 'midnight') return 'default';
-  if (legacy === 'retrowave') return 'retrowave';
-  return null;
-}
 
-// ────────── Tab management ──────────
+// ─────────── Tab management ───────────
 function createWebview(initialUrl) {
   const wv = document.createElement('webview');
   wv.setAttribute('partition', 'persist:wizard');
@@ -840,10 +1082,7 @@ function closeTab(id) {
   const tab = tabs[idx];
   tab.wv.remove();
   tabs.splice(idx, 1);
-  if (tabs.length === 0) {
-    newTab();
-    return;
-  }
+  if (tabs.length === 0) { newTab(); return; }
   if (activeTabId === id) {
     const next = tabs[Math.min(idx, tabs.length - 1)];
     activeTabId = null;
@@ -875,14 +1114,11 @@ function renderTabs() {
     el.dataset.tabId = tab.id;
     el.draggable = true;
     el.innerHTML = `<span class="tab-title" title="${escHtml(tab.title)}">${escHtml(tab.title || 'New Tab')}</span><span class="tab-close" title="Close tab">×</span>`;
-
     el.addEventListener('click', (e) => {
       if (e.target.classList.contains('tab-close')) { closeTab(tab.id); return; }
       activateTab(tab.id);
     });
-    el.addEventListener('mousedown', (e) => {
-      if (e.button === 1) { e.preventDefault(); closeTab(tab.id); }
-    });
+    el.addEventListener('mousedown', (e) => { if (e.button === 1) { e.preventDefault(); closeTab(tab.id); } });
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       ctxTabId = tab.id;
@@ -890,8 +1126,6 @@ function renderTabs() {
       tabCtx.style.top  = e.clientY + 'px';
       tabCtx.classList.add('show');
     });
-
-    // drag & drop reorder
     el.addEventListener('dragstart', (e) => {
       el.classList.add('dragging');
       e.dataTransfer.setData('text/plain', String(tab.id));
@@ -907,10 +1141,8 @@ function renderTabs() {
       const toIdx   = tabs.findIndex(t => t.id === tab.id);
       moveTab(fromIdx, toIdx);
     });
-
     tabBar.appendChild(el);
   }
-  // + button
   const plus = document.createElement('button');
   plus.id = 'new-tab-btn';
   plus.title = 'New tab (Ctrl+T)';
@@ -919,13 +1151,11 @@ function renderTabs() {
   tabBar.appendChild(plus);
 }
 
-// Tab context menu actions
 tabCtx.addEventListener('click', (e) => {
   const act = e.target.dataset.act;
   if (!act || ctxTabId == null) return;
   const tabId = ctxTabId;
-  tabCtx.classList.remove('show');
-  ctxTabId = null;
+  tabCtx.classList.remove('show'); ctxTabId = null;
   const idx = tabs.findIndex(t => t.id === tabId);
   if (idx < 0) return;
   switch (act) {
@@ -934,21 +1164,12 @@ tabCtx.addEventListener('click', (e) => {
     case 'newtab':       newTab(); break;
     case 'newtab-right': newTab({ afterId: tabId }); break;
     case 'close':        closeTab(tabId); break;
-    case 'close-others': {
-      const keep = tabs[idx];
-      [...tabs].forEach(t => { if (t.id !== keep.id) closeTab(t.id); });
-      break;
-    }
-    case 'close-right': {
-      const ids = tabs.slice(idx + 1).map(t => t.id);
-      ids.forEach(id => closeTab(id));
-      break;
-    }
+    case 'close-others': { const keep = tabs[idx]; [...tabs].forEach(t => { if (t.id !== keep.id) closeTab(t.id); }); break; }
+    case 'close-right':  { const ids = tabs.slice(idx + 1).map(t => t.id); ids.forEach(id => closeTab(id)); break; }
   }
 });
 document.addEventListener('click', () => { if (tabCtx.classList.contains('show')) { tabCtx.classList.remove('show'); ctxTabId = null; } });
 
-// ────────── Active webview helpers ──────────
 function activeView() { const t = tabs.find(x => x.id === activeTabId); return t ? t.wv : null; }
 
 function navigate(input) {
@@ -980,7 +1201,6 @@ function updateNav() {
   } catch {}
 }
 
-// ────────── Toolbar wiring ──────────
 urlBar.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); navigate(urlBar.value); urlBar.blur(); }
 });
@@ -997,7 +1217,6 @@ $('#clear-btn').addEventListener('click', async () => {
   blockedSpan.textContent = '0';
 });
 
-// Tor toggle
 const torBtn = $('#tor-btn');
 let torActive = false;
 torBtn.addEventListener('click', async () => {
@@ -1005,13 +1224,18 @@ torBtn.addEventListener('click', async () => {
   const ok = await window.wizardBrowser.toggleTor(torActive);
   if (ok) torBtn.classList.toggle('active', torActive);
   else { torActive = false; torBtn.classList.remove('active'); }
+  updateStatusbar();
 });
 
-// ────────── Bookmarks ──────────
-const bmToggle = $('#bookmarks-toggle');
-const bmPanel  = $('#bookmarks-panel');
-const bmList   = $('#bm-list');
+// Menubar wiring (Win 7)
+$('#mb-tjr').addEventListener('click', () => { const wv = activeView(); wv && wv.loadURL(HOME_URL + '#tjr'); });
+$('#mb-music').addEventListener('click', () => { /* placeholder */ });
+$('#mb-settings').addEventListener('click', () => { const wv = activeView(); wv && wv.loadURL(SETTINGS_URL); });
 
+// ─────────── Bookmarks ───────────
+const bmToggle = $('#bookmarks-toggle');
+const bmPanel = $('#bookmarks-panel');
+const bmList = $('#bm-list');
 $('#bookmark-btn').addEventListener('click', async () => {
   const t = tabs.find(x => x.id === activeTabId);
   if (!t) return;
@@ -1039,22 +1263,14 @@ async function renderBookmarks() {
         <div class="bm-url">${escHtml(bm.url)}</div>
       </div>
       <button class="bm-remove" title="Remove">&times;</button>`;
-    div.querySelector('.bm-title').addEventListener('click', () => {
-      const wv = activeView(); wv && wv.loadURL(bm.url);
-      bmPanel.classList.remove('show');
-    });
-    div.querySelector('.bm-remove').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await window.wizardBrowser.removeBookmark(bm.url);
-      renderBookmarks();
-    });
+    div.querySelector('.bm-title').addEventListener('click', () => { const wv = activeView(); wv && wv.loadURL(bm.url); bmPanel.classList.remove('show'); });
+    div.querySelector('.bm-remove').addEventListener('click', async (e) => { e.stopPropagation(); await window.wizardBrowser.removeBookmark(bm.url); renderBookmarks(); });
     bmList.appendChild(div);
   });
 }
-
 window.wizardBrowser.onBookmarkAdded(() => renderBookmarks());
 
-// ────────── Downloads ──────────
+// ─────────── Downloads ───────────
 const dlPanel = $('#download-panel');
 const dlList  = $('#dl-list');
 $('#dl-btn').addEventListener('click', () => dlPanel.classList.toggle('show'));
@@ -1067,13 +1283,7 @@ function renderDownload(dl) {
   const pct = dl.totalBytes > 0 ? Math.round((dl.receivedBytes / dl.totalBytes) * 100) : 0;
   const isDone = dl.state === 'completed';
   const isFailed = dl.state === 'cancelled' || dl.state === 'interrupted';
-  if (!el) {
-    el = document.createElement('div');
-    el.className = 'dl-item';
-    el.id = 'dl-' + dl.id;
-    dlList.prepend(el);
-    dlPanel.classList.add('show');
-  }
+  if (!el) { el = document.createElement('div'); el.className = 'dl-item'; el.id = 'dl-' + dl.id; dlList.prepend(el); dlPanel.classList.add('show'); }
   el.innerHTML = `
     <div class="dl-filename" title="${escHtml(dl.filename)}">${escHtml(dl.filename)}</div>
     ${!isDone && !isFailed ? `<div class="dl-progress-bar"><div class="dl-progress-fill" style="width:${pct}%"></div></div>` : ''}
@@ -1091,7 +1301,7 @@ window.wizardBrowser.onDownloadStarted(renderDownload);
 window.wizardBrowser.onDownloadUpdated(renderDownload);
 window.wizardBrowser.onDownloadDone(renderDownload);
 
-// ────────── Onion + update banners ──────────
+// ─────────── Onion + update banners ───────────
 const onionBanner = $('#onion-banner');
 let currentOnion = null;
 window.wizardBrowser.onOnionAvailable((data) => {
@@ -1117,19 +1327,24 @@ window.wizardBrowser.onUpdateStatus((data) => {
 $('#update-install').addEventListener('click', () => window.wizardBrowser.installUpdate());
 $('#update-dismiss').addEventListener('click', () => updateBanner.classList.remove('show'));
 
-// ────────── Other listeners ──────────
-window.wizardBrowser.onBlockedUpdate((c) => blockedSpan.textContent = c);
+// ─────────── Statusbar ───────────
+function updateStatusbar() {
+  const tEl = $('#sb-trackers'); if (tEl) tEl.textContent = blockedSpan.textContent + ' trackers blocked';
+  const torEl = $('#sb-tor'); if (torEl) torEl.textContent = torActive ? 'Tor: on' : '';
+}
+function tickClock() { const c = $('#sb-clock'); if (c) c.textContent = new Date().toLocaleTimeString(); }
+setInterval(tickClock, 1000); tickClock();
+
+// ─────────── Misc events ───────────
+window.wizardBrowser.onBlockedUpdate((c) => { blockedSpan.textContent = c; updateStatusbar(); });
 
 if (window.wizardBrowser.onSearchSelection) {
-  window.wizardBrowser.onSearchSelection((text) => {
-    const wv = activeView(); wv && wv.loadURL(HOME_URL + '#q=' + encodeURIComponent(text));
-  });
+  window.wizardBrowser.onSearchSelection((text) => { const wv = activeView(); wv && wv.loadURL(HOME_URL + '#q=' + encodeURIComponent(text)); });
 }
 if (window.wizardBrowser.onNavigateShell) {
   window.wizardBrowser.onNavigateShell((where) => {
     const wv = activeView(); if (!wv) return;
     if (where === 'settings') wv.loadURL(SETTINGS_URL);
-    else if (where === 'irc') wv.loadURL(IRC_URL);
     else if (where === 'home') wv.loadURL(HOME_URL);
     else if (where === 'newtab') newTab();
   });
@@ -1138,15 +1353,7 @@ if (window.wizardBrowser.onNavigateShellUrl) {
   window.wizardBrowser.onNavigateShellUrl((url) => { const wv = activeView(); try { wv && wv.loadURL(url); } catch {} });
 }
 if (window.wizardBrowser.onSettingsChanged) {
-  window.wizardBrowser.onSettingsChanged((s) => {
-    applyTheme({
-      themeMode: s.themeMode || 'default',
-      sharpEdges: !!s.sharpEdges,
-      glossyUI: !!s.glossyUI,
-      aeroBackground: s.aeroBackground || 'fruiter',
-      customBg: s.customBg || ''
-    });
-  });
+  window.wizardBrowser.onSettingsChanged((s) => applyAppearance(s));
 }
 
 // Keyboard shortcuts
@@ -1157,11 +1364,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'F5') { try { activeView() && activeView().reload(); } catch {} }
   if (e.ctrlKey && e.key === 'r') { try { activeView() && activeView().reload(); } catch {} }
   if (e.ctrlKey && e.key === 'j') { dlPanel.classList.toggle('show'); e.preventDefault(); }
-  if (e.ctrlKey && e.key === 'b') {
-    bmPanel.classList.toggle('show');
-    if (bmPanel.classList.contains('show')) renderBookmarks();
-    e.preventDefault();
-  }
+  if (e.ctrlKey && e.key === 'b') { bmPanel.classList.toggle('show'); if (bmPanel.classList.contains('show')) renderBookmarks(); e.preventDefault(); }
   if (e.ctrlKey && e.key === 'd') { $('#bookmark-btn').click(); e.preventDefault(); }
   if (e.ctrlKey && e.key === 't') { e.preventDefault(); newTab(); }
   if (e.ctrlKey && e.key === 'w') { e.preventDefault(); if (activeTabId != null) closeTab(activeTabId); }
@@ -1175,7 +1378,7 @@ function cycleTab(dir) {
   activateTab(tabs[next].id);
 }
 
-// ────────── PIN lock ──────────
+// PIN lock
 (async () => {
   if (!window.wizardBrowser) return;
   const pinState = await window.wizardBrowser.getPinState();
@@ -1186,14 +1389,10 @@ function cycleTab(dir) {
   const pinTitle = $('#pin-title');
   const pinDesc = $('#pin-desc');
   const pinError = $('#pin-error');
-
   if (pinState.enabled) {
     overlay.classList.add('show');
-    pinTitle.textContent = 'Enter PIN';
-    pinDesc.textContent = 'Enter your PIN to unlock Wizard Browser.';
-    pinSubmit.textContent = 'Unlock';
-    pinSkip.style.display = 'none';
-    pinInput.focus();
+    pinTitle.textContent = 'Enter PIN'; pinDesc.textContent = 'Enter your PIN to unlock Wizard Browser.';
+    pinSubmit.textContent = 'Unlock'; pinSkip.style.display = 'none'; pinInput.focus();
     pinSubmit.onclick = async () => {
       const pin = pinInput.value;
       if (pin.length < 4) { pinError.textContent = 'PIN must be at least 4 digits'; return; }
@@ -1203,8 +1402,7 @@ function cycleTab(dir) {
     };
     pinInput.onkeydown = (e) => { if (e.key === 'Enter') pinSubmit.click(); };
   } else if (!pinState.asked) {
-    overlay.classList.add('show');
-    pinInput.focus();
+    overlay.classList.add('show'); pinInput.focus();
     pinSubmit.onclick = async () => {
       const pin = pinInput.value;
       if (pin.length < 4) { pinError.textContent = 'PIN must be at least 4 digits'; return; }
@@ -1216,9 +1414,9 @@ function cycleTab(dir) {
   }
 })();
 
-// ────────── Boot ──────────
-loadInitialTheme();
-newTab(); // open the first tab
+// Boot
+loadInitialAppearance();
+newTab();
 </script>
 </body>
 </html>

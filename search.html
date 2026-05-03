@@ -68,6 +68,57 @@ body.theme-hacker {
 body.theme-hacker { font-family: 'Courier New', monospace !important; }
 body.theme-hacker * { font-family: inherit !important; }
 
+/* "Custom" theme — uses inline body background from JS */
+body.theme-custom {
+  --bg: #0a0a0a; --surface: rgba(15,15,15,0.82); --surface2: rgba(30,30,30,0.7); --border: rgba(170,170,170,0.4);
+  --text: #f0f0f0; --text2: #ccc; --accent: #888; --accent2: #aaa;
+  --green: #22c55e; --red: #ef4444;
+  --link: #aaa; --link-hover: #fff; --url-color: #888; --snippet: #ccc;
+}
+body.theme-custom .result { background: rgba(20,20,20,0.85); border-color: rgba(170,170,170,0.4); backdrop-filter: blur(8px); }
+body.theme-custom #search-form { background: rgba(20,20,20,0.7); border-color: rgba(170,170,170,0.4); backdrop-filter: blur(8px); }
+body.theme-custom .shortcut { background: rgba(20,20,20,0.7); border-color: rgba(170,170,170,0.4); backdrop-filter: blur(6px); }
+
+/* Sharp Edges modifier — applies to every theme */
+body[data-sharp="1"] #search-form,
+body[data-sharp="1"] #search-btn,
+body[data-sharp="1"] .shortcut,
+body[data-sharp="1"] .result,
+body[data-sharp="1"] #knowledge-panel,
+body[data-sharp="1"] #results-search-form,
+body[data-sharp="1"] #results-search-btn,
+body[data-sharp="1"] .tab-btn,
+body[data-sharp="1"] .pagination button,
+body[data-sharp="1"] #offline-container,
+body[data-sharp="1"] #offline-btn,
+body[data-sharp="1"] .offline-button,
+body[data-sharp="1"] .offline-input,
+body[data-sharp="1"] .offline-cache-list li,
+body[data-sharp="1"] #support-drawer,
+body[data-sharp="1"] #support-drawer-close { border-radius: 0 !important; }
+
+/* Glossy UI modifier — adds a soft highlight gradient to surfaces */
+body[data-glossy="1"] #search-form,
+body[data-glossy="1"] .shortcut,
+body[data-glossy="1"] .result,
+body[data-glossy="1"] #search-btn,
+body[data-glossy="1"] #results-search-btn,
+body[data-glossy="1"] .tab-btn.active,
+body[data-glossy="1"] #offline-btn,
+body[data-glossy="1"] .offline-button {
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.04) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+/* Win 7 layout — denser look on the homepage */
+body[data-layout="win7"] {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+body[data-layout="win7"] #logo { font-family: 'Segoe UI', Tahoma, sans-serif; font-weight: 700; }
+body[data-layout="win7"] #search-form { border-radius: 4px; }
+body[data-layout="win7"] #search-btn { border-radius: 0 4px 4px 0; }
+body[data-layout="win7"] .shortcut { border-radius: 4px; }
+
 /* Theme: Retrowave / 1980s neon */
 body.theme-retrowave {
   --bg: #1a0a2e; --surface: rgba(40,8,60,0.85); --surface2: rgba(60,12,90,0.7); --border: #ff2d95;
@@ -1133,11 +1184,29 @@ body {
 #support-drawer-close:hover { color: var(--text, #fff); background: var(--surface2, #1a1a1a); }
 #support-drawer-body {
   flex: 1;
-  overflow-y: auto;
-  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+}
+#support-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+  display: block;
+}
+#support-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2, #888);
+  font-style: italic;
+  background: var(--surface, #141414);
+  pointer-events: none;
   font-size: 13px;
 }
-#support-loading { color: var(--text2, #888); font-style: italic; padding: 24px 0; text-align: center; }
+#support-loading.hide { display: none; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>
 </head>
@@ -1166,10 +1235,6 @@ body {
       <svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>
       Support
     </a>
-    <a onclick="if(window.wizardBrowser&&window.wizardBrowser.openIRC)window.wizardBrowser.openIRC()">
-      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-      IRC
-    </a>
     <a onclick="showOfflineModal()">
       <svg viewBox="0 0 24 24"><path d="M24 14h-6v-2h6v2zm-8.03 0h-2.03V4.04h-3.94V14H7.97l4.01 6 4-6zm-14 2l6 6V18h6v-4h-6V9.97l-6 6.03z"/></svg>
       Offline (tjr://)
@@ -1184,7 +1249,9 @@ body {
     <button id="support-drawer-close" title="Close">&times;</button>
   </div>
   <div id="support-drawer-body">
-    <!-- Tawk.to widget injects itself once the drawer is opened -->
+    <!-- An iframe with srcdoc containing the Tawk.to bootstrap so the chat
+         renders inside this drawer (rather than as a floating widget). -->
+    <iframe id="support-iframe" title="Support chat" allow="microphone; camera; clipboard-read; clipboard-write"></iframe>
     <div id="support-loading">Loading support chat…</div>
   </div>
 </div>
@@ -1289,22 +1356,24 @@ const resultsPerPage = 15;
 let searchStartTime = 0;
 
 // --- Load dynamic speed dial & theme from settings ---
+// Maps the new (layout + theme + modifiers) settings model onto search.html's
+// existing theme-* CSS classes, AND sets data-* attrs for sharp/glossy/custom bg.
 function applyThemeFromSettings(s) {
   if (!s) return;
-  const mode = s.themeMode || 'default';
+  const theme  = s.theme  || 'default';
+  const layout = s.layout || 'default';
   let cls = '';
-  if (mode === 'aero') {
-    const bg = s.aeroBackground || 'fruiter';
-    if (bg === 'fruiter')   cls = 'theme-frutiger-aero';
-    else if (bg === 'canola')   cls = 'theme-canola';
-    else if (bg === 'mountains') cls = 'theme-mountains';
-    else if (bg === 'fortress') cls = 'theme-fortress';
-    else cls = 'theme-frutiger-aero';
-  } else if (mode === 'retrowave') {
-    cls = 'theme-retrowave';
-  }
+  if (theme === 'frutiger')      cls = 'theme-frutiger-aero';
+  else if (theme === 'canola')   cls = 'theme-canola';
+  else if (theme === 'mountains') cls = 'theme-mountains';
+  else if (theme === 'fortress') cls = 'theme-fortress';
+  else if (theme === 'retrowave') cls = 'theme-retrowave';
+  else if (theme === 'custom')   cls = 'theme-custom';
   document.body.className = cls;
-  if (mode === 'aero' && s.aeroBackground === 'custom' && s.customBg) {
+  document.body.dataset.layout = layout;
+  document.body.dataset.sharp  = s.sharpEdges ? '1' : '0';
+  document.body.dataset.glossy = s.glossyUI   ? '1' : '0';
+  if (theme === 'custom' && s.customBg) {
     document.body.style.background = `url(${s.customBg}) center/cover fixed`;
   } else {
     document.body.style.background = '';
@@ -2411,39 +2480,57 @@ function showOfflineModal() {
   initOfflineDB();
 }
 
-// Support drawer (homepage-only — Tawk.to lazy-loads on first open)
-let _tawkLoaded = false;
+// Support drawer (homepage-only). Tawk.to is loaded inside an iframe so the
+// chat renders inside the drawer instead of as a floating widget on the page.
+let _tawkInjected = false;
+const TAWK_PROPERTY = '69f5c452b4a1331c31f06f29';
+const TAWK_WIDGET   = '1jnk0do91';
 function openSupportDrawer() {
-  // Only show on the home view, not on results
   const home = document.getElementById('home');
   if (home && home.style.display === 'none') return;
   document.getElementById('support-overlay').classList.add('show');
   document.getElementById('support-drawer').classList.add('show');
-  if (!_tawkLoaded) {
-    _tawkLoaded = true;
-    try {
-      window.Tawk_API = window.Tawk_API || {};
-      window.Tawk_LoadStart = new Date();
-      const s = document.createElement('script');
-      s.async = true;
-      s.src = 'https://embed.tawk.to/69f5c452b4a1331c31f06f29/1jnk0do91';
-      s.charset = 'UTF-8';
-      s.setAttribute('crossorigin', '*');
-      s.onerror = () => {
-        const el = document.getElementById('support-loading');
-        if (el) el.textContent = 'Could not load support chat (offline?). Try IRC instead.';
-      };
-      document.head.appendChild(s);
-      // Hide the default Tawk launcher button — we use the drawer instead
-      window.Tawk_API.onLoad = function() {
-        try { window.Tawk_API.hideWidget && window.Tawk_API.hideWidget(); } catch {}
-        const el = document.getElementById('support-loading');
-        if (el) el.textContent = 'Support chat connected. Use IRC for additional help.';
-      };
-    } catch (e) {
-      const el = document.getElementById('support-loading');
-      if (el) el.textContent = 'Could not load support chat: ' + e.message;
+  if (!_tawkInjected) {
+    _tawkInjected = true;
+    const iframe = document.getElementById('support-iframe');
+    const loading = document.getElementById('support-loading');
+    // srcdoc bootstraps Tawk.to inside the iframe with the widget shown
+    // by default (no hideWidget call), so it fills the drawer.
+    iframe.srcdoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+html,body{margin:0;padding:0;height:100%;background:#fff;font-family:system-ui,sans-serif;}
+#fallback{padding:18px;color:#444;font-size:13px;}
+#fallback a{color:#1a73e8;}
+</style></head><body>
+<div id="fallback">Connecting to support…</div>
+<script>
+window.Tawk_API = window.Tawk_API || {};
+window.Tawk_LoadStart = new Date();
+window.Tawk_API.onLoad = function(){
+  try { window.Tawk_API.maximize && window.Tawk_API.maximize(); } catch(e){}
+  var f = document.getElementById('fallback'); if (f) f.style.display='none';
+};
+(function(){
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://embed.tawk.to/${TAWK_PROPERTY}/${TAWK_WIDGET}';
+  s.charset = 'UTF-8';
+  s.setAttribute('crossorigin','*');
+  s.onerror = function(){
+    var f = document.getElementById('fallback');
+    if (f) f.innerHTML = 'Could not load support chat. Check your connection or try the IRC link in the toolbar.';
+  };
+  document.head.appendChild(s);
+  // Safety timeout: if widget isn't visible after 8s, show fallback message
+  setTimeout(function(){
+    var f = document.getElementById('fallback');
+    if (f && f.style.display !== 'none') {
+      f.innerHTML = 'Support chat is taking longer than usual to connect. <a href="https://tawk.to/chat/${TAWK_PROPERTY}/${TAWK_WIDGET}" target="_blank">Open in browser tab</a>.';
     }
+  }, 8000);
+})();
+<\/script></body></html>`;
+    // Hide our outer "Loading…" placeholder once the iframe doc loads
+    iframe.addEventListener('load', () => { if (loading) loading.classList.add('hide'); }, { once: true });
   }
 }
 function closeSupportDrawer() {
