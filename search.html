@@ -68,6 +68,27 @@ body.theme-hacker {
 body.theme-hacker { font-family: 'Courier New', monospace !important; }
 body.theme-hacker * { font-family: inherit !important; }
 
+/* Theme: Retrowave / 1980s neon */
+body.theme-retrowave {
+  --bg: #1a0a2e; --surface: rgba(40,8,60,0.85); --surface2: rgba(60,12,90,0.7); --border: #ff2d95;
+  --text: #f7e7ff; --text2: #c896ff; --accent: #ff2d95; --accent2: #00f0ff;
+  --green: #00f0ff; --red: #ff4070;
+  --link: #00f0ff; --link-hover: #80f8ff; --url-color: #c896ff; --snippet: #d8b4ff;
+}
+body.theme-retrowave {
+  background: linear-gradient(180deg,#1a0a2e 0%,#2a0a4e 50%,#4a0a6e 100%) fixed !important;
+  font-family: 'Inter', sans-serif !important;
+}
+body.theme-retrowave #logo {
+  background: linear-gradient(135deg, #ff2d95, #c01080, #00f0ff) !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  text-shadow: 0 0 20px rgba(255,45,149,0.5);
+}
+body.theme-retrowave #search-form { background: rgba(40,8,60,0.7); border-color: #ff2d95; box-shadow: 0 0 20px rgba(255,45,149,0.3); }
+body.theme-retrowave #search-btn { background: linear-gradient(180deg, #ff2d95, #c01080) !important; }
+body.theme-retrowave .result { background: rgba(40,8,60,0.6); border-color: rgba(255,45,149,0.4); backdrop-filter: blur(8px); }
+body.theme-retrowave .shortcut { background: rgba(40,8,60,0.6); border-color: rgba(0,240,255,0.3); }
+
 /* Theme: Mountains (background image) */
 body.theme-mountains {
   --bg: #0a0a0a; --surface: rgba(10,10,10,0.75); --surface2: rgba(20,20,20,0.7); --border: rgba(255,255,255,0.12);
@@ -1061,6 +1082,63 @@ body {
   margin-top: 12px;
 }
 #offline-btn:hover { color: var(--accent2); border-color: var(--accent); }
+
+/* Support drawer (slides in from right on the homepage only) */
+#support-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
+  z-index: 9998;
+  animation: fadeIn 0.18s ease;
+}
+#support-overlay.show { display: block; }
+#support-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  max-width: 92vw;
+  height: 100vh;
+  background: var(--surface, #141414);
+  color: var(--text, #e0e0e0);
+  border-left: 1px solid var(--border, #2a2a2a);
+  z-index: 9999;
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.5);
+}
+#support-drawer.show { transform: translateX(0); }
+#support-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border, #2a2a2a);
+  font-size: 14px;
+  font-weight: 600;
+}
+#support-drawer-close {
+  background: transparent;
+  border: none;
+  color: var(--text2, #888);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0 6px;
+  border-radius: 6px;
+}
+#support-drawer-close:hover { color: var(--text, #fff); background: var(--surface2, #1a1a1a); }
+#support-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  font-size: 13px;
+}
+#support-loading { color: var(--text2, #888); font-style: italic; padding: 24px 0; text-align: center; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>
 </head>
 <body>
@@ -1084,9 +1162,13 @@ body {
       <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
       Settings
     </a>
+    <a onclick="openSupportDrawer()">
+      <svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>
+      Support
+    </a>
     <a onclick="if(window.wizardBrowser&&window.wizardBrowser.openIRC)window.wizardBrowser.openIRC()">
       <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-      IRC Support
+      IRC
     </a>
     <a onclick="showOfflineModal()">
       <svg viewBox="0 0 24 24"><path d="M24 14h-6v-2h6v2zm-8.03 0h-2.03V4.04h-3.94V14H7.97l4.01 6 4-6zm-14 2l6 6V18h6v-4h-6V9.97l-6 6.03z"/></svg>
@@ -1094,6 +1176,19 @@ body {
     </a>
   </div>
 </div>
+
+<!-- Support drawer (homepage-only, opens on click) -->
+<div id="support-drawer">
+  <div id="support-drawer-header">
+    <span id="support-drawer-title">Support</span>
+    <button id="support-drawer-close" title="Close">&times;</button>
+  </div>
+  <div id="support-drawer-body">
+    <!-- Tawk.to widget injects itself once the drawer is opened -->
+    <div id="support-loading">Loading support chat…</div>
+  </div>
+</div>
+<div id="support-overlay"></div>
 
 <!-- Offline TJR Browser Modal -->
 <div id="offline-modal">
@@ -1194,16 +1289,36 @@ const resultsPerPage = 15;
 let searchStartTime = 0;
 
 // --- Load dynamic speed dial & theme from settings ---
+function applyThemeFromSettings(s) {
+  if (!s) return;
+  const mode = s.themeMode || 'default';
+  let cls = '';
+  if (mode === 'aero') {
+    const bg = s.aeroBackground || 'fruiter';
+    if (bg === 'fruiter')   cls = 'theme-frutiger-aero';
+    else if (bg === 'canola')   cls = 'theme-canola';
+    else if (bg === 'mountains') cls = 'theme-mountains';
+    else if (bg === 'fortress') cls = 'theme-fortress';
+    else cls = 'theme-frutiger-aero';
+  } else if (mode === 'retrowave') {
+    cls = 'theme-retrowave';
+  }
+  document.body.className = cls;
+  if (mode === 'aero' && s.aeroBackground === 'custom' && s.customBg) {
+    document.body.style.background = `url(${s.customBg}) center/cover fixed`;
+  } else {
+    document.body.style.background = '';
+  }
+}
+if (window.wizardBrowser && window.wizardBrowser.onSettingsChanged) {
+  window.wizardBrowser.onSettingsChanged(applyThemeFromSettings);
+}
 (async () => {
   if (!window.wizardBrowser) return;
 
-  // Load and apply theme
   try {
     const settings = await window.wizardBrowser.getSettings();
-    const theme = settings.theme || 'dark';
-    if (theme !== 'dark') {
-      document.body.className = 'theme-' + theme;
-    }
+    applyThemeFromSettings(settings);
   } catch {}
 
   // Load speed dial
@@ -2295,6 +2410,53 @@ function showOfflineModal() {
   document.getElementById('offline-status').textContent = '';
   initOfflineDB();
 }
+
+// Support drawer (homepage-only — Tawk.to lazy-loads on first open)
+let _tawkLoaded = false;
+function openSupportDrawer() {
+  // Only show on the home view, not on results
+  const home = document.getElementById('home');
+  if (home && home.style.display === 'none') return;
+  document.getElementById('support-overlay').classList.add('show');
+  document.getElementById('support-drawer').classList.add('show');
+  if (!_tawkLoaded) {
+    _tawkLoaded = true;
+    try {
+      window.Tawk_API = window.Tawk_API || {};
+      window.Tawk_LoadStart = new Date();
+      const s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://embed.tawk.to/69f5c452b4a1331c31f06f29/1jnk0do91';
+      s.charset = 'UTF-8';
+      s.setAttribute('crossorigin', '*');
+      s.onerror = () => {
+        const el = document.getElementById('support-loading');
+        if (el) el.textContent = 'Could not load support chat (offline?). Try IRC instead.';
+      };
+      document.head.appendChild(s);
+      // Hide the default Tawk launcher button — we use the drawer instead
+      window.Tawk_API.onLoad = function() {
+        try { window.Tawk_API.hideWidget && window.Tawk_API.hideWidget(); } catch {}
+        const el = document.getElementById('support-loading');
+        if (el) el.textContent = 'Support chat connected. Use IRC for additional help.';
+      };
+    } catch (e) {
+      const el = document.getElementById('support-loading');
+      if (el) el.textContent = 'Could not load support chat: ' + e.message;
+    }
+  }
+}
+function closeSupportDrawer() {
+  document.getElementById('support-overlay').classList.remove('show');
+  document.getElementById('support-drawer').classList.remove('show');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const c = document.getElementById('support-drawer-close');
+  const o = document.getElementById('support-overlay');
+  if (c) c.addEventListener('click', closeSupportDrawer);
+  if (o) o.addEventListener('click', closeSupportDrawer);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSupportDrawer(); });
+});
 function hideOfflineModal() {
   document.getElementById('offline-modal').style.display = 'none';
 }

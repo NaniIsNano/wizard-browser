@@ -7,154 +7,441 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
 html, body { height: 100%; }
 
+/* =============================================================
+   THEME VARIABLES (defaults — overridden by theme classes below)
+   ============================================================= */
 body {
-  font-family: 'Inter', 'Segoe UI', sans-serif;
-  background: #0a0a0a;
-  color: #e0e0e0;
+  /* color tokens */
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface2: #1a1a1a;
+  --border: #2a2a2a;
+  --text: #e0e0e0;
+  --text2: #aaa;
+  --accent: #7c3aed;
+  --accent2: #a855f7;
+  --accent-on: #fff;
+  --shield: #22c55e;
+  --shield-bg: #141414;
+  --danger: #ef4444;
+
+  /* tab tokens */
+  --tab-bar-bg: #0d0d0d;
+  --tab-bar-border: #1e1e1e;
+  --tab-active-bg: #1a1a1a;
+  --tab-active-text: #fff;
+  --tab-inactive-bg: transparent;
+  --tab-inactive-text: #888;
+  --tab-border: transparent;
+  --tab-radius: 6px 6px 0 0;
+
+  /* toolbar tokens */
+  --toolbar-bg: #0d0d0d;
+  --toolbar-border: #1e1e1e;
+  --toolbar-btn-bg: #141414;
+  --toolbar-btn-text: #aaa;
+  --toolbar-btn-border: #2a2a2a;
+  --toolbar-btn-hover-bg: #1a1a1a;
+  --toolbar-btn-hover-text: #c084fc;
+  --toolbar-btn-hover-border: #7c3aed;
+
+  /* input + content */
+  --input-bg: #141414;
+  --input-text: #ddd;
+  --input-border: #2a2a2a;
+  --input-focus: #7c3aed;
+  --content-bg: #0a0a0a;
+
+  /* shape */
+  --radius: 8px;
+  --radius-tab: 6px 6px 0 0;
+  --gloss-overlay: none;
+  --bg-image: none;
+  --font: 'Inter', 'Segoe UI', sans-serif;
+
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Toolbar — fixed 48px row at the top, always visible */
+body[data-bgimage="1"] { background: var(--bg-image) center/cover fixed; }
+
+/* =============================================================
+   THEME: default (sharp toggle changes radius, glossy adds gradient)
+   ============================================================= */
+body[data-theme="default"][data-sharp="1"] {
+  --radius: 0;
+  --radius-tab: 0;
+}
+body[data-theme="default"][data-glossy="1"] {
+  --gloss-overlay: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 50%);
+}
+
+/* =============================================================
+   THEME: aero (Frutiger Aero / Windows-7 inspired)
+   ============================================================= */
+body[data-theme="aero"] {
+  --bg: #c8e0f8;
+  --surface: rgba(255,255,255,0.75);
+  --surface2: rgba(255,255,255,0.55);
+  --border: rgba(120,152,176,0.55);
+  --text: #1a3050;
+  --text2: #4a6a8a;
+  --accent: #1878d8;
+  --accent2: #4090c8;
+  --accent-on: #fff;
+  --shield: #2a8a4a;
+  --shield-bg: rgba(255,255,255,0.7);
+  --danger: #c62828;
+
+  --tab-bar-bg: linear-gradient(180deg,#d4e8f8 0%,#a8cce8 60%,#92b8d8 100%);
+  --tab-bar-border: #6898b8;
+  --tab-active-bg: linear-gradient(180deg,#f8fcff,#fff);
+  --tab-active-text: #1a3050;
+  --tab-inactive-bg: linear-gradient(180deg,#d8e4f0,#c8d8e8);
+  --tab-inactive-text: #4a6a8a;
+  --tab-border: #6898b8;
+  --tab-radius: 8px 8px 0 0;
+
+  --toolbar-bg: linear-gradient(180deg,#d4e8f8 0%,#a8cce8 40%,#92b8d8 60%,#b8d4eb 100%);
+  --toolbar-border: #6898b8;
+  --toolbar-btn-bg: linear-gradient(180deg,#f0f8ff,#d8e8f4 50%,#c0d8e8);
+  --toolbar-btn-text: #1a3a5c;
+  --toolbar-btn-border: #7898b0;
+  --toolbar-btn-hover-bg: linear-gradient(180deg,#fff,#e8f4ff 50%,#d0e8f8);
+  --toolbar-btn-hover-text: #003060;
+  --toolbar-btn-hover-border: #3a80c8;
+
+  --input-bg: rgba(255,255,255,0.85);
+  --input-text: #1a3050;
+  --input-border: #7898b0;
+  --input-focus: #1878d8;
+
+  --content-bg: linear-gradient(180deg,#eaf4ff,#d8e8f8);
+  --radius: 6px;
+  --radius-tab: 8px 8px 0 0;
+  --gloss-overlay: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 50%);
+  --font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* aero background variants */
+body[data-theme="aero"][data-aero-bg="fruiter"] {
+  --bg-image: linear-gradient(180deg,#c8e0f8,#88b8e8 30%,#60a0d8 60%,#4090c8);
+}
+body[data-theme="aero"][data-aero-bg="canola"] {
+  --bg-image: url('backgrounds/canola.jpg');
+}
+body[data-theme="aero"][data-aero-bg="mountains"] {
+  --bg-image: url('backgrounds/mountains.jpg');
+}
+body[data-theme="aero"][data-aero-bg="fortress"] {
+  --bg-image: url('backgrounds/fortress.jpg');
+}
+
+/* =============================================================
+   THEME: retrowave (1980s neon / vaporwave)
+   ============================================================= */
+body[data-theme="retrowave"] {
+  --bg: #1a0a2e;
+  --surface: rgba(40, 8, 60, 0.85);
+  --surface2: rgba(60, 12, 90, 0.7);
+  --border: #ff2d95;
+  --text: #f7e7ff;
+  --text2: #c896ff;
+  --accent: #ff2d95;
+  --accent2: #00f0ff;
+  --accent-on: #1a0a2e;
+  --shield: #00f0ff;
+  --shield-bg: rgba(40, 8, 60, 0.85);
+  --danger: #ff4070;
+
+  --tab-bar-bg: linear-gradient(180deg, #2a0a4e 0%, #1a0a2e 100%);
+  --tab-bar-border: #ff2d95;
+  --tab-active-bg: linear-gradient(180deg, #ff2d95 0%, #c01080 100%);
+  --tab-active-text: #fff;
+  --tab-inactive-bg: linear-gradient(180deg, #1a0a3e, #100828);
+  --tab-inactive-text: #c896ff;
+  --tab-border: #ff2d95;
+  --tab-radius: 4px 4px 0 0;
+
+  --toolbar-bg: linear-gradient(180deg, #2a0a4e 0%, #1a0a2e 100%);
+  --toolbar-border: #ff2d95;
+  --toolbar-btn-bg: linear-gradient(180deg, #3a1060 0%, #1a0a2e 100%);
+  --toolbar-btn-text: #00f0ff;
+  --toolbar-btn-border: #ff2d95;
+  --toolbar-btn-hover-bg: linear-gradient(180deg, #ff2d95 0%, #c01080 100%);
+  --toolbar-btn-hover-text: #fff;
+  --toolbar-btn-hover-border: #00f0ff;
+
+  --input-bg: rgba(20, 5, 40, 0.85);
+  --input-text: #f7e7ff;
+  --input-border: #ff2d95;
+  --input-focus: #00f0ff;
+  --content-bg: #0a0420;
+
+  --radius: 4px;
+  --radius-tab: 4px 4px 0 0;
+  --gloss-overlay: linear-gradient(180deg, rgba(255,45,149,0.08) 0%, rgba(0,240,255,0.03) 100%);
+  --bg-image: linear-gradient(180deg, #1a0a2e 0%, #2a0a4e 50%, #4a0a6e 100%);
+  --font: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* =============================================================
+   STRUCTURE
+   ============================================================= */
+
+/* Tab bar (above toolbar) */
+#tab-bar {
+  flex: 0 0 32px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--tab-bar-bg);
+  border-bottom: 1px solid var(--tab-bar-border);
+  padding: 4px 4px 0;
+  gap: 2px;
+  position: relative;
+  z-index: 11;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+}
+#tab-bar::-webkit-scrollbar { height: 4px; }
+#tab-bar::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.4); }
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  min-width: 100px;
+  max-width: 220px;
+  padding: 0 10px;
+  background: var(--tab-inactive-bg);
+  color: var(--tab-inactive-text);
+  border: 1px solid var(--tab-border);
+  border-bottom: none;
+  border-radius: var(--tab-radius);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: background 0.1s;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  background: var(--tab-active-bg);
+  color: var(--tab-active-text);
+  font-weight: 600;
+  z-index: 1;
+}
+.tab.dragging { opacity: 0.5; }
+.tab .tab-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tab .tab-close {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-size: 14px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.tab .tab-close:hover { background: rgba(0,0,0,0.15); opacity: 1; }
+.tab.active .tab-close:hover { background: rgba(0,0,0,0.25); }
+
+#new-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 2px;
+  margin-bottom: 1px;
+  background: transparent;
+  color: var(--tab-inactive-text);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+#new-tab-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+/* Tab context menu */
+#tab-ctx {
+  position: fixed;
+  z-index: 10000;
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 0;
+  min-width: 180px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+}
+#tab-ctx.show { display: block; }
+#tab-ctx .ctx-item {
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+#tab-ctx .ctx-item:hover { background: var(--accent); color: var(--accent-on); }
+#tab-ctx .ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* Toolbar */
 #toolbar {
   flex: 0 0 48px;
   display: flex;
   align-items: center;
   height: 48px;
-  background: #0d0d0d;
+  background: var(--toolbar-bg);
+  background-image: var(--gloss-overlay), var(--toolbar-bg);
   padding: 0 10px;
   gap: 6px;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid var(--toolbar-border);
   position: relative;
   z-index: 10;
 }
 
 .nav-btn {
-  width: 30px;
-  height: 30px;
+  width: 30px; height: 30px;
   border: none;
   background: transparent;
-  color: #aaa;
+  color: var(--toolbar-btn-text);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius);
   transition: background 0.15s, color 0.15s;
 }
-.nav-btn:hover { background: #1a1a1a; color: #fff; }
-.nav-btn:active { background: #252525; }
+.nav-btn:hover { background: var(--toolbar-btn-hover-bg); color: var(--toolbar-btn-hover-text); }
 .nav-btn:disabled { opacity: 0.35; cursor: default; }
-.nav-btn:disabled:hover { background: transparent; color: #aaa; }
+.nav-btn:disabled:hover { background: transparent; color: var(--toolbar-btn-text); }
 .nav-btn svg { width: 16px; height: 16px; fill: currentColor; }
 
 #url-bar {
   flex: 1;
   height: 32px;
-  border: 1px solid #2a2a2a;
-  background: #141414;
-  color: #ddd;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
   padding: 0 14px;
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
-  border-radius: 8px;
+  font-family: var(--font);
+  border-radius: var(--radius);
   outline: none;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s;
 }
-#url-bar:focus { border-color: #7c3aed; background: #1a1a1a; color: #fff; }
-#url-bar::placeholder { color: #555; }
+#url-bar:focus { border-color: var(--input-focus); }
+#url-bar::placeholder { color: var(--text2); opacity: 0.7; }
 
 #shield {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #141414;
-  border: 1px solid #2a2a2a;
-  border-radius: 8px;
+  background: var(--shield-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius);
   padding: 0 10px;
   height: 32px;
   font-size: 12px;
   font-weight: 500;
-  color: #22c55e;
+  color: var(--shield);
   user-select: none;
 }
-#shield svg { width: 14px; height: 14px; fill: #22c55e; }
+#shield svg { width: 14px; height: 14px; fill: var(--shield); }
 
 .toolbar-btn {
   display: flex;
   align-items: center;
   gap: 5px;
   height: 32px;
-  border: 1px solid #2a2a2a;
-  background: #141414;
-  color: #aaa;
+  border: 1px solid var(--toolbar-btn-border);
+  background: var(--toolbar-btn-bg);
+  background-image: var(--gloss-overlay), var(--toolbar-btn-bg);
+  color: var(--toolbar-btn-text);
   padding: 0 10px;
   font-size: 11px;
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--radius);
   transition: all 0.15s;
   letter-spacing: 0.3px;
 }
-.toolbar-btn:hover { background: #1a1a1a; color: #c084fc; border-color: #7c3aed; }
-.toolbar-btn.active { background: #1a0a2e; color: #c084fc; border-color: #7c3aed; }
+.toolbar-btn:hover {
+  background: var(--toolbar-btn-hover-bg);
+  color: var(--toolbar-btn-hover-text);
+  border-color: var(--toolbar-btn-hover-border);
+}
+.toolbar-btn.active {
+  background: var(--accent);
+  color: var(--accent-on);
+  border-color: var(--accent);
+}
 .toolbar-btn svg { width: 14px; height: 14px; fill: currentColor; }
 
 #clear-btn {
   height: 32px;
-  border: 1px solid #2a2a2a;
-  background: #141414;
-  color: #aaa;
+  border: 1px solid var(--toolbar-btn-border);
+  background: var(--toolbar-btn-bg);
+  color: var(--toolbar-btn-text);
   padding: 0 12px;
   font-size: 11px;
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--radius);
   transition: all 0.15s;
   letter-spacing: 0.3px;
 }
-#clear-btn:hover { background: #1a1a1a; color: #ef4444; border-color: #ef4444; }
+#clear-btn:hover { background: rgba(239,68,68,0.15); color: var(--danger); border-color: var(--danger); }
 
-/* Loading bar */
 #loading-bar {
   position: absolute;
-  bottom: -1px;
-  left: 0;
+  bottom: -1px; left: 0;
   height: 2px;
-  background: linear-gradient(90deg, #7c3aed, #a855f7, #c084fc);
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
   width: 0%;
   transition: width 0.4s ease;
   z-index: 9999;
-  box-shadow: 0 0 8px rgba(124, 58, 237, 0.6);
+  box-shadow: 0 0 8px var(--accent);
 }
 
-/* Main content holds the webview */
+/* Content area */
 #content {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: #0a0a0a;
+  background: var(--content-bg);
 }
 
 webview {
-  display: flex;
+  display: none;
   width: 100%;
   height: 100%;
-  background: #0a0a0a;
+  background: var(--content-bg);
 }
+webview.active { display: flex; }
 
-/* Banners (onion / update) */
+/* Banners */
 .banner {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   padding: 8px 16px;
   z-index: 100;
   font-size: 13px;
@@ -164,186 +451,111 @@ webview {
 }
 .banner.show { display: flex; }
 .banner button {
-  background: #7c3aed;
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-on);
   border: none;
   padding: 4px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-size: 12px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
   cursor: pointer;
   font-weight: 500;
 }
-.banner button:hover { background: #9333ea; }
 .banner .dismiss {
   background: transparent;
-  color: #888;
+  color: var(--text2);
   margin-left: auto;
   font-size: 16px;
   padding: 2px 6px;
 }
-.banner .dismiss:hover { color: #fff; }
-
-#onion-banner {
-  background: #1a0a2e;
-  border-bottom: 1px solid #7c3aed;
-  color: #d4b5ff;
-}
-#update-banner {
-  background: #0a2e1a;
-  border-bottom: 1px solid #22c55e;
-  color: #b5ffd4;
-  top: 36px;
-}
-#update-banner button:not(.dismiss) { background: #22c55e; }
+.banner .dismiss:hover { color: var(--text); }
+#onion-banner { background: rgba(124, 58, 237, 0.15); border-bottom: 1px solid var(--accent); color: var(--text); }
+#update-banner { background: rgba(34, 197, 94, 0.15); border-bottom: 1px solid var(--shield); color: var(--text); top: 36px; }
+#update-banner button:not(.dismiss) { background: var(--shield); color: #fff; }
 
 /* Bookmarks panel */
-#bookmarks-panel {
+#bookmarks-panel, #download-panel {
   display: none;
   position: absolute;
-  top: 8px;
-  right: 16px;
   width: 360px;
-  max-height: 400px;
-  background: #141414;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   z-index: 1000;
   overflow: hidden;
   flex-direction: column;
   box-shadow: 0 8px 30px rgba(0,0,0,0.5);
 }
-#bookmarks-panel.show { display: flex; }
+#bookmarks-panel { top: 8px; right: 16px; max-height: 400px; }
+#download-panel  { bottom: 0; right: 16px; max-height: 300px; border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.5); }
+#bookmarks-panel.show, #download-panel.show { display: flex; }
+
 #bm-header, #dl-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid #2a2a2a;
-  font-size: 13px;
-  font-weight: 600;
-  color: #e0e0e0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text);
 }
 #bm-header button, #dl-header button {
-  background: transparent;
-  border: none;
-  color: #888;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 2px 6px;
-  border-radius: 4px;
+  background: transparent; border: none; color: var(--text2);
+  cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px;
 }
-#bm-header button:hover, #dl-header button:hover { color: #fff; background: #252525; }
-#bm-list { overflow-y: auto; flex: 1; max-height: 350px; }
+#bm-header button:hover, #dl-header button:hover { color: var(--text); background: var(--surface2); }
+
+#bm-list, #dl-list { overflow-y: auto; flex: 1; max-height: 350px; }
 .bm-item {
   padding: 8px 14px;
-  border-bottom: 1px solid #1e1e1e;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
   cursor: pointer;
-  transition: background 0.15s;
 }
-.bm-item:hover { background: #1a1a1a; }
+.bm-item:hover { background: var(--surface2); }
 .bm-title {
-  flex: 1;
-  font-size: 12px;
-  font-weight: 500;
-  color: #e0e0e0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 1; font-size: 12px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bm-url {
-  font-size: 10px;
-  color: #555;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 160px;
+  font-size: 10px; color: var(--text2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
 }
 .bm-remove {
-  background: transparent;
-  border: none;
-  color: #555;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 2px 4px;
-  border-radius: 4px;
+  background: transparent; border: none; color: var(--text2);
+  cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 4px;
 }
-.bm-remove:hover { color: #ef4444; background: #1e1e1e; }
-.bm-empty { padding: 20px; text-align: center; color: #555; font-size: 12px; }
+.bm-remove:hover { color: var(--danger); background: var(--surface2); }
+.bm-empty { padding: 20px; text-align: center; color: var(--text2); font-size: 12px; }
 
-/* Downloads panel */
-#download-panel {
-  display: none;
-  position: absolute;
-  bottom: 0;
-  right: 16px;
-  width: 360px;
-  max-height: 300px;
-  background: #141414;
-  border: 1px solid #2a2a2a;
-  border-bottom: none;
-  border-radius: 10px 10px 0 0;
-  z-index: 1000;
-  overflow: hidden;
-  flex-direction: column;
-  box-shadow: 0 -8px 30px rgba(0,0,0,0.5);
-}
-#download-panel.show { display: flex; }
-#dl-list { overflow-y: auto; flex: 1; max-height: 250px; }
 .dl-item {
   padding: 10px 14px;
-  border-bottom: 1px solid #1e1e1e;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px;
 }
 .dl-filename {
-  font-size: 12px;
-  font-weight: 500;
-  color: #e0e0e0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 12px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .dl-progress-bar {
-  height: 4px;
-  background: #2a2a2a;
-  border-radius: 2px;
-  overflow: hidden;
+  height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden;
 }
 .dl-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7c3aed, #a855f7);
-  border-radius: 2px;
-  transition: width 0.3s;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px; transition: width 0.3s;
 }
-.dl-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: #888;
-}
+.dl-info { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); }
 .dl-actions { display: flex; gap: 8px; margin-top: 2px; }
 .dl-actions button {
-  background: transparent;
-  border: none;
-  color: #c084fc;
-  cursor: pointer;
-  font-size: 11px;
-  font-family: 'Inter', sans-serif;
-  padding: 0;
+  background: transparent; border: none; color: var(--accent2);
+  cursor: pointer; font-size: 11px; font-family: var(--font); padding: 0;
 }
-.dl-actions button:hover { color: #d8b4fe; text-decoration: underline; }
+.dl-actions button:hover { color: var(--accent); text-decoration: underline; }
 
 /* PIN overlay */
 #pin-overlay {
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: #0a0a0a;
+  background: var(--bg);
   z-index: 10000;
   flex-direction: column;
   align-items: center;
@@ -351,50 +563,34 @@ webview {
   gap: 16px;
 }
 #pin-overlay.show { display: flex; }
-#pin-overlay h2 { font-size: 1.4em; font-weight: 600; color: #e0e0e0; }
-#pin-overlay p { color: #888; font-size: 13px; max-width: 350px; text-align: center; }
+#pin-overlay h2 { font-size: 1.4em; font-weight: 600; color: var(--text); }
+#pin-overlay p { color: var(--text2); font-size: 13px; max-width: 350px; text-align: center; }
 #pin-input {
-  width: 200px;
-  height: 40px;
+  width: 200px; height: 40px;
   text-align: center;
-  font-size: 24px;
-  letter-spacing: 8px;
-  background: #141414;
-  border: 1px solid #2a2a2a;
-  color: #e0e0e0;
-  border-radius: 8px;
+  font-size: 24px; letter-spacing: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
   outline: none;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font);
 }
-#pin-input:focus { border-color: #7c3aed; }
+#pin-input:focus { border-color: var(--accent); }
 .pin-btn {
   padding: 8px 24px;
-  background: #7c3aed;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
+  background: var(--accent); color: var(--accent-on);
+  border: none; border-radius: var(--radius);
+  font-size: 13px; font-weight: 500; font-family: var(--font); cursor: pointer;
 }
-.pin-btn:hover { background: #9333ea; }
-.pin-skip {
-  background: transparent;
-  border: none;
-  color: #555;
-  cursor: pointer;
-  font-size: 12px;
-  font-family: 'Inter', sans-serif;
-  padding: 4px 8px;
-}
-.pin-skip:hover { color: #888; }
-#pin-error { color: #ef4444; font-size: 12px; min-height: 16px; }
+.pin-skip { background: transparent; border: none; color: var(--text2); cursor: pointer; font-size: 12px; font-family: var(--font); padding: 4px 8px; }
+.pin-skip:hover { color: var(--text); }
+#pin-error { color: var(--danger); font-size: 12px; min-height: 16px; }
 </style>
 </head>
-<body>
+<body data-theme="default" data-sharp="0" data-glossy="0" data-aero-bg="fruiter" data-bgimage="0">
 
-<!-- PIN lock overlay (above everything) -->
+<!-- PIN lock -->
 <div id="pin-overlay">
   <h2 id="pin-title">Set Up PIN Lock</h2>
   <p id="pin-desc">Protect your browser with a PIN code. You'll need to enter it each time you open Wizard Browser.</p>
@@ -404,7 +600,10 @@ webview {
   <button class="pin-skip" id="pin-skip">Skip</button>
 </div>
 
-<!-- Toolbar (always 48px tall, always visible) -->
+<!-- Tab bar -->
+<div id="tab-bar"></div>
+
+<!-- Toolbar -->
 <div id="toolbar">
   <button class="nav-btn" id="btn-back" title="Back" disabled>
     <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
@@ -430,12 +629,8 @@ webview {
     <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
   </button>
   <button class="toolbar-btn" id="tor-btn" title="Connect via Tor (SOCKS5 on 127.0.0.1:9050)">
-    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93z"/></svg>
     <span>TOR</span>
-  </button>
-  <button class="toolbar-btn" id="irc-btn" title="IRC #wizard-support">
-    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-    <span>IRC</span>
   </button>
   <button class="toolbar-btn" id="dl-btn" title="Downloads (Ctrl+J)">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -447,72 +642,550 @@ webview {
   <div id="loading-bar"></div>
 </div>
 
-<!-- The browser content -->
+<!-- Content -->
 <div id="content">
-  <!-- Onion banner -->
   <div id="onion-banner" class="banner">
-    <svg viewBox="0 0 24 24" width="16" height="16" style="fill:#a855f7;flex-shrink:0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
     <span id="onion-text">.onion version available</span>
     <button id="onion-go">Switch to .onion</button>
     <button class="dismiss" id="onion-dismiss">&times;</button>
   </div>
-
-  <!-- Update banner -->
   <div id="update-banner" class="banner">
     <span id="update-text">A new version is available!</span>
     <button id="update-install">Restart &amp; Update</button>
     <button class="dismiss" id="update-dismiss">&times;</button>
   </div>
 
-  <!-- The webview -->
-  <webview id="wv" src="search.html" partition="persist:wizard" allowpopups></webview>
+  <!-- Webviews are appended here, one per tab -->
 
-  <!-- Bookmarks panel -->
   <div id="bookmarks-panel">
-    <div id="bm-header">
-      <span>Bookmarks</span>
-      <button id="bm-close">&times;</button>
-    </div>
+    <div id="bm-header"><span>Bookmarks</span><button id="bm-close">&times;</button></div>
     <div id="bm-list"></div>
   </div>
-
-  <!-- Downloads panel -->
   <div id="download-panel">
-    <div id="dl-header">
-      <span>Downloads</span>
-      <button id="dl-close">&times;</button>
-    </div>
+    <div id="dl-header"><span>Downloads</span><button id="dl-close">&times;</button></div>
     <div id="dl-list"></div>
   </div>
 </div>
 
-<script>
-const wv = document.getElementById('wv');
-const urlBar = document.getElementById('url-bar');
-const blockedSpan = document.getElementById('blocked-count');
-const loadingBar = document.getElementById('loading-bar');
-const btnBack = document.getElementById('btn-back');
-const btnForward = document.getElementById('btn-forward');
+<!-- Tab right-click context menu -->
+<div id="tab-ctx">
+  <div class="ctx-item" data-act="reload">Reload</div>
+  <div class="ctx-item" data-act="duplicate">Duplicate</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" data-act="newtab">New tab</div>
+  <div class="ctx-item" data-act="newtab-right">New tab to the right</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" data-act="close">Close</div>
+  <div class="ctx-item" data-act="close-others">Close other tabs</div>
+  <div class="ctx-item" data-act="close-right">Close tabs to the right</div>
+</div>
 
-// Compute file:// URLs for our local pages
+<script>
+// =====================================================================
+// Wizard Browser shell — multi-tab + theming
+// =====================================================================
 const HOME_URL     = new URL('search.html',   location.href).href;
 const SETTINGS_URL = new URL('settings.html', location.href).href;
 const IRC_URL      = new URL('irc.html',      location.href).href;
 
-let currentUrl = '';
-let currentTitle = '';
+const $ = (s) => document.querySelector(s);
+const tabBar    = $('#tab-bar');
+const content   = $('#content');
+const urlBar    = $('#url-bar');
+const blockedSpan = $('#blocked-count');
+const loadingBar = $('#loading-bar');
+const btnBack   = $('#btn-back');
+const btnForward = $('#btn-forward');
+const tabCtx    = $('#tab-ctx');
 
-// --- PIN Lock ---
+// state
+let tabs = [];           // [{ id, title, view, ctxMenuTabId? }]
+let activeTabId = null;
+let nextTabId   = 1;
+let ctxTabId    = null;
+
+function escHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+// ────────── Theme application ──────────
+let themeSettings = {
+  themeMode: 'default',
+  sharpEdges: false,
+  glossyUI: false,
+  aeroBackground: 'fruiter'
+};
+
+function applyTheme(t) {
+  if (!t) return;
+  themeSettings = { ...themeSettings, ...t };
+  const body = document.body;
+  body.dataset.theme = themeSettings.themeMode || 'default';
+  body.dataset.sharp = themeSettings.sharpEdges ? '1' : '0';
+  body.dataset.glossy = themeSettings.glossyUI ? '1' : '0';
+  body.dataset.aeroBg = themeSettings.aeroBackground || 'fruiter';
+  body.dataset.bgimage = (themeSettings.themeMode === 'aero' || themeSettings.themeMode === 'retrowave') ? '1' : '0';
+  if (themeSettings.themeMode === 'aero' && themeSettings.aeroBackground === 'custom' && themeSettings.customBg) {
+    body.style.setProperty('--bg-image', `url(${themeSettings.customBg})`);
+  } else {
+    body.style.removeProperty('--bg-image');
+  }
+}
+
+async function loadInitialTheme() {
+  if (!window.wizardBrowser) return;
+  try {
+    const settings = await window.wizardBrowser.getSettings();
+    applyTheme({
+      themeMode: settings.themeMode || (legacyToMode(settings.theme) || 'default'),
+      sharpEdges: !!settings.sharpEdges,
+      glossyUI: !!settings.glossyUI,
+      aeroBackground: settings.aeroBackground || 'fruiter',
+      customBg: settings.customBg || ''
+    });
+  } catch {}
+}
+function legacyToMode(legacy) {
+  if (!legacy) return null;
+  if (['frutiger-aero','aero','mountains','canola','fortress'].includes(legacy)) return 'aero';
+  if (legacy === 'hacker' || legacy === 'classic' || legacy === 'midnight') return 'default';
+  if (legacy === 'retrowave') return 'retrowave';
+  return null;
+}
+
+// ────────── Tab management ──────────
+function createWebview(initialUrl) {
+  const wv = document.createElement('webview');
+  wv.setAttribute('partition', 'persist:wizard');
+  wv.setAttribute('allowpopups', '');
+  wv.src = initialUrl || HOME_URL;
+  content.appendChild(wv);
+
+  wv.addEventListener('did-start-loading', () => { if (isActive(wv)) setLoading(true); });
+  wv.addEventListener('did-stop-loading',  () => { if (isActive(wv)) { setLoading(false); updateNav(); } });
+  wv.addEventListener('did-finish-load',   () => { if (isActive(wv)) updateNav(); });
+
+  wv.addEventListener('did-navigate', (e) => {
+    const tab = tabForWebview(wv);
+    if (tab) tab.url = e.url;
+    if (isActive(wv)) {
+      urlBar.value = e.url.startsWith('file://') ? '' : e.url;
+      $('#onion-banner').classList.remove('show');
+      updateNav();
+    }
+  });
+  wv.addEventListener('did-navigate-in-page', (e) => {
+    const tab = tabForWebview(wv);
+    if (tab) tab.url = e.url;
+    if (isActive(wv) && !e.url.startsWith('file://')) urlBar.value = e.url;
+    updateNav();
+  });
+  wv.addEventListener('page-title-updated', (e) => {
+    const tab = tabForWebview(wv);
+    if (tab) {
+      tab.title = e.title || tab.title;
+      renderTabs();
+      if (isActive(wv)) document.title = e.title + ' — Wizard';
+    }
+  });
+  wv.addEventListener('dom-ready', () => {
+    if (isActive(wv)) {
+      updateNav();
+      try {
+        const u = wv.getURL();
+        if (u && !u.startsWith('file://')) urlBar.value = u;
+      } catch {}
+    }
+  });
+
+  return wv;
+}
+
+function tabForWebview(wv) { return tabs.find(t => t.wv === wv); }
+function isActive(wv) {
+  const t = tabs.find(x => x.id === activeTabId);
+  return t && t.wv === wv;
+}
+
+function newTab(opts = {}) {
+  const id = nextTabId++;
+  const wv = createWebview(opts.url);
+  const tab = { id, title: opts.title || 'New Tab', url: opts.url || HOME_URL, wv };
+  if (opts.afterId != null) {
+    const idx = tabs.findIndex(t => t.id === opts.afterId);
+    tabs.splice(idx + 1, 0, tab);
+  } else {
+    tabs.push(tab);
+  }
+  if (opts.activate !== false) activateTab(id);
+  else renderTabs();
+  return tab;
+}
+
+function activateTab(id) {
+  if (id === activeTabId) return;
+  activeTabId = id;
+  for (const t of tabs) {
+    if (t.id === id) t.wv.classList.add('active'); else t.wv.classList.remove('active');
+  }
+  renderTabs();
+  const t = tabs.find(x => x.id === id);
+  if (t) {
+    try { urlBar.value = t.wv.getURL().startsWith('file://') ? '' : t.wv.getURL(); } catch {}
+    updateNav();
+  }
+}
+
+function closeTab(id) {
+  const idx = tabs.findIndex(t => t.id === id);
+  if (idx < 0) return;
+  const tab = tabs[idx];
+  tab.wv.remove();
+  tabs.splice(idx, 1);
+  if (tabs.length === 0) {
+    newTab();
+    return;
+  }
+  if (activeTabId === id) {
+    const next = tabs[Math.min(idx, tabs.length - 1)];
+    activeTabId = null;
+    activateTab(next.id);
+  } else {
+    renderTabs();
+  }
+}
+
+function duplicateTab(id) {
+  const t = tabs.find(x => x.id === id);
+  if (!t) return;
+  let url; try { url = t.wv.getURL(); } catch { url = t.url; }
+  newTab({ url, title: t.title, afterId: id });
+}
+
+function moveTab(fromIdx, toIdx) {
+  if (fromIdx === toIdx || toIdx < 0 || toIdx >= tabs.length) return;
+  const [t] = tabs.splice(fromIdx, 1);
+  tabs.splice(toIdx, 0, t);
+  renderTabs();
+}
+
+function renderTabs() {
+  tabBar.innerHTML = '';
+  for (const tab of tabs) {
+    const el = document.createElement('div');
+    el.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
+    el.dataset.tabId = tab.id;
+    el.draggable = true;
+    el.innerHTML = `<span class="tab-title" title="${escHtml(tab.title)}">${escHtml(tab.title || 'New Tab')}</span><span class="tab-close" title="Close tab">×</span>`;
+
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('tab-close')) { closeTab(tab.id); return; }
+      activateTab(tab.id);
+    });
+    el.addEventListener('mousedown', (e) => {
+      if (e.button === 1) { e.preventDefault(); closeTab(tab.id); }
+    });
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      ctxTabId = tab.id;
+      tabCtx.style.left = e.clientX + 'px';
+      tabCtx.style.top  = e.clientY + 'px';
+      tabCtx.classList.add('show');
+    });
+
+    // drag & drop reorder
+    el.addEventListener('dragstart', (e) => {
+      el.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', String(tab.id));
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => el.classList.remove('dragging'));
+    el.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    el.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const fromId = +e.dataTransfer.getData('text/plain');
+      if (fromId === tab.id) return;
+      const fromIdx = tabs.findIndex(t => t.id === fromId);
+      const toIdx   = tabs.findIndex(t => t.id === tab.id);
+      moveTab(fromIdx, toIdx);
+    });
+
+    tabBar.appendChild(el);
+  }
+  // + button
+  const plus = document.createElement('button');
+  plus.id = 'new-tab-btn';
+  plus.title = 'New tab (Ctrl+T)';
+  plus.textContent = '+';
+  plus.addEventListener('click', () => newTab());
+  tabBar.appendChild(plus);
+}
+
+// Tab context menu actions
+tabCtx.addEventListener('click', (e) => {
+  const act = e.target.dataset.act;
+  if (!act || ctxTabId == null) return;
+  const tabId = ctxTabId;
+  tabCtx.classList.remove('show');
+  ctxTabId = null;
+  const idx = tabs.findIndex(t => t.id === tabId);
+  if (idx < 0) return;
+  switch (act) {
+    case 'reload':       { const t = tabs[idx]; try { t.wv.reload(); } catch {} break; }
+    case 'duplicate':    duplicateTab(tabId); break;
+    case 'newtab':       newTab(); break;
+    case 'newtab-right': newTab({ afterId: tabId }); break;
+    case 'close':        closeTab(tabId); break;
+    case 'close-others': {
+      const keep = tabs[idx];
+      [...tabs].forEach(t => { if (t.id !== keep.id) closeTab(t.id); });
+      break;
+    }
+    case 'close-right': {
+      const ids = tabs.slice(idx + 1).map(t => t.id);
+      ids.forEach(id => closeTab(id));
+      break;
+    }
+  }
+});
+document.addEventListener('click', () => { if (tabCtx.classList.contains('show')) { tabCtx.classList.remove('show'); ctxTabId = null; } });
+
+// ────────── Active webview helpers ──────────
+function activeView() { const t = tabs.find(x => x.id === activeTabId); return t ? t.wv : null; }
+
+function navigate(input) {
+  const target = (input || '').trim();
+  if (!target) return;
+  const wv = activeView(); if (!wv) return;
+  if (/^https?:\/\//i.test(target)) wv.loadURL(target);
+  else if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(target) && !target.includes(' ')) wv.loadURL('https://' + target);
+  else wv.loadURL(HOME_URL + '#q=' + encodeURIComponent(target));
+}
+
+function setLoading(loading) {
+  if (loading) loadingBar.style.width = '70%';
+  else {
+    loadingBar.style.width = '100%';
+    setTimeout(() => {
+      loadingBar.style.transition = 'none';
+      loadingBar.style.width = '0%';
+      setTimeout(() => { loadingBar.style.transition = 'width 0.4s ease'; }, 50);
+    }, 250);
+  }
+}
+
+function updateNav() {
+  const wv = activeView(); if (!wv) return;
+  try {
+    btnBack.disabled    = !wv.canGoBack();
+    btnForward.disabled = !wv.canGoForward();
+  } catch {}
+}
+
+// ────────── Toolbar wiring ──────────
+urlBar.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); navigate(urlBar.value); urlBar.blur(); }
+});
+urlBar.addEventListener('focus', () => urlBar.select());
+
+btnBack.addEventListener('click',    () => { const wv = activeView(); try { if (wv && wv.canGoBack())    wv.goBack();    } catch {} });
+btnForward.addEventListener('click', () => { const wv = activeView(); try { if (wv && wv.canGoForward()) wv.goForward(); } catch {} });
+$('#btn-reload').addEventListener('click', () => { const wv = activeView(); try { wv && wv.reload(); } catch {} });
+$('#btn-home').addEventListener('click',   () => { const wv = activeView(); wv && wv.loadURL(HOME_URL); });
+$('#settings-btn').addEventListener('click', () => { const wv = activeView(); wv && wv.loadURL(SETTINGS_URL); });
+
+$('#clear-btn').addEventListener('click', async () => {
+  if (window.wizardBrowser) await window.wizardBrowser.clearAllData();
+  blockedSpan.textContent = '0';
+});
+
+// Tor toggle
+const torBtn = $('#tor-btn');
+let torActive = false;
+torBtn.addEventListener('click', async () => {
+  torActive = !torActive;
+  const ok = await window.wizardBrowser.toggleTor(torActive);
+  if (ok) torBtn.classList.toggle('active', torActive);
+  else { torActive = false; torBtn.classList.remove('active'); }
+});
+
+// ────────── Bookmarks ──────────
+const bmToggle = $('#bookmarks-toggle');
+const bmPanel  = $('#bookmarks-panel');
+const bmList   = $('#bm-list');
+
+$('#bookmark-btn').addEventListener('click', async () => {
+  const t = tabs.find(x => x.id === activeTabId);
+  if (!t) return;
+  let url; try { url = t.wv.getURL(); } catch { return; }
+  if (!url || url.startsWith('file://')) return;
+  await window.wizardBrowser.addBookmark({ title: t.title || url, url });
+  renderBookmarks();
+});
+bmToggle.addEventListener('click', () => {
+  bmPanel.classList.toggle('show');
+  if (bmPanel.classList.contains('show')) renderBookmarks();
+});
+$('#bm-close').addEventListener('click', () => bmPanel.classList.remove('show'));
+
+async function renderBookmarks() {
+  const bms = await window.wizardBrowser.getBookmarks();
+  bmList.innerHTML = '';
+  if (!bms.length) { bmList.innerHTML = '<div class="bm-empty">No bookmarks yet.</div>'; return; }
+  bms.forEach(bm => {
+    const div = document.createElement('div');
+    div.className = 'bm-item';
+    div.innerHTML = `
+      <div style="flex:1;min-width:0">
+        <div class="bm-title">${escHtml(bm.title)}</div>
+        <div class="bm-url">${escHtml(bm.url)}</div>
+      </div>
+      <button class="bm-remove" title="Remove">&times;</button>`;
+    div.querySelector('.bm-title').addEventListener('click', () => {
+      const wv = activeView(); wv && wv.loadURL(bm.url);
+      bmPanel.classList.remove('show');
+    });
+    div.querySelector('.bm-remove').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await window.wizardBrowser.removeBookmark(bm.url);
+      renderBookmarks();
+    });
+    bmList.appendChild(div);
+  });
+}
+
+window.wizardBrowser.onBookmarkAdded(() => renderBookmarks());
+
+// ────────── Downloads ──────────
+const dlPanel = $('#download-panel');
+const dlList  = $('#dl-list');
+$('#dl-btn').addEventListener('click', () => dlPanel.classList.toggle('show'));
+$('#dl-close').addEventListener('click', () => dlPanel.classList.remove('show'));
+
+function fmtBytes(b){ if(!b) return '0 B'; const k=1024,s=['B','KB','MB','GB'],i=Math.floor(Math.log(b)/Math.log(k)); return parseFloat((b/Math.pow(k,i)).toFixed(1))+' '+s[i]; }
+
+function renderDownload(dl) {
+  let el = document.getElementById('dl-' + dl.id);
+  const pct = dl.totalBytes > 0 ? Math.round((dl.receivedBytes / dl.totalBytes) * 100) : 0;
+  const isDone = dl.state === 'completed';
+  const isFailed = dl.state === 'cancelled' || dl.state === 'interrupted';
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'dl-item';
+    el.id = 'dl-' + dl.id;
+    dlList.prepend(el);
+    dlPanel.classList.add('show');
+  }
+  el.innerHTML = `
+    <div class="dl-filename" title="${escHtml(dl.filename)}">${escHtml(dl.filename)}</div>
+    ${!isDone && !isFailed ? `<div class="dl-progress-bar"><div class="dl-progress-fill" style="width:${pct}%"></div></div>` : ''}
+    <div class="dl-info">
+      <span>${isDone ? 'Completed' : isFailed ? 'Failed' : fmtBytes(dl.receivedBytes) + ' / ' + fmtBytes(dl.totalBytes)}</span>
+      <span>${isDone ? fmtBytes(dl.totalBytes) : pct + '%'}</span>
+    </div>
+    ${isDone ? `<div class="dl-actions"><button data-act="open">Open</button><button data-act="show">Show in folder</button></div>` : ''}`;
+  if (isDone) {
+    el.querySelector('[data-act="open"]').addEventListener('click', () => window.wizardBrowser.openDownload(dl.path));
+    el.querySelector('[data-act="show"]').addEventListener('click', () => window.wizardBrowser.showDownload(dl.path));
+  }
+}
+window.wizardBrowser.onDownloadStarted(renderDownload);
+window.wizardBrowser.onDownloadUpdated(renderDownload);
+window.wizardBrowser.onDownloadDone(renderDownload);
+
+// ────────── Onion + update banners ──────────
+const onionBanner = $('#onion-banner');
+let currentOnion = null;
+window.wizardBrowser.onOnionAvailable((data) => {
+  if (!torActive) return;
+  currentOnion = data.onion;
+  $('#onion-text').textContent = `.onion version available for ${data.clearnet}`;
+  onionBanner.classList.add('show');
+});
+$('#onion-go').addEventListener('click', () => {
+  if (currentOnion) { const wv = activeView(); wv && wv.loadURL(currentOnion); }
+  onionBanner.classList.remove('show');
+});
+$('#onion-dismiss').addEventListener('click', () => onionBanner.classList.remove('show'));
+
+const updateBanner = $('#update-banner');
+window.wizardBrowser.onUpdateStatus((data) => {
+  const text = $('#update-text');
+  const installBtn = $('#update-install');
+  if (data.status === 'downloading') { text.textContent = `Downloading update v${data.version}...`; installBtn.style.display = 'none'; updateBanner.classList.add('show'); }
+  else if (data.status === 'ready')  { text.textContent = `Update v${data.version} ready to install`; installBtn.style.display = ''; updateBanner.classList.add('show'); }
+  else if (data.status === 'error')  { text.textContent = `Auto-update error: ${data.message}`; installBtn.style.display = 'none'; updateBanner.classList.add('show'); }
+});
+$('#update-install').addEventListener('click', () => window.wizardBrowser.installUpdate());
+$('#update-dismiss').addEventListener('click', () => updateBanner.classList.remove('show'));
+
+// ────────── Other listeners ──────────
+window.wizardBrowser.onBlockedUpdate((c) => blockedSpan.textContent = c);
+
+if (window.wizardBrowser.onSearchSelection) {
+  window.wizardBrowser.onSearchSelection((text) => {
+    const wv = activeView(); wv && wv.loadURL(HOME_URL + '#q=' + encodeURIComponent(text));
+  });
+}
+if (window.wizardBrowser.onNavigateShell) {
+  window.wizardBrowser.onNavigateShell((where) => {
+    const wv = activeView(); if (!wv) return;
+    if (where === 'settings') wv.loadURL(SETTINGS_URL);
+    else if (where === 'irc') wv.loadURL(IRC_URL);
+    else if (where === 'home') wv.loadURL(HOME_URL);
+    else if (where === 'newtab') newTab();
+  });
+}
+if (window.wizardBrowser.onNavigateShellUrl) {
+  window.wizardBrowser.onNavigateShellUrl((url) => { const wv = activeView(); try { wv && wv.loadURL(url); } catch {} });
+}
+if (window.wizardBrowser.onSettingsChanged) {
+  window.wizardBrowser.onSettingsChanged((s) => {
+    applyTheme({
+      themeMode: s.themeMode || 'default',
+      sharpEdges: !!s.sharpEdges,
+      glossyUI: !!s.glossyUI,
+      aeroBackground: s.aeroBackground || 'fruiter',
+      customBg: s.customBg || ''
+    });
+  });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'l') { urlBar.focus(); e.preventDefault(); }
+  if (e.altKey  && e.key === 'ArrowLeft')  btnBack.click();
+  if (e.altKey  && e.key === 'ArrowRight') btnForward.click();
+  if (e.key === 'F5') { try { activeView() && activeView().reload(); } catch {} }
+  if (e.ctrlKey && e.key === 'r') { try { activeView() && activeView().reload(); } catch {} }
+  if (e.ctrlKey && e.key === 'j') { dlPanel.classList.toggle('show'); e.preventDefault(); }
+  if (e.ctrlKey && e.key === 'b') {
+    bmPanel.classList.toggle('show');
+    if (bmPanel.classList.contains('show')) renderBookmarks();
+    e.preventDefault();
+  }
+  if (e.ctrlKey && e.key === 'd') { $('#bookmark-btn').click(); e.preventDefault(); }
+  if (e.ctrlKey && e.key === 't') { e.preventDefault(); newTab(); }
+  if (e.ctrlKey && e.key === 'w') { e.preventDefault(); if (activeTabId != null) closeTab(activeTabId); }
+  if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); cycleTab(1); }
+  if (e.ctrlKey && e.shiftKey && e.key === 'Tab') { e.preventDefault(); cycleTab(-1); }
+});
+function cycleTab(dir) {
+  if (!tabs.length) return;
+  const idx = tabs.findIndex(t => t.id === activeTabId);
+  const next = (idx + dir + tabs.length) % tabs.length;
+  activateTab(tabs[next].id);
+}
+
+// ────────── PIN lock ──────────
 (async () => {
   if (!window.wizardBrowser) return;
   const pinState = await window.wizardBrowser.getPinState();
-  const overlay = document.getElementById('pin-overlay');
-  const pinInput = document.getElementById('pin-input');
-  const pinSubmit = document.getElementById('pin-submit');
-  const pinSkip = document.getElementById('pin-skip');
-  const pinTitle = document.getElementById('pin-title');
-  const pinDesc = document.getElementById('pin-desc');
-  const pinError = document.getElementById('pin-error');
+  const overlay = $('#pin-overlay');
+  const pinInput = $('#pin-input');
+  const pinSubmit = $('#pin-submit');
+  const pinSkip = $('#pin-skip');
+  const pinTitle = $('#pin-title');
+  const pinDesc = $('#pin-desc');
+  const pinError = $('#pin-error');
 
   if (pinState.enabled) {
     overlay.classList.add('show');
@@ -538,289 +1211,14 @@ let currentTitle = '';
       await window.wizardBrowser.setPin({ pin, enabled: true });
       overlay.classList.remove('show');
     };
-    pinSkip.onclick = async () => {
-      await window.wizardBrowser.skipPinSetup();
-      overlay.classList.remove('show');
-    };
+    pinSkip.onclick = async () => { await window.wizardBrowser.skipPinSetup(); overlay.classList.remove('show'); };
     pinInput.onkeydown = (e) => { if (e.key === 'Enter') pinSubmit.click(); };
   }
 })();
 
-// --- Navigation helpers ---
-function navigate(input) {
-  const target = (input || '').trim();
-  if (!target) return;
-  if (/^https?:\/\//i.test(target)) {
-    wv.loadURL(target);
-  } else if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(target) && !target.includes(' ')) {
-    wv.loadURL('https://' + target);
-  } else {
-    wv.loadURL(HOME_URL + '#q=' + encodeURIComponent(target));
-  }
-}
-
-urlBar.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); navigate(urlBar.value); urlBar.blur(); }
-});
-urlBar.addEventListener('focus', () => urlBar.select());
-
-btnBack.addEventListener('click',    () => { try { if (wv.canGoBack())    wv.goBack();    } catch {} });
-btnForward.addEventListener('click', () => { try { if (wv.canGoForward()) wv.goForward(); } catch {} });
-document.getElementById('btn-reload').addEventListener('click', () => { try { wv.reload(); } catch {} });
-document.getElementById('btn-home').addEventListener('click',   () => wv.loadURL(HOME_URL));
-document.getElementById('settings-btn').addEventListener('click', () => wv.loadURL(SETTINGS_URL));
-document.getElementById('irc-btn').addEventListener('click',      () => wv.loadURL(IRC_URL));
-
-document.getElementById('clear-btn').addEventListener('click', async () => {
-  await window.wizardBrowser.clearAllData();
-  blockedSpan.textContent = '0';
-});
-
-// --- Tor toggle ---
-const torBtn = document.getElementById('tor-btn');
-let torActive = false;
-torBtn.addEventListener('click', async () => {
-  torActive = !torActive;
-  const ok = await window.wizardBrowser.toggleTor(torActive);
-  if (ok) torBtn.classList.toggle('active', torActive);
-  else { torActive = false; torBtn.classList.remove('active'); }
-});
-
-// --- Bookmarks ---
-const bmToggle = document.getElementById('bookmarks-toggle');
-const bmPanel = document.getElementById('bookmarks-panel');
-const bmList = document.getElementById('bm-list');
-const bmClose = document.getElementById('bm-close');
-
-document.getElementById('bookmark-btn').addEventListener('click', async () => {
-  if (!currentUrl || currentUrl.startsWith('file://')) return;
-  await window.wizardBrowser.addBookmark({ title: currentTitle || currentUrl, url: currentUrl });
-  renderBookmarks();
-});
-
-bmToggle.addEventListener('click', () => {
-  bmPanel.classList.toggle('show');
-  if (bmPanel.classList.contains('show')) renderBookmarks();
-});
-bmClose.addEventListener('click', () => bmPanel.classList.remove('show'));
-
-function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
-
-async function renderBookmarks() {
-  const bms = await window.wizardBrowser.getBookmarks();
-  bmList.innerHTML = '';
-  if (!bms.length) {
-    bmList.innerHTML = '<div class="bm-empty">No bookmarks yet. Click the bookmark icon to add pages.</div>';
-    return;
-  }
-  bms.forEach(bm => {
-    const div = document.createElement('div');
-    div.className = 'bm-item';
-    div.innerHTML = `
-      <div style="flex:1;min-width:0">
-        <div class="bm-title">${escapeHtml(bm.title)}</div>
-        <div class="bm-url">${escapeHtml(bm.url)}</div>
-      </div>
-      <button class="bm-remove" title="Remove">&times;</button>
-    `;
-    div.querySelector('.bm-title').addEventListener('click', () => {
-      wv.loadURL(bm.url);
-      bmPanel.classList.remove('show');
-    });
-    div.querySelector('.bm-remove').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await window.wizardBrowser.removeBookmark(bm.url);
-      renderBookmarks();
-    });
-    bmList.appendChild(div);
-  });
-}
-
-window.wizardBrowser.onBookmarkAdded(() => renderBookmarks());
-
-// --- Downloads ---
-const dlBtn = document.getElementById('dl-btn');
-const dlPanel = document.getElementById('download-panel');
-const dlList = document.getElementById('dl-list');
-const dlClose = document.getElementById('dl-close');
-
-dlBtn.addEventListener('click', () => dlPanel.classList.toggle('show'));
-dlClose.addEventListener('click', () => dlPanel.classList.remove('show'));
-
-function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B','KB','MB','GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
-
-function renderDownload(dl) {
-  let el = document.getElementById('dl-' + dl.id);
-  const pct = dl.totalBytes > 0 ? Math.round((dl.receivedBytes / dl.totalBytes) * 100) : 0;
-  const isDone = dl.state === 'completed';
-  const isFailed = dl.state === 'cancelled' || dl.state === 'interrupted';
-
-  if (!el) {
-    el = document.createElement('div');
-    el.className = 'dl-item';
-    el.id = 'dl-' + dl.id;
-    dlList.prepend(el);
-    dlPanel.classList.add('show');
-  }
-
-  el.innerHTML = `
-    <div class="dl-filename" title="${escapeHtml(dl.filename)}">${escapeHtml(dl.filename)}</div>
-    ${!isDone && !isFailed ? `<div class="dl-progress-bar"><div class="dl-progress-fill" style="width:${pct}%"></div></div>` : ''}
-    <div class="dl-info">
-      <span>${isDone ? 'Completed' : isFailed ? 'Failed' : formatBytes(dl.receivedBytes) + ' / ' + formatBytes(dl.totalBytes)}</span>
-      <span>${isDone ? formatBytes(dl.totalBytes) : pct + '%'}</span>
-    </div>
-    ${isDone ? `
-      <div class="dl-actions">
-        <button data-act="open">Open</button>
-        <button data-act="show">Show in folder</button>
-      </div>` : ''}
-  `;
-  if (isDone) {
-    el.querySelector('[data-act="open"]').addEventListener('click', () => window.wizardBrowser.openDownload(dl.path));
-    el.querySelector('[data-act="show"]').addEventListener('click', () => window.wizardBrowser.showDownload(dl.path));
-  }
-}
-
-window.wizardBrowser.onDownloadStarted(renderDownload);
-window.wizardBrowser.onDownloadUpdated(renderDownload);
-window.wizardBrowser.onDownloadDone(renderDownload);
-
-// --- Onion banner ---
-const onionBanner = document.getElementById('onion-banner');
-const onionText = document.getElementById('onion-text');
-let currentOnion = null;
-
-window.wizardBrowser.onOnionAvailable((data) => {
-  if (!torActive) return;
-  currentOnion = data.onion;
-  onionText.textContent = `.onion version available for ${data.clearnet}`;
-  onionBanner.classList.add('show');
-});
-document.getElementById('onion-go').addEventListener('click', () => {
-  if (currentOnion) wv.loadURL(currentOnion);
-  onionBanner.classList.remove('show');
-});
-document.getElementById('onion-dismiss').addEventListener('click', () => {
-  onionBanner.classList.remove('show');
-});
-
-// --- Auto-update banner ---
-const updateBanner = document.getElementById('update-banner');
-const updateText = document.getElementById('update-text');
-const updateInstall = document.getElementById('update-install');
-
-window.wizardBrowser.onUpdateStatus((data) => {
-  if (data.status === 'downloading') {
-    updateText.textContent = `Downloading update v${data.version}...`;
-    updateInstall.style.display = 'none';
-    updateBanner.classList.add('show');
-  } else if (data.status === 'ready') {
-    updateText.textContent = `Update v${data.version} ready to install`;
-    updateInstall.style.display = '';
-    updateBanner.classList.add('show');
-  } else if (data.status === 'error') {
-    updateText.textContent = `Auto-update error: ${data.message}`;
-    updateInstall.style.display = 'none';
-    updateBanner.classList.add('show');
-    updateBanner.style.background = '#2e0a0a';
-    updateBanner.style.borderColor = '#ef4444';
-  }
-});
-updateInstall.addEventListener('click', () => window.wizardBrowser.installUpdate());
-document.getElementById('update-dismiss').addEventListener('click', () => updateBanner.classList.remove('show'));
-
-// --- Webview events ---
-function setLoading(loading) {
-  if (loading) {
-    loadingBar.style.width = '70%';
-  } else {
-    loadingBar.style.width = '100%';
-    setTimeout(() => {
-      loadingBar.style.transition = 'none';
-      loadingBar.style.width = '0%';
-      setTimeout(() => { loadingBar.style.transition = 'width 0.4s ease'; }, 50);
-    }, 250);
-  }
-}
-
-function updateNavButtons() {
-  try {
-    btnBack.disabled    = !wv.canGoBack();
-    btnForward.disabled = !wv.canGoForward();
-  } catch {}
-}
-
-wv.addEventListener('did-start-loading', () => setLoading(true));
-wv.addEventListener('did-stop-loading',  () => { setLoading(false); updateNavButtons(); });
-wv.addEventListener('did-finish-load',   () => updateNavButtons());
-
-wv.addEventListener('did-navigate', (e) => {
-  currentUrl = e.url;
-  urlBar.value = e.url.startsWith('file://') ? '' : e.url;
-  onionBanner.classList.remove('show');
-  updateNavButtons();
-});
-wv.addEventListener('did-navigate-in-page', (e) => {
-  currentUrl = e.url;
-  if (!e.url.startsWith('file://')) urlBar.value = e.url;
-  updateNavButtons();
-});
-wv.addEventListener('page-title-updated', (e) => {
-  currentTitle = e.title;
-  document.title = e.title + ' — Wizard';
-});
-
-window.wizardBrowser.onBlockedUpdate((count) => {
-  blockedSpan.textContent = count;
-});
-
-if (window.wizardBrowser.onSearchSelection) {
-  window.wizardBrowser.onSearchSelection((text) => {
-    wv.loadURL(HOME_URL + '#q=' + encodeURIComponent(text));
-  });
-}
-
-if (window.wizardBrowser.onNavigateShell) {
-  window.wizardBrowser.onNavigateShell((where) => {
-    if (where === 'settings') wv.loadURL(SETTINGS_URL);
-    else if (where === 'irc') wv.loadURL(IRC_URL);
-    else if (where === 'home') wv.loadURL(HOME_URL);
-  });
-}
-if (window.wizardBrowser.onNavigateShellUrl) {
-  window.wizardBrowser.onNavigateShellUrl((url) => { try { wv.loadURL(url); } catch {} });
-}
-
-wv.addEventListener('dom-ready', () => {
-  updateNavButtons();
-  try {
-    const u = wv.getURL();
-    if (u && !u.startsWith('file://')) urlBar.value = u;
-  } catch {}
-});
-
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.key === 'l') { urlBar.focus(); e.preventDefault(); }
-  if (e.altKey  && e.key === 'ArrowLeft')  btnBack.click();
-  if (e.altKey  && e.key === 'ArrowRight') btnForward.click();
-  if (e.key === 'F5') { try { wv.reload(); } catch {} }
-  if (e.ctrlKey && e.key === 'r') { try { wv.reload(); } catch {} }
-  if (e.ctrlKey && e.key === 'j') { dlPanel.classList.toggle('show'); e.preventDefault(); }
-  if (e.ctrlKey && e.key === 'b') {
-    bmPanel.classList.toggle('show');
-    if (bmPanel.classList.contains('show')) renderBookmarks();
-    e.preventDefault();
-  }
-  if (e.ctrlKey && e.key === 'd') { document.getElementById('bookmark-btn').click(); e.preventDefault(); }
-});
+// ────────── Boot ──────────
+loadInitialTheme();
+newTab(); // open the first tab
 </script>
 </body>
 </html>

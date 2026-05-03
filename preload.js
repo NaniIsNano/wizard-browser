@@ -48,5 +48,6 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   onBlockedUpdate:  (cb) => ipcRenderer.on('blocked-update', (_, count) => cb(count)),
   onSearchSelection:(cb) => ipcRenderer.on('search-selection', (_, text) => cb(text)),
   onNavigateShell:  (cb) => ipcRenderer.on('navigate-shell', (_, where) => cb(where)),
-  onNavigateShellUrl:(cb) => ipcRenderer.on('navigate-shell-url', (_, url) => cb(url))
+  onNavigateShellUrl:(cb) => ipcRenderer.on('navigate-shell-url', (_, url) => cb(url)),
+  onSettingsChanged:(cb) => ipcRenderer.on('settings-changed', (_, s) => cb(s))
 });

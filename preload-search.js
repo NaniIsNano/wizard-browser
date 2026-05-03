@@ -17,7 +17,11 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   setPin: (data) => ipcRenderer.invoke('set-pin', data),
   verifyPin: (pin) => ipcRenderer.invoke('verify-pin', pin),
   skipPinSetup: () => ipcRenderer.invoke('skip-pin-setup'),
-  // Navigation
+  // Shell navigation (asks browser.html shell to drive the active webview)
   openSettings: () => ipcRenderer.send('open-settings'),
-  openIRC: () => ipcRenderer.send('open-irc')
+  openIRC: () => ipcRenderer.send('open-irc'),
+  openHome: () => ipcRenderer.send('open-home'),
+  openNewTab: () => ipcRenderer.send('open-newtab'),
+  // Settings live-change (so search/settings can re-render when changed elsewhere)
+  onSettingsChanged: (cb) => ipcRenderer.on('settings-changed', (_, s) => cb(s))
 });
