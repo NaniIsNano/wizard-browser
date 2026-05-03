@@ -8,7 +8,7 @@
   [![License: WPL-1.0](https://img.shields.io/badge/License-WPL--1.0-7c3aed?style=flat-square)](./LICENSE)
   [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-a855f7?style=flat-square)](#install)
   [![Built with Electron](https://img.shields.io/badge/Built%20with-Electron-47848f?style=flat-square&logo=electron)](https://www.electronjs.org/)
-  [![Free Software](https://img.shields.io/badge/Free%20Software-Free%20as%20in%20Freedom-22c55e?style=flat-square)](#license)
+  [![Version](https://img.shields.io/badge/Version-2.4.1-22c55e?style=flat-square)](#install)
   [![Website](https://img.shields.io/badge/Website-wizardbrowser.netlify.app-7c3aed?style=flat-square&logo=netlify)](https://wizardbrowser.netlify.app/)
 
   *No tracking. No cookies. No logs.*
@@ -35,11 +35,12 @@
 | **Canvas & WebGL spoofing** | Fingerprinting via GPU/rendering blocked |
 | **Referrer stripping** | Cross-origin referrer headers removed |
 | **Generic user agent** | Spoofs a common Chrome UA to blend in |
+| **DNT + GPC headers** | Sends `DNT: 1` and `Sec-GPC: 1` on every request |
 | **Clear on exit** | All browsing data wiped automatically when you close the browser |
 
 ### 🔍 Wizard Search Engine
 
-Built-in private search that aggregates results from multiple independent sources — no single company controls what you see.
+Built-in private search aggregating results from multiple independent sources — no single company controls what you see. Queries route through a pool of SearXNG instances (randomly selected, with DuckDuckGo Lite as fallback) entirely server-side to avoid CORS and fingerprinting.
 
 **Sources:** SearXNG · Wikipedia · YouTube (via Piped) · Hacker News · Reddit · Archive.org · Stack Overflow · GitHub
 
@@ -50,17 +51,31 @@ Built-in private search that aggregates results from multiple independent source
 
 ### 🌐 Browser
 
-- Clean dark UI with purple accents — 9 built-in themes
+- Clean dark UI with purple accents
+- **9 built-in themes** — Default, Frutiger Aero, Canola, Mountains, Fortress, Retrowave, Win7 layout, and more
+- **Customizable background** — set your own image under any theme
 - Back / Forward / Reload / Home navigation
-- URL bar with smart navigation (URL detection, search fallback)
-- Live tracker block counter
-- Bookmarks manager
-- Download manager
-- One-click **Tor** routing via SOCKS5 (auto-suggests `.onion` versions of major sites)
-- Built-in **IRC** client (#wizard-support)
-- **PIN lock** — require a code on every launch
-- Manual **CLEAR** button to wipe all data on demand
-- Keyboard shortcuts: `Ctrl+L` (URL bar) · `Alt+←/→` (back/forward) · `F5` (reload) · `Ctrl+D` (bookmark) · `Ctrl+B` (bookmarks panel) · `Ctrl+J` (downloads)
+- URL bar with smart navigation (auto-detects URLs vs. search queries)
+- Live **tracker block counter**
+- **Bookmarks** manager with panel (`Ctrl+B`)
+- **Download** manager (`Ctrl+J`)
+- **Speed dial** — customizable homepage shortcuts
+- One-click **Tor** routing via SOCKS5 proxy (auto-suggests `.onion` versions of major sites)
+- **PIN lock** — require a PIN code on every launch
+- Manual **CLEAR** button to wipe all session data on demand
+- Right-click context menu: copy, paste, search selection, bookmark page/link, inspect element
+- **Auto-updater** — checks GitHub Releases on startup and installs updates on quit
+
+### ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+L` | Focus URL bar |
+| `Alt+←` / `Alt+→` | Back / Forward |
+| `F5` | Reload |
+| `Ctrl+D` | Bookmark current page |
+| `Ctrl+B` | Toggle bookmarks panel |
+| `Ctrl+J` | Toggle downloads panel |
 
 ---
 
@@ -83,19 +98,39 @@ npm start
 ```bash
 npm run build:win
 ```
+Outputs: `dist/Wizard-Browser-Setup-x.x.x.exe` (NSIS installer)
 
 **Linux**
 ```bash
 npm run build:linux
 ```
+Outputs: `dist/Wizard-Browser-x.x.x.AppImage` and `.deb`
 
-Built executables are output to `dist/`.
+> Built executables are output to `dist/`.
+
+---
+
+## Project Structure
+
+```
+wizard-browser/
+├── main.js              # Electron main process — privacy, sessions, IPC, updater
+├── preload.js           # Preload bridge for the browser shell
+├── preload-search.js    # Preload injected into every page via session
+├── browser.html         # Browser shell UI (nav bar, tabs, chrome)
+├── search.html          # Wizard Search engine UI
+├── settings.html        # Settings panel UI
+├── tracker-list.json    # Network-level tracker blocklist
+├── backgrounds/         # Built-in theme background images
+├── package.json
+└── logo.png / thumbnail.png
+```
 
 ---
 
 ## ⚠️ Windows SmartScreen Warning
 
-When running the `.exe` for the first time, Windows may show a *"Windows protected your PC"* warning. This is expected for unsigned open-source software — the app is not code-signed.
+When running the `.exe` for the first time, Windows may show a *"Windows protected your PC"* warning. This is expected for unsigned open-source software.
 
 Click **"More info"** → **"Run anyway"** to proceed. The full source code is open and auditable on GitHub.
 
