@@ -56,7 +56,32 @@ and may not use "Wizard Browser" or confusingly similar names.
 Commercialization is not allowed now or in the future by anyone, including the
 original author, unless a separate license is explicitly released by NaniIsNano.
 
-5. No Warranty
+5. Violation & Termination
+
+5.1 Automatic Termination
+Any breach of this License (including missing attribution, commercial use, or
+obfuscation of origin) causes immediate automatic termination of all rights
+granted under this License.
+
+5.2 Violator Obligations
+Upon termination, the violator must:
+  - Immediately cease all use, modification, distribution, and hosting of the
+    Software and any derivative works.
+  - Delete or make private all copies and forks within 48 hours of receiving
+    notice or becoming aware of the violation.
+
+5.3 Rights of the Original Author (NaniIsNano)
+In case of violation, NaniIsNano reserves the right to:
+  - Demand immediate takedown of all violating copies and derivatives.
+  - Publicly mark the violating project as unauthorized and in breach.
+  - Fork, correct, or re-release any derivative work under their own control.
+  - Pursue all available legal remedies under copyright law, including
+    injunctions, damages, and attorney fees.
+
+Violators have no license to continue using the Software or derivatives after
+termination.
+
+6. No Warranty
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -65,7 +90,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-6. Acceptance
+7. Acceptance
 By using, modifying, or distributing this Software, you automatically agree to
 the terms of this License.
 
