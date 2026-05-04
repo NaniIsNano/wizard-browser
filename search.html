@@ -2463,11 +2463,15 @@ function showOfflineModal() {
   initOfflineDB();
 }
 
-// Support: Tawk.to refuses to load inside iframes/webviews due to its CSP, so
-// we hand off to the user's default OS browser via shell.openExternal.
+// Support: open the Tawk.to chat as a new Wizard tab. Tawk's CSP blocks
+// iframe embeds, but a <webview> is a top-level browsing context with its
+// own session — Tawk treats it as a real browser tab and renders fine.
 const TAWK_CHAT_URL = 'https://tawk.to/chat/69f5c452b4a1331c31f06f29/1jnk0do91';
 function openSupportDrawer() {
-  if (window.wizardBrowser && window.wizardBrowser.openExternal) {
+  if (window.wizardBrowser && window.wizardBrowser.openInNewTab) {
+    window.wizardBrowser.openInNewTab(TAWK_CHAT_URL);
+  } else if (window.wizardBrowser && window.wizardBrowser.openExternal) {
+    // Fallback if for some reason the new-tab IPC isn't wired.
     window.wizardBrowser.openExternal(TAWK_CHAT_URL);
   } else {
     window.open(TAWK_CHAT_URL, '_blank', 'noopener,noreferrer');

@@ -39,9 +39,10 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   skipPinSetup:     () => ipcRenderer.invoke('skip-pin-setup'),
 
   // Auto-update
-  checkUpdate:      () => ipcRenderer.invoke('check-update'),
-  installUpdate:    () => ipcRenderer.send('install-update'),
-  onUpdateStatus:   (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
+  checkUpdate:        () => ipcRenderer.invoke('check-update'),
+  installUpdate:      () => ipcRenderer.send('install-update'),
+  getUpdateStatus:    () => ipcRenderer.invoke('get-update-status'),
+  onUpdateStatus:     (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
 
   // Browser-shell events
   onOnionAvailable: (cb) => ipcRenderer.on('onion-available', (_, data) => cb(data)),

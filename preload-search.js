@@ -28,6 +28,12 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   // Settings live-change (so search/settings can re-render when changed elsewhere)
   onSettingsChanged: (cb) => ipcRenderer.on('settings-changed', (_, s) => cb(s)),
 
+  // ─── Auto-update ───
+  checkUpdate:       () => ipcRenderer.invoke('check-update'),
+  installUpdate:     () => ipcRenderer.send('install-update'),
+  getUpdateStatus:   () => ipcRenderer.invoke('get-update-status'),
+  onUpdateStatus:    (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
+
   // ─── WizardScript management (used by extensions.html) ───
   extList:                () => ipcRenderer.invoke('ext-list'),
   extToggle:              (id) => ipcRenderer.invoke('ext-toggle', id),

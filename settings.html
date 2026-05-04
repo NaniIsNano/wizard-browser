@@ -544,6 +544,37 @@ body[data-glossy="1"] .toggle input:checked + .toggle-slider {
     </div>
   </div>
 
+  <!-- UPDATES -->
+  <div class="section">
+    <div class="section-title">Updates</div>
+
+    <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 0;">
+          <div class="setting-label">
+            <span id="upd-status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:8px;vertical-align:middle;"></span>
+            <span id="upd-status-label">Checking…</span>
+          </div>
+          <div class="setting-desc" id="upd-current-version">Current version: …</div>
+          <div class="setting-desc" id="upd-last-checked" style="margin-top: 2px; opacity: 0.7;">Last checked: never</div>
+          <div class="setting-desc" id="upd-message"   style="margin-top: 4px; color: #f59e0b; display:none;"></div>
+        </div>
+        <div style="display: flex; gap: 8px; flex-shrink: 0;">
+          <button class="btn" id="upd-check-btn">Check for updates</button>
+          <button class="btn" id="upd-install-btn" style="background: var(--green); display: none;">Restart &amp; Update</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-label">Auto-update</div>
+        <div class="setting-desc">Automatically download new versions in the background and install on quit. Periodic re-check every 2 hours while the app is open.</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-autoupdate" /><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
   <!-- ABOUT -->
   <div class="section">
     <div class="section-title">About</div>
@@ -774,6 +805,85 @@ function escapeHtml(str) {
 }
 
 loadSettings();
+
+// =====================================================================
+// Update panel
+// =====================================================================
+const STATUS_LABELS = {
+  idle:         { text: 'Idle',                              color: '#888' },
+  checking:     { text: 'Checking for updates…',             color: '#3b82f6' },
+  downloading:  { text: 'Downloading update…',               color: '#3b82f6' },
+  ready:        { text: 'Update ready — click Restart & Update', color: '#22c55e' },
+  'up-to-date': { text: 'Wizard Browser is up to date',      color: '#22c55e' },
+  error:        { text: 'Update check failed',               color: '#ef4444' },
+  disabled:     { text: 'Auto-update is disabled',           color: '#888'    }
+};
+
+function fmtRelative(ts) {
+  if (!ts) return 'never';
+  const d = Date.now() - ts;
+  if (d < 60_000)         return 'just now';
+  if (d < 3_600_000)      return Math.floor(d / 60_000) + ' min ago';
+  if (d < 86_400_000)     return Math.floor(d / 3_600_000) + ' hr ago';
+  return new Date(ts).toLocaleString();
+}
+
+function renderUpdate(state) {
+  if (!state) return;
+  const dot   = document.getElementById('upd-status-dot');
+  const label = document.getElementById('upd-status-label');
+  const cur   = document.getElementById('upd-current-version');
+  const last  = document.getElementById('upd-last-checked');
+  const msg   = document.getElementById('upd-message');
+  const inst  = document.getElementById('upd-install-btn');
+  const chk   = document.getElementById('upd-check-btn');
+  const meta  = STATUS_LABELS[state.status] || STATUS_LABELS.idle;
+
+  dot.style.background = meta.color;
+  let text = meta.text;
+  if (state.status === 'downloading' && state.availableVersion) text += ` (v${state.availableVersion})`;
+  if (state.status === 'ready'       && state.availableVersion) text = `v${state.availableVersion} ready — click Restart & Update`;
+  label.textContent = text;
+  cur.textContent  = 'Current version: ' + (state.currentVersion || 'unknown');
+  last.textContent = 'Last checked: ' + fmtRelative(state.lastChecked);
+  if (state.message) { msg.textContent = state.message; msg.style.display = ''; }
+  else               { msg.textContent = '';            msg.style.display = 'none'; }
+
+  inst.style.display = (state.status === 'ready') ? '' : 'none';
+  chk.disabled = (state.status === 'checking' || state.status === 'downloading');
+  chk.textContent = (state.status === 'checking' || state.status === 'downloading') ? 'Checking…' : 'Check for updates';
+}
+
+// Initial render from cached state
+(async () => {
+  if (window.wizardBrowser && window.wizardBrowser.getUpdateStatus) {
+    try { renderUpdate(await window.wizardBrowser.getUpdateStatus()); } catch {}
+  }
+})();
+// Live updates from main process
+if (window.wizardBrowser && window.wizardBrowser.onUpdateStatus) {
+  window.wizardBrowser.onUpdateStatus(renderUpdate);
+}
+
+document.getElementById('upd-check-btn').addEventListener('click', async () => {
+  if (window.wizardBrowser.checkUpdate) await window.wizardBrowser.checkUpdate();
+});
+document.getElementById('upd-install-btn').addEventListener('click', () => {
+  if (window.wizardBrowser.installUpdate) window.wizardBrowser.installUpdate();
+});
+
+// Auto-update toggle is part of the privacy/modifier toggle group; we wire
+// it here separately so its label/desc fit the Updates section.
+const autoToggle = document.getElementById('opt-autoupdate');
+async function syncAutoToggle() {
+  const s = await window.wizardBrowser.getSettings();
+  autoToggle.checked = s.autoUpdate !== false;
+}
+syncAutoToggle();
+autoToggle.addEventListener('change', async () => {
+  await window.wizardBrowser.saveSettings({ autoUpdate: autoToggle.checked });
+  showToast(autoToggle.checked ? 'Auto-update enabled' : 'Auto-update disabled');
+});
 
 // Re-apply when settings change elsewhere (so the page reflects shell-driven changes)
 if (window.wizardBrowser && window.wizardBrowser.onSettingsChanged) {
