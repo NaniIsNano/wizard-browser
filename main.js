@@ -41,6 +41,7 @@ let settings = loadJSON(settingsPath, {
   referrerStripping: true,
   trackerBlocking: true,
   clearOnExit: true,
+  autoUpdate: true,              // user can opt out from Settings → Updates
   speedDial: [
     { name: 'YouTube',   url: 'https://youtube.com',   icon: 'Y' },
     { name: 'GitHub',    url: 'https://github.com',    icon: 'G' },
@@ -676,30 +677,65 @@ ipcMain.handle('ext-privacy-getBlockedCount', () => blockedCount);
 ipcMain.handle('ext-ui-getTheme', () => settings.theme || 'default');
 
 // =====================================================================
-// Auto-updater
+// Auto-updater (with periodic re-check, status state, opt-out)
 // =====================================================================
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
+// Centralised status used by Settings → Update panel + the toolbar dot.
+let updateState = {
+  status: 'idle',          // 'idle' | 'checking' | 'downloading' | 'ready' | 'up-to-date' | 'error' | 'disabled'
+  currentVersion: app.getVersion(),
+  availableVersion: null,
+  lastChecked: null,       // ms epoch
+  message: null
+};
+
+function setUpdateState(patch) {
+  updateState = { ...updateState, ...patch };
+  // Broadcast to every renderer (shell + every webview tab) so Settings,
+  // homepage, and toolbar all stay in sync.
+  try {
+    webContents.getAllWebContents().forEach(wc => {
+      try { wc.send('update-status', updateState); } catch {}
+    });
+  } catch {}
+}
+
+autoUpdater.on('checking-for-update', () => {
+  setUpdateState({ status: 'checking', message: null });
+});
 autoUpdater.on('update-available', (info) => {
-  if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', version: info.version });
+  setUpdateState({ status: 'downloading', availableVersion: info && info.version, message: null });
 });
 autoUpdater.on('update-downloaded', (info) => {
-  if (mainWindow) mainWindow.webContents.send('update-status', { status: 'ready', version: info.version });
+  setUpdateState({ status: 'ready', availableVersion: info && info.version, message: null });
 });
 autoUpdater.on('update-not-available', () => {
-  if (mainWindow) mainWindow.webContents.send('update-status', { status: 'up-to-date' });
+  setUpdateState({ status: 'up-to-date', availableVersion: null, message: null, lastChecked: Date.now() });
 });
 autoUpdater.on('error', (err) => {
-  if (mainWindow) mainWindow.webContents.send('update-status', {
-    status: 'error', message: err ? err.message : 'Unknown error'
-  });
+  setUpdateState({ status: 'error', message: err ? err.message : 'Unknown error', lastChecked: Date.now() });
 });
 
-ipcMain.handle('check-update', async () => {
-  try { await autoUpdater.checkForUpdates(); return { checking: true }; }
-  catch { return { checking: false }; }
-});
+async function runUpdateCheck(reason = 'manual') {
+  if (settings.autoUpdate === false && reason !== 'manual') {
+    setUpdateState({ status: 'disabled', message: 'Auto-update is disabled in Settings.' });
+    return false;
+  }
+  // 'checking' state already fired by the autoUpdater event; mark lastChecked
+  // when we get a terminal event (up-to-date / ready / error).
+  try {
+    await autoUpdater.checkForUpdates();
+    return true;
+  } catch (e) {
+    setUpdateState({ status: 'error', message: e ? e.message : 'Check failed', lastChecked: Date.now() });
+    return false;
+  }
+}
+
+ipcMain.handle('get-update-status', () => updateState);
+ipcMain.handle('check-update', async () => { await runUpdateCheck('manual'); return updateState; });
 ipcMain.on('install-update', () => autoUpdater.quitAndInstall(false, true));
 
 // =====================================================================
@@ -717,7 +753,11 @@ app.on('before-quit', async () => {
 
 app.whenReady().then(() => {
   createWindow();
-  setTimeout(() => { autoUpdater.checkForUpdates().catch(() => {}); }, 3000);
+  // Initial check shortly after boot, then re-check every 2 hours while the
+  // app stays open. (Chrome polls every few hours via its background service;
+  // we can't run when closed, but periodic in-app keeps users current.)
+  setTimeout(() => { runUpdateCheck('startup'); }, 3000);
+  setInterval(() => { runUpdateCheck('periodic'); }, 2 * 60 * 60 * 1000);
 });
 
 app.on('window-all-closed', () => app.quit());

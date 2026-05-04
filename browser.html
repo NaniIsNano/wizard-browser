@@ -645,6 +645,20 @@ body[data-layout="win7"] #shield { height: 26px; font-size: 11px; }
 .toolbar-btn svg { width: 14px; height: 14px; fill: currentColor; }
 body[data-layout="win7"] .toolbar-btn { height: 26px; font-size: 11px; padding: 0 8px; }
 
+/* "Update ready" dot on the Settings button */
+.toolbar-btn.has-update { position: relative; }
+.toolbar-btn.has-update::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--shield, #22c55e);
+  box-shadow: 0 0 0 2px var(--toolbar-bg, #0d0d0d), 0 0 6px rgba(34,197,94,0.6);
+}
+
 #clear-btn {
   height: 32px;
   border: 1px solid var(--toolbar-btn-border);
@@ -1331,14 +1345,36 @@ $('#onion-dismiss').addEventListener('click', () => onionBanner.classList.remove
 
 const updateBanner = $('#update-banner');
 window.wizardBrowser.onUpdateStatus((data) => {
+  if (!data) return;
   const text = $('#update-text');
   const installBtn = $('#update-install');
-  if (data.status === 'downloading') { text.textContent = `Downloading update v${data.version}...`; installBtn.style.display = 'none'; updateBanner.classList.add('show'); }
-  else if (data.status === 'ready')  { text.textContent = `Update v${data.version} ready to install`; installBtn.style.display = ''; updateBanner.classList.add('show'); }
-  else if (data.status === 'error')  { text.textContent = `Auto-update error: ${data.message}`; installBtn.style.display = 'none'; updateBanner.classList.add('show'); }
+  const settingsBtn = $('#settings-btn');
+  const v = data.availableVersion || data.version || '';
+  if (data.status === 'downloading') {
+    text.textContent = `Downloading update${v ? ' v' + v : ''}…`;
+    installBtn.style.display = 'none';
+    updateBanner.classList.add('show');
+    settingsBtn && settingsBtn.classList.remove('has-update');
+  } else if (data.status === 'ready') {
+    text.textContent = `Update${v ? ' v' + v : ''} ready to install`;
+    installBtn.style.display = '';
+    updateBanner.classList.add('show');
+    settingsBtn && settingsBtn.classList.add('has-update');
+  } else if (data.status === 'error') {
+    text.textContent = `Auto-update error: ${data.message || 'unknown'}`;
+    installBtn.style.display = 'none';
+    updateBanner.classList.add('show');
+    settingsBtn && settingsBtn.classList.remove('has-update');
+  } else if (data.status === 'up-to-date') {
+    settingsBtn && settingsBtn.classList.remove('has-update');
+  }
 });
 $('#update-install').addEventListener('click', () => window.wizardBrowser.installUpdate());
-$('#update-dismiss').addEventListener('click', () => updateBanner.classList.remove('show'));
+$('#update-dismiss').addEventListener('click', () => {
+  updateBanner.classList.remove('show');
+  // Dismiss only hides the banner — the settings dot remains so the user
+  // doesn't lose the cue that an update is ready.
+});
 
 // ─────────── Statusbar ───────────
 function updateStatusbar() {
