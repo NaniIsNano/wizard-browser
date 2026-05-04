@@ -26,5 +26,12 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   // refuse to load inside an embedded webview)
   openExternal: (url) => ipcRenderer.send('open-external', url),
   // Settings live-change (so search/settings can re-render when changed elsewhere)
-  onSettingsChanged: (cb) => ipcRenderer.on('settings-changed', (_, s) => cb(s))
+  onSettingsChanged: (cb) => ipcRenderer.on('settings-changed', (_, s) => cb(s)),
+
+  // ─── WizardScript management (used by extensions.html) ───
+  extList:                () => ipcRenderer.invoke('ext-list'),
+  extToggle:              (id) => ipcRenderer.invoke('ext-toggle', id),
+  extUninstall:           (id) => ipcRenderer.invoke('ext-uninstall', id),
+  extInstallFromFolder:   () => ipcRenderer.invoke('ext-install-from-folder'),
+  onExtensionsChanged:    (cb) => ipcRenderer.on('extensions-changed', () => cb())
 });
