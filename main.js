@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, Menu, clipboard, shell, webContents } = require('electron');
+const { app, BrowserWindow, ipcMain, session, Menu, clipboard, shell, webContents, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
@@ -488,6 +488,192 @@ ipcMain.on('open-external', (_, url) => {
 ipcMain.on('open-url',      (_, url) => {
   if (mainWindow && typeof url === 'string') mainWindow.webContents.send('navigate-shell-url', url);
 });
+
+// =====================================================================
+// WizardScript — extension subsystem
+// =====================================================================
+const extensionsDir = path.join(app.getPath('userData'), 'extensions');
+try { fs.mkdirSync(extensionsDir, { recursive: true }); } catch {}
+
+function slugifyId(name, version) {
+  return ((name || 'unnamed') + '-' + (version || '0.0.0'))
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+function loadExtensions() {
+  const list = [];
+  let entries = [];
+  try { entries = fs.readdirSync(extensionsDir, { withFileTypes: true }); } catch {}
+  for (const ent of entries) {
+    if (!ent.isDirectory()) continue;
+    const dir = path.join(extensionsDir, ent.name);
+    try {
+      const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'wizard.json'), 'utf-8'));
+      if (!manifest.script) continue;
+      const codePath = path.join(dir, manifest.script);
+      const code = fs.readFileSync(codePath, 'utf-8');
+      list.push({
+        id: ent.name,
+        manifest,
+        code,
+        enabled: !manifest._disabled,
+        dir
+      });
+    } catch (e) {
+      // Skip invalid extensions silently — they'll show up missing in UI.
+    }
+  }
+  return list;
+}
+let extensions = loadExtensions();
+
+function broadcastExtensionsChanged() {
+  try {
+    webContents.getAllWebContents().forEach(wc => {
+      try { wc.send('extensions-changed'); } catch {}
+    });
+  } catch {}
+}
+
+// List installed extensions (manifest + enabled flag, no code)
+ipcMain.handle('ext-list', () => extensions.map(e => ({
+  id: e.id, manifest: e.manifest, enabled: e.enabled
+})));
+
+// List enabled extensions WITH code — used by the shell runtime
+ipcMain.handle('ext-list-runtime', () => extensions
+  .filter(e => e.enabled)
+  .map(e => ({ id: e.id, manifest: e.manifest, code: e.code })));
+
+ipcMain.handle('ext-toggle', (_, id) => {
+  const ext = extensions.find(e => e.id === id);
+  if (!ext) return false;
+  ext.enabled = !ext.enabled;
+  ext.manifest._disabled = !ext.enabled;
+  try { fs.writeFileSync(path.join(ext.dir, 'wizard.json'), JSON.stringify(ext.manifest, null, 2)); } catch {}
+  broadcastExtensionsChanged();
+  return true;
+});
+
+ipcMain.handle('ext-uninstall', (_, id) => {
+  const ext = extensions.find(e => e.id === id);
+  if (!ext) return false;
+  try { fs.rmSync(ext.dir, { recursive: true, force: true }); } catch {}
+  extensions = loadExtensions();
+  broadcastExtensionsChanged();
+  return true;
+});
+
+ipcMain.handle('ext-install-from-folder', async () => {
+  if (!mainWindow) return { ok: false, error: 'no window' };
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Pick an extension folder (containing wizard.json + script)'
+  });
+  if (result.canceled || !result.filePaths.length) return { ok: false, error: 'cancelled' };
+  const src = result.filePaths[0];
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(path.join(src, 'wizard.json'), 'utf-8'));
+  } catch {
+    return { ok: false, error: 'No valid wizard.json in that folder' };
+  }
+  if (!manifest.name || !manifest.version || !manifest.script) {
+    return { ok: false, error: 'wizard.json missing required fields (name, version, script)' };
+  }
+  const scriptSrc = path.join(src, manifest.script);
+  if (!fs.existsSync(scriptSrc)) {
+    return { ok: false, error: `Script file "${manifest.script}" not found` };
+  }
+  const id = slugifyId(manifest.name, manifest.version);
+  const dest = path.join(extensionsDir, id);
+  try {
+    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+    fs.mkdirSync(dest, { recursive: true });
+    fs.copyFileSync(path.join(src, 'wizard.json'), path.join(dest, 'wizard.json'));
+    fs.copyFileSync(scriptSrc, path.join(dest, manifest.script));
+    if (manifest.icon) {
+      try { fs.copyFileSync(path.join(src, manifest.icon), path.join(dest, manifest.icon)); } catch {}
+    }
+  } catch (e) {
+    return { ok: false, error: 'Copy failed: ' + e.message };
+  }
+  extensions = loadExtensions();
+  broadcastExtensionsChanged();
+  return { ok: true, id };
+});
+
+// Per-extension scoped key/value storage on disk.
+function extStoragePath(id) { return path.join(extensionsDir, id, 'storage.json'); }
+function readExtStorage(id) {
+  try { return JSON.parse(fs.readFileSync(extStoragePath(id), 'utf-8')); } catch { return {}; }
+}
+function writeExtStorage(id, data) {
+  try { fs.writeFileSync(extStoragePath(id), JSON.stringify(data, null, 2)); } catch {}
+}
+
+ipcMain.handle('ext-storage-get',    (_, id, key)        => { const d = readExtStorage(id); return d[key] ?? null; });
+ipcMain.handle('ext-storage-set',    (_, id, key, value) => { const d = readExtStorage(id); d[key] = value; writeExtStorage(id, d); return true; });
+ipcMain.handle('ext-storage-remove', (_, id, key)        => { const d = readExtStorage(id); delete d[key]; writeExtStorage(id, d); return true; });
+ipcMain.handle('ext-storage-clear',  (_, id)             => { writeExtStorage(id, {}); return true; });
+
+// CORS-bypassing fetch for extensions. Returns { ok, status, body }.
+function extHttpRequest(url, { method = 'GET', headers = {}, body = null, timeout = 12000 } = {}) {
+  return new Promise((resolve) => {
+    let lib, parsed;
+    try { parsed = new URL(url); } catch { return resolve({ ok: false, status: 0, body: '' }); }
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return resolve({ ok: false, status: 0, body: '' });
+    lib = parsed.protocol === 'https:' ? require('https') : require('http');
+    const req = lib.request(url, {
+      method,
+      headers: { 'User-Agent': 'WizardBrowser/1.0 WizardScript', ...headers },
+      timeout
+    }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve({
+        ok: res.statusCode >= 200 && res.statusCode < 300,
+        status: res.statusCode || 0,
+        body: data
+      }));
+    });
+    req.on('error',   () => resolve({ ok: false, status: 0, body: '' }));
+    req.on('timeout', () => { req.destroy(); resolve({ ok: false, status: 0, body: '' }); });
+    if (body != null) {
+      const payload = typeof body === 'string' ? body : JSON.stringify(body);
+      req.write(payload);
+    }
+    req.end();
+  });
+}
+
+ipcMain.handle('ext-net-fetch', (_, url, options)        => extHttpRequest(url, options || {}));
+ipcMain.handle('ext-net-post',  (_, url, body, options)  => extHttpRequest(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', ...((options && options.headers) || {}) },
+  body,
+  ...((options && { timeout: options.timeout }) || {})
+}));
+
+// Read-only privacy + theme bridges for extensions
+ipcMain.handle('ext-privacy-getSettings', () => ({
+  trackerBlocking:    !!settings.trackerBlocking,
+  doNotTrack:         !!settings.doNotTrack,
+  canvasSpoofing:     !!settings.canvasSpoofing,
+  webrtcProtection:   !!settings.webrtcProtection,
+  referrerStripping:  !!settings.referrerStripping,
+  clearOnExit:        !!settings.clearOnExit
+}));
+ipcMain.handle('ext-privacy-isTrackerBlocked', (_, domain) => {
+  if (typeof domain !== 'string') return false;
+  const d = domain.toLowerCase();
+  return trackerList.some(t => d.includes(t));
+});
+ipcMain.handle('ext-privacy-getBlockedCount', () => blockedCount);
+ipcMain.handle('ext-ui-getTheme', () => settings.theme || 'default');
 
 // =====================================================================
 // Auto-updater

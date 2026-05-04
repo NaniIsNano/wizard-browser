@@ -895,6 +895,9 @@ webview.active { display: flex; }
   <button class="toolbar-btn" id="dl-btn" title="Downloads (Ctrl+J)">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
   </button>
+  <button class="toolbar-btn" id="ext-btn" title="WizardScript Extensions">
+    <svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
+  </button>
   <button class="toolbar-btn" id="settings-btn" title="Settings">
     <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
   </button>
@@ -947,8 +950,9 @@ webview.active { display: flex; }
 </div>
 
 <script>
-const HOME_URL     = new URL('search.html',   location.href).href;
-const SETTINGS_URL = new URL('settings.html', location.href).href;
+const HOME_URL     = new URL('search.html',     location.href).href;
+const SETTINGS_URL = new URL('settings.html',   location.href).href;
+const EXT_URL      = new URL('extensions.html', location.href).href;
 
 const $ = (s) => document.querySelector(s);
 const tabBar    = $('#tab-bar');
@@ -1003,7 +1007,13 @@ function createWebview(initialUrl) {
 
   wv.addEventListener('did-start-loading', () => { if (isActive(wv)) setLoading(true); });
   wv.addEventListener('did-stop-loading',  () => { if (isActive(wv)) { setLoading(false); updateNav(); } });
-  wv.addEventListener('did-finish-load',   () => { if (isActive(wv)) updateNav(); });
+  wv.addEventListener('did-finish-load',   () => {
+    if (isActive(wv)) updateNav();
+    // WizardScript: fire onLoad for extensions watching the active tab
+    if (isActive(wv)) {
+      try { WizardRuntime.fireLoad(wv.getURL()); } catch {}
+    }
+  });
 
   wv.addEventListener('did-navigate', (e) => {
     const tab = tabForWebview(wv);
@@ -1012,6 +1022,8 @@ function createWebview(initialUrl) {
       urlBar.value = e.url.startsWith('file://') ? '' : e.url;
       $('#onion-banner').classList.remove('show');
       updateNav();
+      // WizardScript: fire onNavigate for extensions
+      try { WizardRuntime.fireNavigate(e.url); } catch {}
     }
   });
   wv.addEventListener('did-navigate-in-page', (e) => {
@@ -1211,6 +1223,7 @@ btnForward.addEventListener('click', () => { const wv = activeView(); try { if (
 $('#btn-reload').addEventListener('click', () => { const wv = activeView(); try { wv && wv.reload(); } catch {} });
 $('#btn-home').addEventListener('click',   () => { const wv = activeView(); wv && wv.loadURL(HOME_URL); });
 $('#settings-btn').addEventListener('click', () => { const wv = activeView(); wv && wv.loadURL(SETTINGS_URL); });
+$('#ext-btn').addEventListener('click',      () => { const wv = activeView(); wv && wv.loadURL(EXT_URL); });
 
 $('#clear-btn').addEventListener('click', async () => {
   if (window.wizardBrowser) await window.wizardBrowser.clearAllData();
@@ -1417,8 +1430,151 @@ function cycleTab(dir) {
   }
 })();
 
+// =====================================================================
+// WizardScript runtime — runs each enabled extension in this shell
+// renderer with a scoped `wizard` API. Extensions can listen to
+// navigation events on the active tab, manipulate the active page, and
+// use scoped persistent storage / CORS-bypass network.
+// =====================================================================
+const WizardRuntime = (() => {
+  let loaded = []; // [{ id, manifest, callbacks }]
+  let toastEl = null;
+
+  function ensureToastEl() {
+    if (toastEl) return toastEl;
+    toastEl = document.createElement('div');
+    toastEl.id = 'wizscript-toast';
+    Object.assign(toastEl.style, {
+      position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+      background: 'var(--accent, #7c3aed)', color: 'var(--accent-on, #fff)',
+      padding: '10px 18px', borderRadius: 'var(--radius, 8px)',
+      fontSize: '13px', fontWeight: '500', zIndex: 99999,
+      opacity: '0', transition: 'opacity 0.2s', pointerEvents: 'none',
+      maxWidth: '420px', boxShadow: '0 6px 20px rgba(0,0,0,0.4)'
+    });
+    document.body.appendChild(toastEl);
+    return toastEl;
+  }
+  function notify(msg, opts = {}) {
+    const el = ensureToastEl();
+    el.textContent = String(msg || '');
+    el.style.background = ({
+      info:    'var(--accent, #7c3aed)',
+      success: 'var(--shield, #22c55e)',
+      warn:    '#f59e0b'
+    })[opts.type] || 'var(--accent, #7c3aed)';
+    el.style.opacity = '1';
+    clearTimeout(notify._t);
+    notify._t = setTimeout(() => { el.style.opacity = '0'; }, opts.duration || 3000);
+  }
+
+  function urlMatches(patterns, url) {
+    if (!patterns || !patterns.length) return true;
+    for (const p of patterns) {
+      if (p === '*' || p === '<all_urls>') return true;
+      // Glob with wildcard at the end (e.g. "https://github.com/*")
+      const re = new RegExp('^' + p.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+      if (re.test(url)) return true;
+    }
+    return false;
+  }
+
+  function makeApi(ext) {
+    const callbacks = { onNavigate: [], onLoad: [], onQuery: [] };
+    const perms = ext.manifest.permissions || [];
+    const has = (p) => perms.includes(p);
+    const wb = window.wizardBrowser;
+    const safeCb = (fn) => function (...args) { try { fn.apply(null, args); } catch (e) { console.warn(`[ext:${ext.id}]`, e); } };
+
+    const api = {};
+    if (has('page')) api.page = {
+      getURL: () => { try { return activeView()?.getURL() || ''; } catch { return ''; } },
+      getTitle: () => { try { return activeView()?.getTitle() || ''; } catch { return ''; } },
+      injectCSS: (css) => { try { activeView()?.insertCSS(String(css || '')); } catch {} },
+      injectScript: (js) => { try { activeView()?.executeJavaScript(String(js || '')); } catch {} },
+      onNavigate: (cb) => { if (typeof cb === 'function') callbacks.onNavigate.push(safeCb(cb)); },
+      onLoad:     (cb) => { if (typeof cb === 'function') callbacks.onLoad.push(safeCb(cb)); }
+    };
+    if (has('storage')) api.storage = {
+      get:    (key)        => wb.extStorageGet(ext.id, String(key)),
+      set:    (key, value) => wb.extStorageSet(ext.id, String(key), value),
+      remove: (key)        => wb.extStorageRemove(ext.id, String(key)),
+      clear:  ()           => wb.extStorageClear(ext.id)
+    };
+    if (has('ui')) api.ui = {
+      notify:    (msg, opts) => notify(msg, opts),
+      getTheme:  () => wb.extUiGetTheme()
+      // setTitle + addButton are v1.1 — they need a toolbar registry.
+    };
+    if (has('privacy')) api.privacy = {
+      getSettings:      () => wb.extPrivacyGetSettings(),
+      isTrackerBlocked: (d) => wb.extPrivacyIsTrackerBlocked(d),
+      getBlockedCount:  () => wb.extPrivacyGetBlockedCount()
+    };
+    if (has('net')) api.net = {
+      fetch: async (url, opts) => {
+        const r = await wb.extNetFetch(url, opts || {});
+        return {
+          ok: r.ok, status: r.status,
+          text:  async () => r.body,
+          json:  async () => { try { return JSON.parse(r.body); } catch { return null; } }
+        };
+      },
+      post: async (url, body, opts) => {
+        const r = await wb.extNetPost(url, body, opts || {});
+        return {
+          ok: r.ok, status: r.status,
+          text:  async () => r.body,
+          json:  async () => { try { return JSON.parse(r.body); } catch { return null; } }
+        };
+      }
+    };
+    return { api, callbacks };
+  }
+
+  async function reload() {
+    if (!window.wizardBrowser || !window.wizardBrowser.extListRuntime) return;
+    loaded = [];
+    let list = [];
+    try { list = await window.wizardBrowser.extListRuntime(); } catch { return; }
+    for (const ext of list) {
+      const { api, callbacks } = makeApi(ext);
+      try {
+        // Wrap in IIFE-as-Function so the extension's local vars stay scoped
+        // and don't leak into the shell window.
+        const fn = new Function('wizard', '"use strict";\n' + ext.code);
+        fn(api);
+        loaded.push({ id: ext.id, manifest: ext.manifest, callbacks });
+      } catch (e) {
+        console.warn(`[ext:${ext.id}] failed to init:`, e);
+      }
+    }
+  }
+
+  function fireNavigate(url) {
+    for (const e of loaded) {
+      if (!urlMatches(e.manifest.match, url)) continue;
+      for (const cb of e.callbacks.onNavigate) cb(url);
+    }
+  }
+  function fireLoad(url) {
+    for (const e of loaded) {
+      if (!urlMatches(e.manifest.match, url)) continue;
+      for (const cb of e.callbacks.onLoad) cb(url);
+    }
+  }
+
+  // Re-load whenever the extension set changes (install / toggle / uninstall).
+  if (window.wizardBrowser && window.wizardBrowser.onExtensionsChanged) {
+    window.wizardBrowser.onExtensionsChanged(() => reload());
+  }
+
+  return { reload, fireNavigate, fireLoad, get loaded() { return loaded; } };
+})();
+
 // Boot
 loadInitialAppearance();
+WizardRuntime.reload();
 newTab();
 </script>
 </body>

@@ -50,5 +50,19 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   onNavigateShell:  (cb) => ipcRenderer.on('navigate-shell', (_, where) => cb(where)),
   onNavigateShellUrl:(cb) => ipcRenderer.on('navigate-shell-url', (_, url) => cb(url)),
   onOpenNewTabUrl:  (cb) => ipcRenderer.on('open-newtab-url', (_, url) => cb(url)),
-  onSettingsChanged:(cb) => ipcRenderer.on('settings-changed', (_, s) => cb(s))
+  onSettingsChanged:(cb) => ipcRenderer.on('settings-changed', (_, s) => cb(s)),
+
+  // ─── WizardScript runtime bridges (shell-side) ───
+  extListRuntime:        () => ipcRenderer.invoke('ext-list-runtime'),
+  extStorageGet:         (id, key)        => ipcRenderer.invoke('ext-storage-get', id, key),
+  extStorageSet:         (id, key, value) => ipcRenderer.invoke('ext-storage-set', id, key, value),
+  extStorageRemove:      (id, key)        => ipcRenderer.invoke('ext-storage-remove', id, key),
+  extStorageClear:       (id)             => ipcRenderer.invoke('ext-storage-clear', id),
+  extNetFetch:           (url, options)        => ipcRenderer.invoke('ext-net-fetch', url, options),
+  extNetPost:            (url, body, options)  => ipcRenderer.invoke('ext-net-post',  url, body, options),
+  extPrivacyGetSettings: ()       => ipcRenderer.invoke('ext-privacy-getSettings'),
+  extPrivacyIsTrackerBlocked: (d) => ipcRenderer.invoke('ext-privacy-isTrackerBlocked', d),
+  extPrivacyGetBlockedCount: ()   => ipcRenderer.invoke('ext-privacy-getBlockedCount'),
+  extUiGetTheme:         ()       => ipcRenderer.invoke('ext-ui-getTheme'),
+  onExtensionsChanged:   (cb)     => ipcRenderer.on('extensions-changed', () => cb())
 });

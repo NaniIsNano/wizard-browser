@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Extensions — Wizard Browser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #181818;
+  --border: #222;
+  --text: #e5e5e5;
+  --text2: #888;
+  --accent: #7c3aed;
+  --accent2: #a855f7;
+  --green: #22c55e;
+  --red: #ef4444;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container { max-width: 880px; margin: 0 auto; padding: 32px 24px 80px; }
+
+.header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 28px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  font-family: 'Space Grotesk', sans-serif; font-size: 1.4em; font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  cursor: pointer;
+}
+.title { font-size: 1.2em; font-weight: 600; color: var(--text2); }
+.spacer { flex: 1; }
+
+.btn {
+  padding: 8px 16px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 0.85em; font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer; transition: background 0.15s;
+}
+.btn:hover { background: var(--accent2); }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--accent); background: rgba(124,58,237,0.08); }
+.btn-danger {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+.btn-danger:hover { background: rgba(239,68,68,0.12); }
+
+.intro {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 22px; margin-bottom: 24px; font-size: 0.92em; color: var(--text2);
+  line-height: 1.65;
+}
+.intro b { color: var(--text); font-weight: 600; }
+.intro code {
+  background: rgba(124,58,237,0.12); color: #c084fc;
+  padding: 1px 6px; border-radius: 4px; font-family: 'Menlo', monospace; font-size: 0.85em;
+}
+
+.toolbar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px;
+}
+.toolbar .count {
+  color: var(--text2); font-size: 0.85em; margin-left: 8px;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--text2);
+  font-size: 0.95em;
+}
+.empty p { margin-top: 6px; font-size: 0.85em; opacity: 0.8; }
+
+.ext-list { display: flex; flex-direction: column; gap: 10px; }
+.ext-card {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 18px;
+  transition: border-color 0.15s;
+}
+.ext-card:hover { border-color: rgba(124,58,237,0.4); }
+.ext-card.disabled { opacity: 0.55; }
+.ext-icon {
+  width: 44px; height: 44px; flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: var(--accent2);
+  font-family: 'Space Grotesk', sans-serif;
+  overflow: hidden;
+}
+.ext-icon img { width: 100%; height: 100%; object-fit: cover; }
+.ext-meta { flex: 1; min-width: 0; }
+.ext-name {
+  font-size: 1em; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+.ext-version {
+  font-family: 'Menlo', monospace; font-size: 0.7em;
+  background: rgba(124,58,237,0.12); color: #c084fc;
+  padding: 1px 6px; border-radius: 4px; font-weight: 500;
+}
+.ext-disabled-tag {
+  font-size: 0.65em; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--red); background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3); padding: 1px 6px; border-radius: 3px;
+}
+.ext-desc { font-size: 0.82em; color: var(--text2); line-height: 1.5; margin-bottom: 6px; }
+.ext-author { font-size: 0.72em; color: var(--text2); }
+.ext-perms {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;
+}
+.ext-perm {
+  font-size: 0.65em; font-weight: 600;
+  font-family: 'Menlo', monospace;
+  background: rgba(255,255,255,0.04); color: var(--text2);
+  padding: 1px 6px; border-radius: 3px; border: 1px solid var(--border);
+}
+.ext-actions {
+  display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
+}
+
+/* Toggle switch */
+.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #333; border-radius: 12px; transition: 0.2s;
+}
+.toggle-slider:before {
+  content: ''; position: absolute; height: 18px; width: 18px;
+  left: 3px; bottom: 3px;
+  background: #888; border-radius: 50%; transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(20px); background: #fff; }
+
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--green); color: #fff;
+  padding: 10px 20px; border-radius: 8px;
+  font-size: 0.85em; font-weight: 500;
+  display: none; z-index: 100;
+}
+.toast.show { display: block; }
+.toast.error { background: var(--red); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="logo" onclick="location.href='search.html'">Wizard</div>
+    <div class="title">Extensions</div>
+    <div class="spacer"></div>
+    <button class="btn-ghost btn" onclick="location.href='search.html'">← Back</button>
+  </div>
+
+  <div class="intro">
+    <b>WizardScript v1.0</b> — Wizard Browser's native extension API.
+    Extensions are folders containing a <code>wizard.json</code> manifest and an <code>index.js</code>
+    script that uses the <code>wizard.*</code> namespace (page / storage / ui / privacy / net).
+    Drop a folder below to install. Toggle and uninstall any time. Changes apply live — no restart.
+  </div>
+
+  <div class="toolbar">
+    <button class="btn" id="install-btn">Install from folder…</button>
+    <button class="btn-ghost btn" id="reload-btn">Reload list</button>
+    <span class="count" id="ext-count"></span>
+  </div>
+
+  <div id="empty" class="empty" style="display:none">
+    No extensions installed.
+    <p>Click <b>Install from folder</b> and pick any folder containing a <code>wizard.json</code> + script.</p>
+  </div>
+
+  <div id="ext-list" class="ext-list"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const wb = window.wizardBrowser;
+
+function escHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function showToast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+async function render() {
+  const list = await wb.extList();
+  const root = document.getElementById('ext-list');
+  const empty = document.getElementById('empty');
+  const count = document.getElementById('ext-count');
+  root.innerHTML = '';
+  count.textContent = list.length ? `${list.length} installed` : '';
+  empty.style.display = list.length ? 'none' : 'block';
+
+  for (const ext of list) {
+    const m = ext.manifest || {};
+    const card = document.createElement('div');
+    card.className = 'ext-card' + (ext.enabled ? '' : ' disabled');
+    const initial = (m.name || ext.id).charAt(0).toUpperCase();
+    card.innerHTML = `
+      <div class="ext-icon">${escHtml(initial)}</div>
+      <div class="ext-meta">
+        <div class="ext-name">
+          ${escHtml(m.name || ext.id)}
+          <span class="ext-version">v${escHtml(m.version || '0.0.0')}</span>
+          ${ext.enabled ? '' : '<span class="ext-disabled-tag">disabled</span>'}
+        </div>
+        ${m.description ? `<div class="ext-desc">${escHtml(m.description)}</div>` : ''}
+        ${m.author ? `<div class="ext-author">by ${escHtml(m.author)}</div>` : ''}
+        ${(m.permissions || []).length ? `<div class="ext-perms">${
+          m.permissions.map(p => `<span class="ext-perm">${escHtml(p)}</span>`).join('')
+        }</div>` : ''}
+      </div>
+      <div class="ext-actions">
+        <label class="toggle"><input type="checkbox" ${ext.enabled ? 'checked' : ''} data-act="toggle" data-id="${escHtml(ext.id)}"/><span class="toggle-slider"></span></label>
+        <button class="btn btn-danger" data-act="uninstall" data-id="${escHtml(ext.id)}">Uninstall</button>
+      </div>`;
+    card.querySelector('[data-act="toggle"]').addEventListener('change', async () => {
+      await wb.extToggle(ext.id);
+      render();
+      showToast(ext.enabled ? 'Disabled' : 'Enabled');
+    });
+    card.querySelector('[data-act="uninstall"]').addEventListener('click', async () => {
+      if (!confirm(`Uninstall "${m.name || ext.id}"?\nThis also removes its stored data.`)) return;
+      await wb.extUninstall(ext.id);
+      render();
+      showToast('Uninstalled');
+    });
+    root.appendChild(card);
+  }
+}
+
+document.getElementById('install-btn').addEventListener('click', async () => {
+  const r = await wb.extInstallFromFolder();
+  if (r.ok) { showToast('Installed: ' + r.id); render(); }
+  else if (r.error !== 'cancelled') { showToast(r.error || 'Install failed', true); }
+});
+document.getElementById('reload-btn').addEventListener('click', () => render());
+
+// Re-render whenever the extension set changes elsewhere (toggle / install / uninstall)
+if (wb.onExtensionsChanged) wb.onExtensionsChanged(() => render());
+
+render();
+</script>
+</body>
+</html>
