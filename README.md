@@ -15,6 +15,8 @@
 
   **[🌐 wizardbrowser.netlify.app](https://wizardbrowser.netlify.app/)**
 
+  **[⚙️ https://wizardextensionstore.netlify.app/](https://wizardextensionstore.netlify.app/)**
+
   <br/>
 
   <img src="thumbnail.png" width="860" alt="Wizard Browser — interface screenshot" />
