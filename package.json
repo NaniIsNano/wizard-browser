@@ -1,12 +1,12 @@
 {
   "name": "wizard-browser",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Libre, privacy-focused browser powered by Wizard Search",
   "author": {
     "name": "NaniIsNano",
     "email": "naniis@nano.dev"
   },
-  "license": "GPL-3.0",
+  "license": "SEE LICENSE IN LICENSE",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

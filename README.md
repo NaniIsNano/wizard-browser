@@ -8,7 +8,7 @@
   [![License: WPL-1.0](https://img.shields.io/badge/License-WPL--1.0-7c3aed?style=flat-square)](./LICENSE)
   [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-a855f7?style=flat-square)](#install)
   [![Built with Electron](https://img.shields.io/badge/Built%20with-Electron-47848f?style=flat-square&logo=electron)](https://www.electronjs.org/)
-  [![Version](https://img.shields.io/badge/Version-2.4.1-22c55e?style=flat-square)](#install)
+  [![Version](https://img.shields.io/badge/Version-2.5.1-22c55e?style=flat-square)](#install)
   [![Website](https://img.shields.io/badge/Website-wizardbrowser.netlify.app-7c3aed?style=flat-square&logo=netlify)](https://wizardbrowser.netlify.app/)
 
   *No tracking. No cookies. No logs.*
@@ -66,6 +66,18 @@ Built-in private search aggregating results from multiple independent sources �
 - Right-click context menu: copy, paste, search selection, bookmark page/link, inspect element
 - **Auto-updater** — checks GitHub Releases on startup and installs updates on quit
 
+### 🧩 WizardScript — Native Extension API
+
+Build extensions in plain JavaScript using the `wizard.*` namespace. No build step, no manifest v3 ceremony — a `wizard.json` + a single JS file. Drop a folder into the **Extensions** panel and it goes live without a restart.
+
+- `wizard.page` — `getURL`, `getTitle`, `injectCSS`, `injectScript`, `onNavigate`, `onLoad`
+- `wizard.storage` — `get`, `set`, `remove`, `clear` (per-extension scoped)
+- `wizard.ui` — `notify`, `getTheme`
+- `wizard.privacy` — `getSettings`, `isTrackerBlocked`, `getBlockedCount`
+- `wizard.net` — `fetch`, `post` (CORS-bypassing main-process proxy)
+- Per-extension permission gating via the manifest's `permissions` array
+- `match` patterns let extensions target specific URLs (`"*"`, `"https://github.com/*"`, etc.)
+
 ### ⌨️ Keyboard Shortcuts
 
 | Shortcut | Action |
@@ -76,6 +88,9 @@ Built-in private search aggregating results from multiple independent sources �
 | `Ctrl+D` | Bookmark current page |
 | `Ctrl+B` | Toggle bookmarks panel |
 | `Ctrl+J` | Toggle downloads panel |
+| `Ctrl+T` | New tab |
+| `Ctrl+W` | Close active tab |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Cycle tabs |
 
 ---
 
@@ -117,9 +132,10 @@ wizard-browser/
 ├── main.js              # Electron main process — privacy, sessions, IPC, updater
 ├── preload.js           # Preload bridge for the browser shell
 ├── preload-search.js    # Preload injected into every page via session
-├── browser.html         # Browser shell UI (nav bar, tabs, chrome)
-├── search.html          # Wizard Search engine UI
-├── settings.html        # Settings panel UI
+├── browser.html         # Browser shell UI (tab bar, toolbar, chrome)
+├── search.html          # Wizard Search engine UI (homepage)
+├── settings.html        # Settings panel UI (layout / theme / privacy)
+├── extensions.html      # WizardScript extension manager UI
 ├── tracker-list.json    # Network-level tracker blocklist
 ├── backgrounds/         # Built-in theme background images
 ├── package.json
