@@ -13,9 +13,9 @@
 
   *No tracking. No cookies. No logs.*
 
-  **[🌐 wizardbrowser.netlify.app](https://wizardbrowser.netlify.app/)**
+  **[🌐 Wizard Browser](https://wizardbrowser.netlify.app/)**
 
-  **[⚙️ https://wizardextensionstore.netlify.app/](https://wizardextensionstore.netlify.app/)**
+  **[⚙️ Wizard Extenstion Store](https://wizardextensionstore.netlify.app/)**
 
   <br/>
 
