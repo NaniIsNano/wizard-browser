@@ -1265,6 +1265,57 @@ ipcMain.handle('get-ubo-status', () => uboState);
 ipcMain.handle('install-ubo', async () => { await installUBO(); return uboState; });
 ipcMain.handle('remove-ubo',  async () => { await removeUBO(); return uboState; });
 ipcMain.handle('check-ubo-update', async () => { await checkUBOForUpdate(); return uboState; });
+
+// Open one of uBO's own UI pages (dashboard / popup / logger) in a real
+// BrowserWindow tied to the persist:wizard session. Extension chrome.* APIs
+// only work fully in BrowserWindow contexts — webview tabs don't have
+// chrome.runtime.sendMessage wired through to the extension's background
+// page, which is why uBO's dashboard renders blank when loaded in a tab.
+let uboWindows = new Map();   // url -> BrowserWindow
+ipcMain.handle('open-ubo-window', async (_, which = 'dashboard') => {
+  if (!uboExtension) return false;
+  let url;
+  if (which === 'popup' && uboState.popupUrl)        url = uboState.popupUrl;
+  else if (which === 'options' && uboState.optionsUrl) url = uboState.optionsUrl;
+  else if (which === 'logger' && uboState.optionsUrl) {
+    url = uboState.optionsUrl.replace(/[^/]*$/, '') + 'logger-ui.html';
+  }
+  else url = uboState.optionsUrl || uboState.popupUrl;
+  if (!url) return false;
+
+  // If a window for this URL is already open, just focus it
+  const existing = uboWindows.get(url);
+  if (existing && !existing.isDestroyed()) {
+    existing.focus();
+    return true;
+  }
+
+  const isPopup = which === 'popup' || (url && url.includes('popup'));
+  const win = new BrowserWindow({
+    width:  isPopup ? 420 : 980,
+    height: isPopup ? 560 : 720,
+    minWidth: 320,
+    minHeight: 320,
+    parent: mainWindow,
+    title: 'uBlock Origin',
+    autoHideMenuBar: true,
+    backgroundColor: '#1b1b1b',
+    icon: path.join(__dirname, 'icon.png'),
+    webPreferences: {
+      session: session.fromPartition(PARTITION),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      // No preload — let the extension's chrome.* APIs run unhindered
+    }
+  });
+  try { Menu.setApplicationMenu(null); } catch {}
+  win.removeMenu();
+  win.loadURL(url);
+  uboWindows.set(url, win);
+  win.on('closed', () => { uboWindows.delete(url); });
+  return true;
+});
 ipcMain.handle('refresh-adblocker', async () => {
   // Force a network re-fetch of EasyList / EasyPrivacy / uBO unbreak / etc.
   await initAdblocker({ forceRefresh: true });
