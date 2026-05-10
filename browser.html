@@ -1742,19 +1742,21 @@ const WizardRuntime = (() => {
         if (typeof cb !== 'function' || !wb.onUboStatus) return;
         wb.onUboStatus(safeCb(cb));
       },
-      // Open uBO's own popup HTML in a new Wizard tab when uBO is active.
-      // No-op (returns false) otherwise.
+      // Open uBO's own popup HTML in a real BrowserWindow (chrome.* APIs
+      // only fully work in BrowserWindow contexts — webview tabs can't
+      // talk to the extension's background script, so the page renders
+      // blank). Returns false if uBO isn't active.
       openUboPopup:     async () => {
-        if (!wb.getUboStatus) return false;
-        const u = await wb.getUboStatus();
-        if (!u || u.state !== 'active' || !u.popupUrl) return false;
-        try { newTab({ url: u.popupUrl }); return true; } catch { return false; }
+        if (!wb.openUboWindow) return false;
+        try { return !!(await wb.openUboWindow('popup')); } catch { return false; }
       },
       openUboOptions:   async () => {
-        if (!wb.getUboStatus) return false;
-        const u = await wb.getUboStatus();
-        if (!u || u.state !== 'active' || !u.optionsUrl) return false;
-        try { newTab({ url: u.optionsUrl }); return true; } catch { return false; }
+        if (!wb.openUboWindow) return false;
+        try { return !!(await wb.openUboWindow('options')); } catch { return false; }
+      },
+      openUboLogger:    async () => {
+        if (!wb.openUboWindow) return false;
+        try { return !!(await wb.openUboWindow('logger')); } catch { return false; }
       }
     };
     if (has('net')) api.net = {
