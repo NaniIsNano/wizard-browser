@@ -354,6 +354,246 @@ async function initAdblocker({ forceRefresh = false } = {}) {
   broadcastAdblockerStatus();
 }
 
+// =====================================================================
+// uBlock Origin (real, gorhill's code) loaded as a Chrome MV2 extension
+// =====================================================================
+// Strategy: download the latest MV2 build from gorhill/uBlock GitHub
+// Releases on first launch, extract to userData/chrome-extensions/uBO/,
+// then session.loadExtension() it into the persist:wizard partition.
+// While uBO is live, we DISABLE the Ghostery engine so they don't
+// double-block. If uBO fails to install / load, Ghostery remains the
+// active engine (safety net).
+
+const UBO_DIR        = path.join(app.getPath('userData'), 'chrome-extensions', 'ublock-origin');
+const UBO_META_FILE  = path.join(UBO_DIR, '.wizard-meta.json');
+let uboExtension = null;            // electron Extension handle if loaded
+let uboState = {
+  state: 'idle',                    // 'idle'|'downloading'|'extracting'|'loading'|'active'|'failed'|'unsupported'
+  version: null,
+  popupUrl: null,                   // chrome-extension://<id>/<popup>
+  optionsUrl: null,
+  message: null,
+  lastTried: null
+};
+function setUboState(patch) {
+  uboState = { ...uboState, ...patch };
+  try {
+    webContents.getAllWebContents().forEach(wc => {
+      try { wc.send('ubo-status', uboState); } catch {}
+    });
+  } catch {}
+}
+
+function httpGetJson(url) {
+  return httpGet(url).then(buf => JSON.parse(buf.toString('utf-8')));
+}
+function httpGet(url, redirectsLeft = 5) {
+  return new Promise((resolve, reject) => {
+    let lib, parsed;
+    try { parsed = new URL(url); } catch { return reject(new Error('bad url')); }
+    lib = parsed.protocol === 'https:' ? require('https') : require('http');
+    const req = lib.get(url, {
+      headers: { 'User-Agent': 'WizardBrowser/1.0 (uBO-installer)', 'Accept': 'application/octet-stream, application/json' },
+      timeout: 30000
+    }, (res) => {
+      // Follow GitHub redirect to actual asset
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirectsLeft > 0) {
+        res.resume();
+        return resolve(httpGet(res.headers.location, redirectsLeft - 1));
+      }
+      if (res.statusCode !== 200) {
+        return reject(new Error('HTTP ' + res.statusCode + ' on ' + url));
+      }
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+  });
+}
+
+// CRX → ZIP: strips the CRX wrapper (CRX2 or CRX3) so we can use adm-zip.
+function stripCrxHeader(buf) {
+  if (buf.length < 16 || buf.slice(0, 4).toString('ascii') !== 'Cr24') return buf;
+  const version = buf.readUInt32LE(4);
+  if (version === 2) {
+    const pubkeyLen = buf.readUInt32LE(8);
+    const sigLen    = buf.readUInt32LE(12);
+    return buf.slice(16 + pubkeyLen + sigLen);
+  }
+  if (version === 3) {
+    const headerLen = buf.readUInt32LE(8);
+    return buf.slice(12 + headerLen);
+  }
+  return buf;
+}
+
+function rmrfDir(p) { try { fs.rmSync(p, { recursive: true, force: true }); } catch {} }
+
+function unzipBufferToDir(buf, dest) {
+  const AdmZip = require('adm-zip');
+  const zip = new AdmZip(buf);
+  fs.mkdirSync(dest, { recursive: true });
+  zip.extractAllTo(dest, /* overwrite */ true);
+}
+
+// uBO MV2 sometimes nests its files inside a top-level folder. Locate the
+// directory that actually contains manifest.json.
+function findManifestRoot(dir) {
+  if (fs.existsSync(path.join(dir, 'manifest.json'))) return dir;
+  let entries = [];
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return null; }
+  for (const e of entries) {
+    if (!e.isDirectory()) continue;
+    const sub = path.join(dir, e.name);
+    if (fs.existsSync(path.join(sub, 'manifest.json'))) return sub;
+  }
+  return null;
+}
+
+async function downloadUBOAsset() {
+  setUboState({ state: 'downloading', message: 'Fetching latest release info…' });
+  // Try latest release first; if the asset list doesn't include a usable
+  // MV2 build we fall through to a known-good legacy chromium release.
+  const candidates = [
+    'https://api.github.com/repos/gorhill/uBlock/releases/latest',
+    'https://api.github.com/repos/gorhill/uBlock/releases'
+  ];
+  for (const apiUrl of candidates) {
+    try {
+      const data = await httpGetJson(apiUrl);
+      const releases = Array.isArray(data) ? data : [data];
+      for (const release of releases) {
+        const assets = (release && release.assets) || [];
+        // Preference order: chromium.zip > edge.crx > firefox.signed.xpi > firefox.xpi
+        const pick = assets.find(a => /^uBlock0_.*\.chromium\.zip$/i.test(a.name))
+                  || assets.find(a => /^uBlock0_.*\.chromium\.crx$/i.test(a.name))
+                  || assets.find(a => /^uBlock0_.*\.edge\.crx$/i.test(a.name))
+                  || assets.find(a => /^uBlock0_.*\.firefox\.signed\.xpi$/i.test(a.name))
+                  || assets.find(a => /^uBlock0_.*\.firefox\.xpi$/i.test(a.name));
+        if (!pick) continue;
+        setUboState({ state: 'downloading', message: 'Downloading ' + pick.name + ' (v' + (release.tag_name || '?') + ')…' });
+        const buf = await httpGet(pick.browser_download_url);
+        return { buf, name: pick.name, version: release.tag_name || release.name || '' };
+      }
+    } catch (e) {
+      // Try next candidate
+    }
+  }
+  throw new Error('No suitable uBO MV2 build found in releases');
+}
+
+async function installUBO() {
+  if (!ses_canLoadExtension()) {
+    setUboState({ state: 'unsupported', message: 'This Electron build does not support session.loadExtension.' });
+    return false;
+  }
+  try {
+    rmrfDir(UBO_DIR);
+    const { buf, name, version } = await downloadUBOAsset();
+    setUboState({ state: 'extracting', message: 'Extracting ' + name + '…' });
+    const zipBuf = name.endsWith('.crx') ? stripCrxHeader(buf) : buf;
+    unzipBufferToDir(zipBuf, UBO_DIR);
+    fs.writeFileSync(UBO_META_FILE, JSON.stringify({ version, source: name, installedAt: Date.now() }, null, 2));
+    setUboState({ state: 'loading', version, message: 'Loading extension…' });
+    return await loadUBOFromDisk();
+  } catch (e) {
+    setUboState({ state: 'failed', message: 'Install failed: ' + (e && e.message || 'unknown'), lastTried: Date.now() });
+    return false;
+  }
+}
+
+function ses_canLoadExtension() {
+  try { return typeof session.fromPartition(PARTITION).loadExtension === 'function'; } catch { return false; }
+}
+
+async function loadUBOFromDisk() {
+  const ses = session.fromPartition(PARTITION);
+  const root = findManifestRoot(UBO_DIR);
+  if (!root) {
+    setUboState({ state: 'failed', message: 'No manifest.json in extracted bundle' });
+    return false;
+  }
+  let meta = {};
+  try { meta = JSON.parse(fs.readFileSync(UBO_META_FILE, 'utf-8')); } catch {}
+  try {
+    if (uboExtension) {
+      try { ses.removeExtension(uboExtension.id); } catch {}
+      uboExtension = null;
+    }
+    const ext = await ses.loadExtension(root, { allowFileAccess: true });
+    uboExtension = ext;
+    // Pick popup URL if the manifest declares one. Field name differs
+    // between MV2 ("browser_action") and MV3 ("action"); try both.
+    let popupRel = null;
+    let optionsRel = null;
+    try {
+      const m = ext.manifest || {};
+      popupRel   = (m.browser_action && m.browser_action.default_popup)
+                || (m.action && m.action.default_popup)
+                || null;
+      optionsRel = (m.options_ui && m.options_ui.page) || m.options_page || null;
+    } catch {}
+    const popupUrl   = popupRel   ? `chrome-extension://${ext.id}/${popupRel.replace(/^\/+/, '')}`   : null;
+    const optionsUrl = optionsRel ? `chrome-extension://${ext.id}/${optionsRel.replace(/^\/+/, '')}` : null;
+
+    // uBO is now blocking via its own webRequest hooks. Suspend Ghostery to
+    // avoid double-blocking and let uBO own the request stream.
+    if (adblockerEngine) {
+      try { adblockerEngine.disableBlockingInSession(ses); } catch {}
+      adblockerReady = false;
+    }
+
+    setUboState({
+      state: 'active',
+      version: meta.version || ext.version || null,
+      popupUrl,
+      optionsUrl,
+      message: null,
+      lastTried: Date.now()
+    });
+    // Reflect in adblocker status so Settings shows the right engine label
+    adblockerStatus = {
+      ...adblockerStatus,
+      enabled: true,
+      ready: true,
+      source: 'ublock-origin',
+      lastUpdated: meta.installedAt || adblockerStatus.lastUpdated,
+      message: null
+    };
+    broadcastAdblockerStatus();
+    return true;
+  } catch (e) {
+    setUboState({ state: 'failed', message: 'loadExtension failed: ' + (e && e.message || 'unknown'), lastTried: Date.now() });
+    return false;
+  }
+}
+
+async function ensureUBO({ download = true } = {}) {
+  // Already loaded?
+  if (uboExtension) return true;
+  // Already extracted to disk? Just reload.
+  if (fs.existsSync(path.join(UBO_DIR, 'manifest.json')) || findManifestRoot(UBO_DIR)) {
+    return loadUBOFromDisk();
+  }
+  // Need to download.
+  if (!download) return false;
+  return installUBO();
+}
+
+async function removeUBO() {
+  const ses = session.fromPartition(PARTITION);
+  if (uboExtension) {
+    try { ses.removeExtension(uboExtension.id); } catch {}
+    uboExtension = null;
+  }
+  rmrfDir(UBO_DIR);
+  setUboState({ state: 'idle', version: null, popupUrl: null, optionsUrl: null, message: null });
+  // Re-arm Ghostery as the active engine
+  initAdblocker().catch(() => {});
+}
+
 function createWindow() {
   configureContentSession();
 
@@ -973,6 +1213,9 @@ ipcMain.handle('get-update-status', () => updateState);
 
 // Adblocker IPC
 ipcMain.handle('get-adblocker-status', () => adblockerStatus);
+ipcMain.handle('get-ubo-status', () => uboState);
+ipcMain.handle('install-ubo', async () => { await installUBO(); return uboState; });
+ipcMain.handle('remove-ubo',  async () => { await removeUBO(); return uboState; });
 ipcMain.handle('refresh-adblocker', async () => {
   // Force a network re-fetch of EasyList / EasyPrivacy / uBO unbreak / etc.
   await initAdblocker({ forceRefresh: true });
@@ -1002,12 +1245,16 @@ app.whenReady().then(() => {
   setTimeout(() => { runUpdateCheck('startup'); }, 3000);
   setInterval(() => { runUpdateCheck('periodic'); }, 2 * 60 * 60 * 1000);
 
-  // Spin up the Ghostery/uBO adblocker. Reads the cached compiled engine
-  // off disk (instant) or fetches the prebuilt list on first launch.
-  // Static blocklist remains active until this finishes.
+  // Spin up the Ghostery filter engine first (fast, always-on safety net).
   setTimeout(() => { initAdblocker().catch(e => console.warn('[adblocker]', e)); }, 200);
-  // Refresh filter lists once a week (lifecycle of typical EasyList updates)
+  // Refresh Ghostery's filter lists weekly
   setInterval(() => { initAdblocker({ forceRefresh: true }).catch(() => {}); }, ADBLOCK_TTL_MS);
+
+  // Then try to load the real uBlock Origin (gorhill MV2 build). If it
+  // installs/loads cleanly, ensureUBO() will suspend Ghostery and become
+  // the live blocker. If it fails (no network, asset removed, etc.) the
+  // Ghostery engine keeps running.
+  setTimeout(() => { ensureUBO({ download: true }).catch(e => console.warn('[uBO]', e)); }, 2500);
 });
 
 app.on('window-all-closed', () => app.quit());

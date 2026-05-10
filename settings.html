@@ -513,9 +513,27 @@ body[data-glossy="1"] .toggle input:checked + .toggle-slider {
       </div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn" id="ab-refresh-btn">Refresh filter lists</button>
-        <span class="setting-desc" style="align-self:center; opacity: 0.85;">
-          Powered by EasyList, EasyPrivacy, uBO unbreak &amp; Peter Lowe's — same engine as uBlock Origin.
-        </span>
+      </div>
+    </div>
+
+    <!-- Real uBlock Origin (gorhill) sub-panel -->
+    <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="setting-info" style="flex:1;">
+          <div class="setting-label">
+            <span id="ubo-status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:8px;vertical-align:middle;"></span>
+            uBlock Origin (gorhill / real)
+          </div>
+          <div class="setting-desc" id="ubo-status-line">Checking installation…</div>
+          <div class="setting-desc" id="ubo-message" style="margin-top: 4px; color: #f59e0b; display:none;"></div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn" id="ubo-install-btn">Install / update uBO</button>
+        <button class="btn btn-danger" id="ubo-remove-btn" style="display:none;">Remove uBO (use Ghostery fallback)</button>
+      </div>
+      <div class="setting-desc" style="opacity: 0.8;">
+        Downloads the latest MV2 build from <a href="https://github.com/gorhill/uBlock/releases" target="_blank" style="color: var(--accent2);">gorhill/uBlock</a> on first install (~3 MB), extracts it, and loads it via Electron's extension API. While uBO is active, Ghostery is suspended to avoid double-blocking. If uBO can't be installed (no network / asset removed), Ghostery stays active automatically.
       </div>
     </div>
 
@@ -848,10 +866,15 @@ function renderAdblocker(s) {
     btn.disabled = true;
   } else if (s.ready) {
     dot.style.background = '#22c55e';
-    const filters = s.totalFilters ? s.totalFilters.toLocaleString() : '—';
-    line.textContent = `Active · ${filters} filter rules loaded`;
-    const sourceLabel = s.source === 'network' ? 'fetched from network'
-                     : s.source === 'cache'   ? 'loaded from local cache'
+    if (s.source === 'ublock-origin') {
+      line.textContent = 'Active · uBlock Origin (real) is the live blocker';
+    } else {
+      const filters = s.totalFilters ? s.totalFilters.toLocaleString() : '—';
+      line.textContent = `Active · ${filters} filter rules loaded`;
+    }
+    const sourceLabel = s.source === 'ublock-origin' ? "powered by gorhill's uBlock Origin extension"
+                     : s.source === 'network'       ? 'Ghostery engine · fetched from network'
+                     : s.source === 'cache'         ? 'Ghostery engine · loaded from local cache'
                      : 'using built-in fallback list';
     src.textContent  = `Lists ${sourceLabel} · last updated ${fmtAge(s.lastUpdated)}`;
     btn.disabled = false;
@@ -886,6 +909,58 @@ if (abBtn) {
     }
   });
 }
+
+// =====================================================================
+// uBlock Origin (real) panel
+// =====================================================================
+const UBO_LABELS = {
+  idle:        { dot: '#888',     line: 'Not installed.' },
+  downloading: { dot: '#3b82f6',  line: 'Downloading uBO from gorhill/uBlock…' },
+  extracting:  { dot: '#3b82f6',  line: 'Extracting extension bundle…' },
+  loading:     { dot: '#3b82f6',  line: 'Loading extension…' },
+  active:      { dot: '#22c55e',  line: 'Active — gorhill code is the live blocker.' },
+  failed:      { dot: '#ef4444',  line: 'Install failed.' },
+  unsupported: { dot: '#f59e0b',  line: 'This Electron build does not support loadExtension.' }
+};
+
+function renderUbo(s) {
+  if (!s) return;
+  const dot      = document.getElementById('ubo-status-dot');
+  const line     = document.getElementById('ubo-status-line');
+  const msg      = document.getElementById('ubo-message');
+  const installBtn = document.getElementById('ubo-install-btn');
+  const removeBtn  = document.getElementById('ubo-remove-btn');
+  if (!dot || !line) return;
+  const meta = UBO_LABELS[s.state] || UBO_LABELS.idle;
+  dot.style.background = meta.dot;
+  let text = meta.line;
+  if (s.version) text += ' (v' + s.version + ')';
+  line.textContent = text;
+  if (s.message) { msg.textContent = s.message; msg.style.display = ''; }
+  else           { msg.textContent = '';        msg.style.display = 'none'; }
+
+  const busy = s.state === 'downloading' || s.state === 'extracting' || s.state === 'loading';
+  installBtn.disabled = busy;
+  installBtn.textContent = busy ? 'Working…' : (s.state === 'active' ? 'Re-install uBO' : 'Install uBO');
+  removeBtn.style.display = (s.state === 'active') ? '' : 'none';
+}
+
+(async () => {
+  if (window.wizardBrowser && window.wizardBrowser.getUboStatus) {
+    try { renderUbo(await window.wizardBrowser.getUboStatus()); } catch {}
+  }
+})();
+if (window.wizardBrowser && window.wizardBrowser.onUboStatus) {
+  window.wizardBrowser.onUboStatus(renderUbo);
+}
+const uboInstall = document.getElementById('ubo-install-btn');
+const uboRemove  = document.getElementById('ubo-remove-btn');
+if (uboInstall) uboInstall.addEventListener('click', () => window.wizardBrowser.installUbo());
+if (uboRemove)  uboRemove.addEventListener('click',  () => {
+  if (confirm('Remove the real uBlock Origin?\nThe Ghostery filter engine will become the active blocker.')) {
+    window.wizardBrowser.removeUbo();
+  }
+});
 
 // =====================================================================
 // Update panel

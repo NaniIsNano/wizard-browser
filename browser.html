@@ -1640,6 +1640,28 @@ const WizardRuntime = (() => {
       onStatus:         (cb) => {
         if (typeof cb !== 'function' || !wb.onAdblockerStatus) return;
         wb.onAdblockerStatus(safeCb(cb));
+      },
+      // gorhill / real uBO sub-state. Extensions can offer to open uBO's
+      // own popup or settings page when uBO is the live blocker.
+      getUboStatus:     () => wb.getUboStatus ? wb.getUboStatus() : Promise.resolve({ state: 'idle' }),
+      installUbo:       () => wb.installUbo  ? wb.installUbo()  : Promise.resolve(null),
+      onUboStatus:      (cb) => {
+        if (typeof cb !== 'function' || !wb.onUboStatus) return;
+        wb.onUboStatus(safeCb(cb));
+      },
+      // Open uBO's own popup HTML in a new Wizard tab when uBO is active.
+      // No-op (returns false) otherwise.
+      openUboPopup:     async () => {
+        if (!wb.getUboStatus) return false;
+        const u = await wb.getUboStatus();
+        if (!u || u.state !== 'active' || !u.popupUrl) return false;
+        try { newTab({ url: u.popupUrl }); return true; } catch { return false; }
+      },
+      openUboOptions:   async () => {
+        if (!wb.getUboStatus) return false;
+        const u = await wb.getUboStatus();
+        if (!u || u.state !== 'active' || !u.optionsUrl) return false;
+        try { newTab({ url: u.optionsUrl }); return true; } catch { return false; }
       }
     };
     if (has('net')) api.net = {

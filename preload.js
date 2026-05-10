@@ -47,6 +47,11 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   getAdblockerStatus: () => ipcRenderer.invoke('get-adblocker-status'),
   refreshAdblocker:   () => ipcRenderer.invoke('refresh-adblocker'),
   onAdblockerStatus:  (cb) => ipcRenderer.on('adblocker-status', (_, data) => cb(data)),
+  // Real uBlock Origin (gorhill MV2 extension loaded via Electron)
+  getUboStatus:       () => ipcRenderer.invoke('get-ubo-status'),
+  installUbo:         () => ipcRenderer.invoke('install-ubo'),
+  removeUbo:          () => ipcRenderer.invoke('remove-ubo'),
+  onUboStatus:        (cb) => ipcRenderer.on('ubo-status', (_, data) => cb(data)),
 
   // Browser-shell events
   onOnionAvailable: (cb) => ipcRenderer.on('onion-available', (_, data) => cb(data)),
