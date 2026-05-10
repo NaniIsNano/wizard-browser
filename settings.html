@@ -187,6 +187,49 @@ body {
   border: 1px solid var(--border);
 }
 
+/* Chrome-style colour-scheme circles */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 12px;
+}
+.color-swatch {
+  --c1: #7c3aed; --c2: #a855f7; --c3: #0a0a0a;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  background:
+    linear-gradient(135deg, var(--c1) 0%, var(--c1) 50%, var(--c2) 50%, var(--c2) 100%);
+}
+.color-swatch::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 50%;
+  background: var(--c3);
+}
+.color-swatch:hover { transform: translateY(-2px); border-color: var(--accent); }
+.color-swatch.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(124,58,237,0.4), 0 4px 16px rgba(124,58,237,0.3);
+}
+.color-swatch.active::before {
+  content: '✓';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  z-index: 2;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
 .theme-name {
   font-size: 0.8em;
   font-weight: 500;
@@ -395,49 +438,61 @@ body[data-glossy="1"] .toggle input:checked + .toggle-slider {
     </div>
   </div>
 
-  <!-- THEME / COLOR + BACKGROUND -->
+  <!-- COLOUR SCHEME — Chrome-style accent picker -->
   <div class="section">
-    <div class="section-title">Theme &amp; Background</div>
-    <div class="theme-grid" id="theme-grid">
-      <div class="theme-card" data-theme="default">
-        <div class="theme-preview" style="background: linear-gradient(135deg, #0a0a0a, #1a0a2e);"></div>
-        <div class="theme-name">Wizard Dark</div>
-        <div class="theme-desc">Dark purple — signature look</div>
+    <div class="section-title">Colour Scheme</div>
+    <div class="color-grid" id="color-grid">
+      <div class="color-swatch" data-theme="default"   style="--c1:#7c3aed;--c2:#a855f7;--c3:#0a0a0a;" title="Wizard Purple"></div>
+      <div class="color-swatch" data-theme="frutiger"  style="--c1:#1878d8;--c2:#4090c8;--c3:#c8e0f8;" title="Aero Blue"></div>
+      <div class="color-swatch" data-theme="retrowave" style="--c1:#ff2d95;--c2:#00f0ff;--c3:#1a0a2e;" title="Retrowave Neon"></div>
+      <div class="color-swatch" data-theme="emerald"   style="--c1:#10b981;--c2:#34d399;--c3:#0a1a14;" title="Emerald"></div>
+      <div class="color-swatch" data-theme="canola"    style="--c1:#4a7c10;--c2:#6b8e23;--c3:#1a2a0a;" title="Canola Green"></div>
+      <div class="color-swatch" data-theme="fortress"  style="--c1:#c9a84c;--c2:#dabb66;--c3:#3a2a1a;" title="Fortress Gold"></div>
+      <div class="color-swatch" data-theme="sunset"    style="--c1:#f97316;--c2:#fb923c;--c3:#1a0a05;" title="Sunset"></div>
+      <div class="color-swatch" data-theme="rose"      style="--c1:#ec4899;--c2:#f472b6;--c3:#1a0a14;" title="Rose"></div>
+      <div class="color-swatch" data-theme="mountains" style="--c1:#7cb9e8;--c2:#a8d4f0;--c3:#1a3a5a;" title="Mountain Slate"></div>
+      <div class="color-swatch" data-theme="monochrome" style="--c1:#aaa;--c2:#ccc;--c3:#0d0d0d;" title="Monochrome"></div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-top:10px;">
+      Hover for the name. The colour scheme controls toolbar / tab / button colours independently of the wallpaper below.
+    </div>
+  </div>
+
+  <!-- BACKGROUND — independent wallpaper -->
+  <div class="section">
+    <div class="section-title">Background</div>
+    <div class="theme-grid" id="bg-grid">
+      <div class="theme-card" data-bg="none">
+        <div class="theme-preview" style="background: linear-gradient(135deg, #0a0a0a, #1a1a1a); display:flex;align-items:center;justify-content:center;color:#888;font-size:11px;">No image</div>
+        <div class="theme-name">None</div>
+        <div class="theme-desc">Just the colour scheme</div>
       </div>
-      <div class="theme-card" data-theme="frutiger">
+      <div class="theme-card" data-bg="frutiger">
         <div class="theme-preview" style="background: linear-gradient(180deg,#c8e0f8,#88b8e8 30%,#60a0d8 60%,#4090c8); border-color:#87ceeb;"></div>
         <div class="theme-name">Frutiger Aero</div>
-        <div class="theme-desc">Glossy Y2K sky</div>
+        <div class="theme-desc">Sky gradient</div>
       </div>
-      <div class="theme-card" data-theme="canola">
-        <div class="theme-preview" style="background: linear-gradient(135deg, #6b8e23, #c8d84a, #87ceeb);"></div>
+      <div class="theme-card" data-bg="canola">
+        <div class="theme-preview" style="background-image: url('backgrounds/canola.jpg'); background-size: cover; background-position: center;"></div>
         <div class="theme-name">Canola Fields</div>
-        <div class="theme-desc">Golden fields + sky</div>
+        <div class="theme-desc">Golden fields</div>
       </div>
-      <div class="theme-card" data-theme="mountains">
-        <div class="theme-preview" style="background: linear-gradient(135deg, #1a3a5a, #4a7a9a, #8ab4d4);"></div>
+      <div class="theme-card" data-bg="mountains">
+        <div class="theme-preview" style="background-image: url('backgrounds/mountains.jpg'); background-size: cover; background-position: center;"></div>
         <div class="theme-name">Mountains</div>
-        <div class="theme-desc">Rocky winter peaks</div>
+        <div class="theme-desc">Rocky peaks</div>
       </div>
-      <div class="theme-card" data-theme="fortress">
-        <div class="theme-preview" style="background: linear-gradient(135deg, #3a2a1a, #8a7a5a, #b0a080);"></div>
+      <div class="theme-card" data-bg="fortress">
+        <div class="theme-preview" style="background-image: url('backgrounds/fortress.jpg'); background-size: cover; background-position: center;"></div>
         <div class="theme-name">Fortress</div>
-        <div class="theme-desc">Ancient stone ruins</div>
+        <div class="theme-desc">Stone ruins</div>
       </div>
-      <div class="theme-card" data-theme="retrowave">
-        <div class="theme-preview" style="background: linear-gradient(180deg,#1a0a2e 0%,#ff2d95 50%,#00f0ff 100%); border-color:#ff2d95;"></div>
-        <div class="theme-name">Retrowave</div>
-        <div class="theme-desc">1980s neon, vaporwave</div>
-      </div>
-      <div class="theme-card" data-theme="custom">
+      <div class="theme-card" data-bg="custom">
         <div class="theme-preview" id="custom-bg-preview" style="background: linear-gradient(135deg, #444, #222); display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;cursor:pointer;" title="Click to upload / change image">Click to upload</div>
         <div class="theme-name">Custom Wallpaper</div>
-        <div class="theme-desc">Click preview to change image</div>
+        <div class="theme-desc">Click preview to swap image</div>
         <input type="file" id="custom-bg-upload" accept="image/*" style="display:none" />
       </div>
-    </div>
-    <div style="font-size:11px;color:var(--text2);margin-top:10px;font-style:italic;">
-      Themes work with any layout. Pick a layout above, then a theme here.
     </div>
   </div>
 
@@ -640,8 +695,9 @@ async function loadSettings() {
   currentSettings = await window.wizardBrowser.getSettings();
 
   // Reflect appearance on the settings page itself so the user sees changes live
-  document.body.dataset.layout = currentSettings.layout || 'default';
-  document.body.dataset.theme  = currentSettings.theme  || 'default';
+  document.body.dataset.layout = currentSettings.layout     || 'default';
+  document.body.dataset.theme  = currentSettings.theme      || 'default';
+  document.body.dataset.bg     = currentSettings.background || 'none';
   document.body.dataset.sharp  = currentSettings.sharpEdges ? '1' : '0';
   document.body.dataset.glossy = currentSettings.glossyUI   ? '1' : '0';
 
@@ -661,13 +717,19 @@ async function loadSettings() {
     c.classList.toggle('active', c.dataset.layout === layout);
   });
 
-  // Theme
+  // Colour scheme — independent from background
   const theme = currentSettings.theme || 'default';
-  document.querySelectorAll('#theme-grid .theme-card').forEach(c => {
+  document.querySelectorAll('#color-grid .color-swatch').forEach(c => {
     c.classList.toggle('active', c.dataset.theme === theme);
   });
 
-  // Custom-bg preview (always visible regardless of which theme is active)
+  // Background — independent from colour scheme
+  const bg = currentSettings.background || 'none';
+  document.querySelectorAll('#bg-grid .theme-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.bg === bg);
+  });
+
+  // Custom-bg preview (always visible regardless of which background is active)
   if (currentSettings.customBg) {
     const prev = document.getElementById('custom-bg-preview');
     if (prev) { prev.style.background = `url(${currentSettings.customBg}) center/cover`; prev.textContent = ''; }
@@ -711,28 +773,33 @@ document.querySelectorAll('#layout-grid .theme-card').forEach(card => {
   });
 });
 
-// Theme selection — clicking the card activates the theme
-document.querySelectorAll('#theme-grid .theme-card').forEach(card => {
+// Colour scheme selection — clicking a swatch activates that scheme
+document.querySelectorAll('#color-grid .color-swatch').forEach(card => {
+  card.addEventListener('click', async () => {
+    document.querySelectorAll('#color-grid .color-swatch').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    await window.wizardBrowser.saveSettings({ theme: card.dataset.theme });
+    showToast('Colour scheme applied');
+  });
+});
+
+// Background selection — independent from colour scheme
+document.querySelectorAll('#bg-grid .theme-card').forEach(card => {
   card.addEventListener('click', async (e) => {
-    // Clicks on the preview thumbnail of the custom card should open the
-    // file picker instead of just activating the theme — so the user can
-    // re-upload at any time.
-    if (card.dataset.theme === 'custom' && e.target.id === 'custom-bg-preview') {
-      // file input change handler will activate the theme after upload
-      return;
-    }
-    if (card.dataset.theme === 'custom') {
-      // First-time custom selection without a saved bg — open the picker.
+    // Clicking the preview thumbnail of the Custom card opens the picker
+    // instead of just activating it (so the user can re-upload any time).
+    if (card.dataset.bg === 'custom' && e.target.id === 'custom-bg-preview') return;
+    if (card.dataset.bg === 'custom') {
       const cur = await window.wizardBrowser.getSettings();
       if (!cur.customBg) {
         document.getElementById('custom-bg-upload').click();
         return;
       }
     }
-    document.querySelectorAll('#theme-grid .theme-card').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('#bg-grid .theme-card').forEach(c => c.classList.remove('active'));
     card.classList.add('active');
-    await window.wizardBrowser.saveSettings({ theme: card.dataset.theme });
-    showToast('Theme applied');
+    await window.wizardBrowser.saveSettings({ background: card.dataset.bg });
+    showToast('Background applied');
   });
 });
 
@@ -746,7 +813,7 @@ if (customPrev) {
   });
 }
 
-// File input change handler — saves the image and activates the custom theme.
+// File input change handler — saves the image and activates the custom background.
 const upload = document.getElementById('custom-bg-upload');
 if (upload) {
   upload.addEventListener('change', async (e) => {
@@ -755,10 +822,10 @@ if (upload) {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       const dataUrl = ev.target.result;
-      await window.wizardBrowser.saveSettings({ theme: 'custom', customBg: dataUrl });
+      await window.wizardBrowser.saveSettings({ background: 'custom', customBg: dataUrl });
       const prev = document.getElementById('custom-bg-preview');
       if (prev) { prev.style.background = `url(${dataUrl}) center/cover`; prev.textContent = ''; }
-      document.querySelectorAll('#theme-grid .theme-card').forEach(c => c.classList.toggle('active', c.dataset.theme === 'custom'));
+      document.querySelectorAll('#bg-grid .theme-card').forEach(c => c.classList.toggle('active', c.dataset.bg === 'custom'));
       showToast('Custom wallpaper saved');
     };
     reader.readAsDataURL(file);
@@ -1081,8 +1148,9 @@ autoToggle.addEventListener('change', async () => {
 if (window.wizardBrowser && window.wizardBrowser.onSettingsChanged) {
   window.wizardBrowser.onSettingsChanged((s) => {
     currentSettings = s;
-    document.body.dataset.layout = s.layout || 'default';
-    document.body.dataset.theme  = s.theme  || 'default';
+    document.body.dataset.layout = s.layout     || 'default';
+    document.body.dataset.theme  = s.theme      || 'default';
+    document.body.dataset.bg     = s.background || 'none';
     document.body.dataset.sharp  = s.sharpEdges ? '1' : '0';
     document.body.dataset.glossy = s.glossyUI   ? '1' : '0';
   });

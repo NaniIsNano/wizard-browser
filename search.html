@@ -38,7 +38,7 @@ body.theme-frutiger-aero {
   --green: #2e7d32; --red: #c62828;
   --link: #0077aa; --link-hover: #005580; --url-color: #6a9aaa; --snippet: #4a7a8a;
 }
-body.theme-frutiger-aero { background: linear-gradient(135deg, #e8f4f8, #b3e0ee, #87ceeb) !important; }
+/* (background moved to .bg-frutiger) */
 body.theme-frutiger-aero .result { background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); }
 body.theme-frutiger-aero #search-form { background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); }
 body.theme-frutiger-aero .shortcut { background: rgba(255,255,255,0.6); backdrop-filter: blur(6px); }
@@ -78,6 +78,37 @@ body.theme-custom {
 body.theme-custom .result { background: rgba(20,20,20,0.85); border-color: rgba(170,170,170,0.4); backdrop-filter: blur(8px); }
 body.theme-custom #search-form { background: rgba(20,20,20,0.7); border-color: rgba(170,170,170,0.4); backdrop-filter: blur(8px); }
 body.theme-custom .shortcut { background: rgba(20,20,20,0.7); border-color: rgba(170,170,170,0.4); backdrop-filter: blur(6px); }
+
+/* ─── BACKGROUNDS (independent from colour scheme) ─────────────────
+   Pair any of these with any colour scheme. Default is no image (uses the
+   theme's --bg colour). */
+body.bg-frutiger  { background: linear-gradient(135deg, #e8f4f8, #b3e0ee, #87ceeb) !important; }
+body.bg-canola    { background: url('backgrounds/canola.jpg')    center/cover fixed !important; }
+body.bg-mountains { background: url('backgrounds/mountains.jpg') center/cover fixed !important; }
+body.bg-fortress  { background: url('backgrounds/fortress.jpg')  center/cover fixed !important; }
+/* .bg-custom — body.style.background set inline by JS */
+
+/* Extra colour schemes for the picker (Chrome-style variety) */
+body.theme-rose {
+  --bg: #1a0a14; --surface: rgba(42,14,29,0.85); --surface2: rgba(58,20,42,0.7); --border: rgba(236,72,153,0.4);
+  --text: #fce7f3; --text2: #f9a8d4; --accent: #ec4899; --accent2: #f472b6;
+  --link: #f9a8d4; --link-hover: #fbcfe8; --url-color: #c084c0; --snippet: #e8d4dc;
+}
+body.theme-emerald {
+  --bg: #0a1a14; --surface: rgba(14,42,32,0.85); --surface2: rgba(20,53,42,0.7); --border: rgba(16,185,129,0.4);
+  --text: #d1fae5; --text2: #6ee7b7; --accent: #10b981; --accent2: #34d399;
+  --link: #6ee7b7; --link-hover: #a7f3d0; --url-color: #80bb9b; --snippet: #b8d8c8;
+}
+body.theme-sunset {
+  --bg: #1a0a05; --surface: rgba(42,18,8,0.85); --surface2: rgba(58,26,13,0.7); --border: rgba(249,115,22,0.4);
+  --text: #fed7aa; --text2: #fb923c; --accent: #f97316; --accent2: #fb923c;
+  --link: #fb923c; --link-hover: #fed7aa; --url-color: #c0805c; --snippet: #e0c0a0;
+}
+body.theme-monochrome {
+  --bg: #0d0d0d; --surface: #1a1a1a; --surface2: #222; --border: #2e2e2e;
+  --text: #e5e5e5; --text2: #999; --accent: #aaa; --accent2: #ccc;
+  --link: #ccc; --link-hover: #fff; --url-color: #777; --snippet: #aaa;
+}
 
 /* Sharp Edges modifier — applies to every theme */
 body[data-sharp="1"] #search-form,
@@ -200,9 +231,7 @@ body.theme-mountains {
   --text: #f0f0f0; --text2: #bbb; --accent: #7cb9e8; --accent2: #a8d4f0;
   --link: #a8d4f0; --link-hover: #cde8f7; --url-color: #8aa; --snippet: #bbb;
 }
-body.theme-mountains {
-  background: url('backgrounds/mountains.jpg') center/cover fixed !important;
-}
+/* (background moved to .bg-mountains) */
 body.theme-mountains #home { background: rgba(0,0,0,0.45); min-height: 100vh; }
 body.theme-mountains .result { background: rgba(10,10,10,0.7); backdrop-filter: blur(12px); }
 body.theme-mountains #search-form { background: rgba(10,10,10,0.7); backdrop-filter: blur(10px); }
@@ -217,9 +246,7 @@ body.theme-canola {
   --green: #2e7d32; --red: #c62828;
   --link: #2e5a00; --link-hover: #3a7000; --url-color: #6a8a4a; --snippet: #4a6a2a;
 }
-body.theme-canola {
-  background: url('backgrounds/canola.jpg') center/cover fixed !important;
-}
+/* (background moved to .bg-canola) */
 body.theme-canola #home { background: rgba(255,255,255,0.25); min-height: 100vh; }
 body.theme-canola .result { background: rgba(255,255,255,0.65); backdrop-filter: blur(12px); }
 body.theme-canola #search-form { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); }
@@ -234,9 +261,7 @@ body.theme-fortress {
   --text: #e8e0d0; --text2: #a89878; --accent: #c9a84c; --accent2: #dabb66;
   --link: #dabb66; --link-hover: #eedd88; --url-color: #8a7a5a; --snippet: #b0a080;
 }
-body.theme-fortress {
-  background: url('backgrounds/fortress.jpg') center/cover fixed !important;
-}
+/* (background moved to .bg-fortress) */
 body.theme-fortress #home { background: rgba(0,0,0,0.5); min-height: 100vh; }
 body.theme-fortress .result { background: rgba(15,12,10,0.75); backdrop-filter: blur(12px); }
 body.theme-fortress #search-form { background: rgba(15,12,10,0.75); backdrop-filter: blur(10px); }
@@ -1331,20 +1356,35 @@ let searchStartTime = 0;
 // existing theme-* CSS classes, AND sets data-* attrs for sharp/glossy/custom bg.
 function applyThemeFromSettings(s) {
   if (!s) return;
-  const theme  = s.theme  || 'default';
-  const layout = s.layout || 'default';
-  let cls = '';
-  if (theme === 'frutiger')      cls = 'theme-frutiger-aero';
-  else if (theme === 'canola')   cls = 'theme-canola';
-  else if (theme === 'mountains') cls = 'theme-mountains';
-  else if (theme === 'fortress') cls = 'theme-fortress';
-  else if (theme === 'retrowave') cls = 'theme-retrowave';
-  else if (theme === 'custom')   cls = 'theme-custom';
-  document.body.className = cls;
+  const theme  = s.theme      || 'default';
+  const bg     = s.background || 'none';
+  const layout = s.layout     || 'default';
+  // Map the colour scheme to a class
+  const themeCls = ({
+    frutiger:   'theme-frutiger-aero',
+    canola:     'theme-canola',
+    mountains:  'theme-mountains',
+    fortress:   'theme-fortress',
+    retrowave:  'theme-retrowave',
+    rose:       'theme-rose',
+    emerald:    'theme-emerald',
+    sunset:     'theme-sunset',
+    monochrome: 'theme-monochrome'
+  })[theme] || '';
+  // Map the background to a class (independent of theme)
+  const bgCls = ({
+    frutiger:  'bg-frutiger',
+    canola:    'bg-canola',
+    mountains: 'bg-mountains',
+    fortress:  'bg-fortress',
+    custom:    'bg-custom'
+  })[bg] || '';
+  document.body.className = [themeCls, bgCls].filter(Boolean).join(' ');
   document.body.dataset.layout = layout;
   document.body.dataset.sharp  = s.sharpEdges ? '1' : '0';
   document.body.dataset.glossy = s.glossyUI   ? '1' : '0';
-  if (theme === 'custom' && s.customBg) {
+  // Only the "custom" background needs an inline style for the data: URL
+  if (bg === 'custom' && s.customBg) {
     document.body.style.background = `url(${s.customBg}) center/cover fixed`;
   } else {
     document.body.style.background = '';

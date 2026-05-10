@@ -16,11 +16,20 @@ const btn = wizard.ui.addButton({
     const ubo = cachedUbo || (wizard.adblock.getUboStatus
       ? await wizard.adblock.getUboStatus()
       : { state: 'idle' });
-    // If the real uBO is loaded, jump straight to its popup so the user
-    // gets gorhill's actual UI (per-site rules, logger, etc.)
-    if (ubo && ubo.state === 'active' && wizard.adblock.openUboPopup) {
-      const opened = await wizard.adblock.openUboPopup();
-      if (opened) return;
+    // If the real uBO is loaded, jump to its UI. Prefer the dashboard
+    // (`options_ui` page) because it's designed for full-tab rendering
+    // — uBO's popup-fenix.html depends on a popup-window context with
+    // a parent active tab, which doesn't exist when it IS the tab,
+    // so it renders blank.
+    if (ubo && ubo.state === 'active') {
+      if (wizard.adblock.openUboOptions) {
+        const opened = await wizard.adblock.openUboOptions();
+        if (opened) return;
+      }
+      if (wizard.adblock.openUboPopup) {
+        const opened = await wizard.adblock.openUboPopup();
+        if (opened) return;
+      }
     }
     const s = cachedStatus || await wizard.adblock.getStatus();
     if (!s.enabled) {
