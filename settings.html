@@ -525,11 +525,13 @@ body[data-glossy="1"] .toggle input:checked + .toggle-slider {
             uBlock Origin (gorhill / real)
           </div>
           <div class="setting-desc" id="ubo-status-line">Checking installation…</div>
+          <div class="setting-desc" id="ubo-checked-line" style="margin-top: 2px; opacity: 0.7;"></div>
           <div class="setting-desc" id="ubo-message" style="margin-top: 4px; color: #f59e0b; display:none;"></div>
         </div>
       </div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn" id="ubo-install-btn">Install / update uBO</button>
+        <button class="btn" id="ubo-check-btn" style="display:none; background: transparent; border: 1px solid var(--border); color: var(--text2);">Check for updates</button>
         <button class="btn btn-danger" id="ubo-remove-btn" style="display:none;">Remove uBO (use Ghostery fallback)</button>
       </div>
       <div class="setting-desc" style="opacity: 0.8;">
@@ -925,24 +927,46 @@ const UBO_LABELS = {
 
 function renderUbo(s) {
   if (!s) return;
-  const dot      = document.getElementById('ubo-status-dot');
-  const line     = document.getElementById('ubo-status-line');
-  const msg      = document.getElementById('ubo-message');
-  const installBtn = document.getElementById('ubo-install-btn');
-  const removeBtn  = document.getElementById('ubo-remove-btn');
+  const dot         = document.getElementById('ubo-status-dot');
+  const line        = document.getElementById('ubo-status-line');
+  const checkedLine = document.getElementById('ubo-checked-line');
+  const msg         = document.getElementById('ubo-message');
+  const installBtn  = document.getElementById('ubo-install-btn');
+  const checkBtn    = document.getElementById('ubo-check-btn');
+  const removeBtn   = document.getElementById('ubo-remove-btn');
   if (!dot || !line) return;
   const meta = UBO_LABELS[s.state] || UBO_LABELS.idle;
   dot.style.background = meta.dot;
   let text = meta.line;
   if (s.version) text += ' (v' + s.version + ')';
+  // If a newer version exists on GitHub but we haven't picked it up yet,
+  // surface that so the user knows the auto-updater is waiting to refresh.
+  if (s.state === 'active' && s.latestAvailable && s.version
+      && s.latestAvailable.replace(/^v/,'') !== s.version.replace(/^v/,'')) {
+    text += ' · update available: v' + s.latestAvailable;
+  }
   line.textContent = text;
+
+  if (checkedLine) {
+    if (s.state === 'active') {
+      checkedLine.textContent = s.lastChecked
+        ? 'Last checked for updates: ' + fmtAge(s.lastChecked)
+        : 'Auto-checks every 6 hours while running';
+      checkedLine.style.display = '';
+    } else {
+      checkedLine.textContent = '';
+      checkedLine.style.display = 'none';
+    }
+  }
+
   if (s.message) { msg.textContent = s.message; msg.style.display = ''; }
   else           { msg.textContent = '';        msg.style.display = 'none'; }
 
   const busy = s.state === 'downloading' || s.state === 'extracting' || s.state === 'loading';
   installBtn.disabled = busy;
   installBtn.textContent = busy ? 'Working…' : (s.state === 'active' ? 'Re-install uBO' : 'Install uBO');
-  removeBtn.style.display = (s.state === 'active') ? '' : 'none';
+  checkBtn.style.display  = (s.state === 'active' && !busy) ? '' : 'none';
+  removeBtn.style.display = (s.state === 'active' && !busy) ? '' : 'none';
 }
 
 (async () => {
@@ -954,11 +978,23 @@ if (window.wizardBrowser && window.wizardBrowser.onUboStatus) {
   window.wizardBrowser.onUboStatus(renderUbo);
 }
 const uboInstall = document.getElementById('ubo-install-btn');
+const uboCheck   = document.getElementById('ubo-check-btn');
 const uboRemove  = document.getElementById('ubo-remove-btn');
 if (uboInstall) uboInstall.addEventListener('click', () => window.wizardBrowser.installUbo());
 if (uboRemove)  uboRemove.addEventListener('click',  () => {
   if (confirm('Remove the real uBlock Origin?\nThe Ghostery filter engine will become the active blocker.')) {
     window.wizardBrowser.removeUbo();
+  }
+});
+if (uboCheck) uboCheck.addEventListener('click', async () => {
+  if (!window.wizardBrowser.checkUboUpdate) return;
+  uboCheck.disabled = true;
+  const orig = uboCheck.textContent;
+  uboCheck.textContent = 'Checking…';
+  try { await window.wizardBrowser.checkUboUpdate(); }
+  finally {
+    uboCheck.disabled = false;
+    uboCheck.textContent = orig;
   }
 });
 

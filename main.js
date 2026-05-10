@@ -373,7 +373,9 @@ let uboState = {
   popupUrl: null,                   // chrome-extension://<id>/<popup>
   optionsUrl: null,
   message: null,
-  lastTried: null
+  lastTried: null,
+  lastChecked: null,                // ms epoch — last GitHub Releases poll
+  latestAvailable: null             // most recent tag observed on GitHub
 };
 function setUboState(patch) {
   uboState = { ...uboState, ...patch };
@@ -592,6 +594,38 @@ async function removeUBO() {
   setUboState({ state: 'idle', version: null, popupUrl: null, optionsUrl: null, message: null });
   // Re-arm Ghostery as the active engine
   initAdblocker().catch(() => {});
+}
+
+// Periodic uBO version check. Compares the installed tag with the latest
+// release on github.com/gorhill/uBlock and silently re-installs if newer.
+// Mirrors how Chrome polls for extension updates roughly every 5 hours.
+function normaliseTag(t) { return String(t || '').replace(/^v/, '').trim(); }
+
+async function checkUBOForUpdate() {
+  // Skip if uBO isn't installed (no version baseline to compare against).
+  if (!uboExtension) return { updated: false, reason: 'not-installed' };
+  const now = Date.now();
+  setUboState({ lastChecked: now });
+  try {
+    const release = await httpGetJson('https://api.github.com/repos/gorhill/uBlock/releases/latest');
+    const latest    = normaliseTag(release && release.tag_name);
+    const installed = normaliseTag(uboState.version);
+    setUboState({ latestAvailable: latest, lastChecked: now });
+    if (latest && installed && latest !== installed) {
+      // Run install in the background. installUBO() walks through the
+      // download → extract → loadExtension flow, broadcasting status the
+      // whole way, so the Settings panel reflects each stage.
+      console.log('[uBO] update available: ' + installed + ' → ' + latest);
+      await installUBO();
+      return { updated: true, from: installed, to: latest };
+    }
+    return { updated: false, version: installed };
+  } catch (e) {
+    // Network blip — try again next interval. Don't surface as an error
+    // because the previous version is still running and still blocking.
+    setUboState({ lastChecked: now });
+    return { updated: false, reason: 'check-failed', message: e && e.message };
+  }
 }
 
 function createWindow() {
@@ -1216,6 +1250,7 @@ ipcMain.handle('get-adblocker-status', () => adblockerStatus);
 ipcMain.handle('get-ubo-status', () => uboState);
 ipcMain.handle('install-ubo', async () => { await installUBO(); return uboState; });
 ipcMain.handle('remove-ubo',  async () => { await removeUBO(); return uboState; });
+ipcMain.handle('check-ubo-update', async () => { await checkUBOForUpdate(); return uboState; });
 ipcMain.handle('refresh-adblocker', async () => {
   // Force a network re-fetch of EasyList / EasyPrivacy / uBO unbreak / etc.
   await initAdblocker({ forceRefresh: true });
@@ -1255,6 +1290,13 @@ app.whenReady().then(() => {
   // the live blocker. If it fails (no network, asset removed, etc.) the
   // Ghostery engine keeps running.
   setTimeout(() => { ensureUBO({ download: true }).catch(e => console.warn('[uBO]', e)); }, 2500);
+
+  // Auto-update uBO ~5 min after boot (catches releases shipped between
+  // sessions) and every 6 hours after that. Matches Chrome's extension
+  // polling cadence. Silent — just re-installs the new build and reloads
+  // the extension. Filter lists update on uBO's own internal schedule.
+  setTimeout(() => { checkUBOForUpdate().catch(() => {}); }, 5 * 60 * 1000);
+  setInterval(() => { checkUBOForUpdate().catch(() => {}); }, 6 * 60 * 60 * 1000);
 });
 
 app.on('window-all-closed', () => app.quit());
