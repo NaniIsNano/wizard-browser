@@ -1303,9 +1303,17 @@ ipcMain.handle('open-ubo-window', async (_, which = 'dashboard') => {
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       session: session.fromPartition(PARTITION),
-      contextIsolation: true,
+      // contextIsolation MUST be off for uBO's UI pages. With isolation on,
+      // Electron injects the chrome.* extension APIs into the isolated
+      // preload world only — uBO's scripts run in the main world and find
+      // chrome.* undefined, then crash silently, leaving the page black.
+      // Safe to disable here because the window strictly loads
+      // chrome-extension:// URLs we control (uBO's own pages) and
+      // nodeIntegration stays off, so no Node access is exposed.
+      contextIsolation: false,
       nodeIntegration: false,
       sandbox: false,
+      webviewTag: false,
       // No preload — let the extension's chrome.* APIs run unhindered
     }
   });
