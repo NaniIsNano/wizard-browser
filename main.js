@@ -3,6 +3,18 @@ const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
+// Built-in adblocker (uBO / EasyList / EasyPrivacy / Peter Lowe's filter
+// engine) — same matching engine that powers Ghostery, used by many
+// Electron apps. We keep the static trackerList around as a fallback for
+// the first launch when the network isn't available.
+let ElectronBlocker, fetchFn;
+try {
+  ElectronBlocker = require('@ghostery/adblocker-electron').ElectronBlocker;
+  fetchFn = require('cross-fetch').fetch;
+} catch (e) {
+  console.warn('[adblocker] package not available, falling back to static blocklist:', e.message);
+}
+
 const trackerList = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'tracker-list.json'), 'utf-8')
 ).trackers;
@@ -12,6 +24,18 @@ const PARTITION = 'persist:wizard';
 let mainWindow;
 let blockedCount = 0;
 let downloads = [];
+
+// Adblocker state — populated by initAdblocker() after Electron is ready
+let adblockerEngine = null;
+let adblockerReady = false;
+let adblockerStatus = {
+  enabled: false,
+  ready: false,
+  source: 'static',     // 'static' | 'cache' | 'network'
+  lastUpdated: null,    // ms epoch when filter lists were fetched
+  totalFilters: 0,
+  message: null
+};
 
 // --- Persisted state ---
 const settingsPath  = path.join(app.getPath('userData'), 'wizard-settings.json');
@@ -115,8 +139,15 @@ function configureContentSession() {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
   );
 
+  // The Ghostery/uBO blocker is enabled async after boot via
+  // initAdblocker(). Until it's ready (or if it never loads — e.g. first
+  // launch with no network), fall back to the static trackerList.
   if (settings.trackerBlocking) {
     ses.webRequest.onBeforeRequest((details, callback) => {
+      // If the Ghostery engine has been installed it will have hooked the
+      // session itself; this static check only fires when the engine isn't
+      // up yet (first boot, offline, disabled).
+      if (adblockerReady) { callback({}); return; }
       const url = details.url.toLowerCase();
       if (trackerList.some(t => url.includes(t))) {
         blockedCount++;
@@ -185,6 +216,142 @@ function configureContentSession() {
   });
 
   return ses;
+}
+
+// =====================================================================
+// Adblocker — Ghostery / uBO filter engine on the content session
+// =====================================================================
+const ADBLOCK_CACHE_DIR  = path.join(app.getPath('userData'), 'adblocker');
+const ADBLOCK_CACHE_FILE = path.join(ADBLOCK_CACHE_DIR, 'engine.bin');
+const ADBLOCK_META_FILE  = path.join(ADBLOCK_CACHE_DIR, 'engine.meta.json');
+const ADBLOCK_TTL_MS     = 7 * 24 * 60 * 60 * 1000; // refresh after 7 days
+
+function broadcastAdblockerStatus() {
+  try {
+    webContents.getAllWebContents().forEach(wc => {
+      try { wc.send('adblocker-status', adblockerStatus); } catch {}
+    });
+  } catch {}
+}
+
+function persistAdblockerCache(engine) {
+  try {
+    fs.mkdirSync(ADBLOCK_CACHE_DIR, { recursive: true });
+    fs.writeFileSync(ADBLOCK_CACHE_FILE, Buffer.from(engine.serialize()));
+    fs.writeFileSync(ADBLOCK_META_FILE, JSON.stringify({
+      lastUpdated: Date.now(),
+      version: 1
+    }, null, 2));
+  } catch (e) {
+    console.warn('[adblocker] cache write failed:', e.message);
+  }
+}
+
+function readAdblockerCache() {
+  try {
+    if (!fs.existsSync(ADBLOCK_CACHE_FILE) || !fs.existsSync(ADBLOCK_META_FILE)) return null;
+    const meta = JSON.parse(fs.readFileSync(ADBLOCK_META_FILE, 'utf-8'));
+    if (typeof meta.lastUpdated !== 'number') return null;
+    const buf = fs.readFileSync(ADBLOCK_CACHE_FILE);
+    return { meta, buf };
+  } catch { return null; }
+}
+
+async function initAdblocker({ forceRefresh = false } = {}) {
+  if (!ElectronBlocker || !fetchFn) {
+    adblockerStatus = { ...adblockerStatus, enabled: false, ready: false, source: 'static',
+      message: 'Adblocker package not installed; using static blocklist.' };
+    broadcastAdblockerStatus();
+    return;
+  }
+  if (settings.trackerBlocking === false) {
+    adblockerStatus = { ...adblockerStatus, enabled: false, ready: false,
+      message: 'Tracker blocking is off in Settings.' };
+    broadcastAdblockerStatus();
+    return;
+  }
+
+  const ses = session.fromPartition(PARTITION);
+  let engine = null;
+  let source = 'cache';
+
+  // Try disk cache first (fast path) unless caller asked for a refresh
+  if (!forceRefresh) {
+    const cached = readAdblockerCache();
+    if (cached && (Date.now() - cached.meta.lastUpdated) < ADBLOCK_TTL_MS) {
+      try {
+        engine = ElectronBlocker.deserialize(new Uint8Array(cached.buf));
+        adblockerStatus.lastUpdated = cached.meta.lastUpdated;
+      } catch (e) {
+        console.warn('[adblocker] cache deserialize failed, refetching:', e.message);
+        engine = null;
+      }
+    }
+  }
+
+  // Fetch the prebuilt EasyList + EasyPrivacy + uBO unbreak + Peter Lowe's
+  // bundle from Ghostery's mirror, then cache to disk for next time.
+  if (!engine) {
+    try {
+      engine = await ElectronBlocker.fromPrebuiltAdsAndTracking(fetchFn);
+      source = 'network';
+      adblockerStatus.lastUpdated = Date.now();
+      persistAdblockerCache(engine);
+    } catch (e) {
+      adblockerStatus = { ...adblockerStatus, enabled: false, ready: false, source: 'static',
+        message: 'Filter list fetch failed (' + (e && e.message || 'unknown') + '). Using static blocklist for this session.' };
+      broadcastAdblockerStatus();
+      return;
+    }
+  }
+
+  // Replace any prior install — disable old, enable new
+  if (adblockerEngine) {
+    try { adblockerEngine.disableBlockingInSession(ses); } catch {}
+  }
+  adblockerEngine = engine;
+  try {
+    engine.enableBlockingInSession(ses);
+  } catch (e) {
+    adblockerStatus = { ...adblockerStatus, enabled: false, ready: false,
+      message: 'Could not install blocker: ' + (e && e.message || 'unknown') };
+    broadcastAdblockerStatus();
+    return;
+  }
+
+  // Count blocks. Ghostery emits 'request-blocked' / 'request-redirected' /
+  // 'request-whitelisted' events on the engine.
+  engine.on('request-blocked', () => {
+    blockedCount++;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('blocked-update', blockedCount);
+    }
+  });
+  engine.on('request-redirected', () => {
+    blockedCount++;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('blocked-update', blockedCount);
+    }
+  });
+
+  // Engine stats — totalFilters across network + cosmetic buckets
+  let totalFilters = 0;
+  try {
+    if (engine.lists)             totalFilters += engine.lists.size || 0;
+    if (engine.networkFilters)    totalFilters += engine.networkFilters.length || engine.networkFilters.size || 0;
+    if (engine.cosmeticFilters)   totalFilters += engine.cosmeticFilters.length || engine.cosmeticFilters.size || 0;
+  } catch {}
+
+  adblockerReady = true;
+  adblockerStatus = {
+    enabled: true,
+    ready: true,
+    source,
+    lastUpdated: adblockerStatus.lastUpdated,
+    totalFilters,
+    message: null
+  };
+  broadcastAdblockerStatus();
 }
 
 function createWindow() {
@@ -436,6 +603,7 @@ ipcMain.on('show-download', (_, p) => shell.showItemInFolder(p));
 
 ipcMain.handle('get-settings',     () => settings);
 ipcMain.handle('save-settings',    (_, partial) => {
+  const prev = settings;
   settings = { ...settings, ...partial };
   saveJSON(settingsPath, settings);
   // Broadcast to every renderer (shell + every webview tab) so the chrome,
@@ -445,6 +613,19 @@ ipcMain.handle('save-settings',    (_, partial) => {
       try { wc.send('settings-changed', settings); } catch {}
     });
   } catch {}
+  // If the user just toggled tracker blocking on/off, install or uninstall
+  // the adblocker engine on the live session.
+  if ('trackerBlocking' in (partial || {}) && prev.trackerBlocking !== settings.trackerBlocking) {
+    if (settings.trackerBlocking) {
+      initAdblocker().catch(() => {});
+    } else if (adblockerEngine) {
+      try { adblockerEngine.disableBlockingInSession(session.fromPartition(PARTITION)); } catch {}
+      adblockerEngine = null;
+      adblockerReady = false;
+      adblockerStatus = { ...adblockerStatus, enabled: false, ready: false, message: 'Tracker blocking is off in Settings.' };
+      broadcastAdblockerStatus();
+    }
+  }
   return true;
 });
 ipcMain.handle('get-speed-dial',   () => settings.speedDial || []);
@@ -735,6 +916,14 @@ async function runUpdateCheck(reason = 'manual') {
 }
 
 ipcMain.handle('get-update-status', () => updateState);
+
+// Adblocker IPC
+ipcMain.handle('get-adblocker-status', () => adblockerStatus);
+ipcMain.handle('refresh-adblocker', async () => {
+  // Force a network re-fetch of EasyList / EasyPrivacy / uBO unbreak / etc.
+  await initAdblocker({ forceRefresh: true });
+  return adblockerStatus;
+});
 ipcMain.handle('check-update', async () => { await runUpdateCheck('manual'); return updateState; });
 ipcMain.on('install-update', () => autoUpdater.quitAndInstall(false, true));
 
@@ -758,6 +947,13 @@ app.whenReady().then(() => {
   // we can't run when closed, but periodic in-app keeps users current.)
   setTimeout(() => { runUpdateCheck('startup'); }, 3000);
   setInterval(() => { runUpdateCheck('periodic'); }, 2 * 60 * 60 * 1000);
+
+  // Spin up the Ghostery/uBO adblocker. Reads the cached compiled engine
+  // off disk (instant) or fetches the prebuilt list on first launch.
+  // Static blocklist remains active until this finishes.
+  setTimeout(() => { initAdblocker().catch(e => console.warn('[adblocker]', e)); }, 200);
+  // Refresh filter lists once a week (lifecycle of typical EasyList updates)
+  setInterval(() => { initAdblocker({ forceRefresh: true }).catch(() => {}); }, ADBLOCK_TTL_MS);
 });
 
 app.on('window-all-closed', () => app.quit());

@@ -34,6 +34,11 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   getUpdateStatus:   () => ipcRenderer.invoke('get-update-status'),
   onUpdateStatus:    (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
 
+  // ─── Adblocker (Ghostery / uBO filter engine) ───
+  getAdblockerStatus: () => ipcRenderer.invoke('get-adblocker-status'),
+  refreshAdblocker:   () => ipcRenderer.invoke('refresh-adblocker'),
+  onAdblockerStatus:  (cb) => ipcRenderer.on('adblocker-status', (_, data) => cb(data)),
+
   // ─── WizardScript management (used by extensions.html) ───
   extList:                () => ipcRenderer.invoke('ext-list'),
   extToggle:              (id) => ipcRenderer.invoke('ext-toggle', id),

@@ -43,6 +43,10 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   installUpdate:      () => ipcRenderer.send('install-update'),
   getUpdateStatus:    () => ipcRenderer.invoke('get-update-status'),
   onUpdateStatus:     (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
+  // Adblocker
+  getAdblockerStatus: () => ipcRenderer.invoke('get-adblocker-status'),
+  refreshAdblocker:   () => ipcRenderer.invoke('refresh-adblocker'),
+  onAdblockerStatus:  (cb) => ipcRenderer.on('adblocker-status', (_, data) => cb(data)),
 
   // Browser-shell events
   onOnionAvailable: (cb) => ipcRenderer.on('onion-available', (_, data) => cb(data)),

@@ -498,12 +498,25 @@ body[data-glossy="1"] .toggle input:checked + .toggle-slider {
       <label class="toggle"><input type="checkbox" id="opt-referrer" /><span class="toggle-slider"></span></label>
     </div>
 
-    <div class="setting-row">
-      <div class="setting-info">
-        <div class="setting-label">Tracker & Ad Blocking</div>
-        <div class="setting-desc">Block known trackers and advertising domains</div>
+    <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="setting-info" style="flex:1;">
+          <div class="setting-label">
+            <span id="ab-status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:8px;vertical-align:middle;"></span>
+            Tracker &amp; Ad Blocking
+          </div>
+          <div class="setting-desc" id="ab-status-line">Loading filter lists…</div>
+          <div class="setting-desc" id="ab-source-line" style="margin-top: 2px; opacity: 0.7;"></div>
+          <div class="setting-desc" id="ab-message" style="margin-top: 4px; color: #f59e0b; display:none;"></div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="opt-trackers" /><span class="toggle-slider"></span></label>
       </div>
-      <label class="toggle"><input type="checkbox" id="opt-trackers" /><span class="toggle-slider"></span></label>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn" id="ab-refresh-btn">Refresh filter lists</button>
+        <span class="setting-desc" style="align-self:center; opacity: 0.85;">
+          Powered by EasyList, EasyPrivacy, uBO unbreak &amp; Peter Lowe's — same engine as uBlock Origin.
+        </span>
+      </div>
     </div>
 
     <div class="setting-row">
@@ -805,6 +818,74 @@ function escapeHtml(str) {
 }
 
 loadSettings();
+
+// =====================================================================
+// Adblocker panel
+// =====================================================================
+function fmtAge(ts) {
+  if (!ts) return 'never';
+  const d = Date.now() - ts;
+  if (d < 60_000)     return 'just now';
+  if (d < 3_600_000)  return Math.floor(d / 60_000) + ' min ago';
+  if (d < 86_400_000) return Math.floor(d / 3_600_000) + ' hr ago';
+  if (d < 7 * 86_400_000) return Math.floor(d / 86_400_000) + ' day' + (d >= 2*86_400_000 ? 's' : '') + ' ago';
+  return new Date(ts).toLocaleDateString();
+}
+
+function renderAdblocker(s) {
+  if (!s) return;
+  const dot   = document.getElementById('ab-status-dot');
+  const line  = document.getElementById('ab-status-line');
+  const src   = document.getElementById('ab-source-line');
+  const msg   = document.getElementById('ab-message');
+  const btn   = document.getElementById('ab-refresh-btn');
+  if (!dot || !line) return;
+
+  if (!s.enabled) {
+    dot.style.background = '#888';
+    line.textContent = 'Tracker blocking is off — toggle it on to load filter lists.';
+    src.textContent = '';
+    btn.disabled = true;
+  } else if (s.ready) {
+    dot.style.background = '#22c55e';
+    const filters = s.totalFilters ? s.totalFilters.toLocaleString() : '—';
+    line.textContent = `Active · ${filters} filter rules loaded`;
+    const sourceLabel = s.source === 'network' ? 'fetched from network'
+                     : s.source === 'cache'   ? 'loaded from local cache'
+                     : 'using built-in fallback list';
+    src.textContent  = `Lists ${sourceLabel} · last updated ${fmtAge(s.lastUpdated)}`;
+    btn.disabled = false;
+  } else {
+    dot.style.background = '#f59e0b';
+    line.textContent = 'Loading filter lists… (using static blocklist for now)';
+    src.textContent = '';
+    btn.disabled = true;
+  }
+
+  if (s.message) { msg.textContent = s.message; msg.style.display = ''; }
+  else           { msg.textContent = '';        msg.style.display = 'none'; }
+}
+
+(async () => {
+  if (window.wizardBrowser && window.wizardBrowser.getAdblockerStatus) {
+    try { renderAdblocker(await window.wizardBrowser.getAdblockerStatus()); } catch {}
+  }
+})();
+if (window.wizardBrowser && window.wizardBrowser.onAdblockerStatus) {
+  window.wizardBrowser.onAdblockerStatus(renderAdblocker);
+}
+const abBtn = document.getElementById('ab-refresh-btn');
+if (abBtn) {
+  abBtn.addEventListener('click', async () => {
+    abBtn.disabled = true;
+    abBtn.textContent = 'Refreshing…';
+    try { await window.wizardBrowser.refreshAdblocker(); }
+    finally {
+      abBtn.disabled = false;
+      abBtn.textContent = 'Refresh filter lists';
+    }
+  });
+}
 
 // =====================================================================
 // Update panel
