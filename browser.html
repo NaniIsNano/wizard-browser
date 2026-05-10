@@ -72,10 +72,20 @@ body {
   overflow: hidden;
 }
 
-/* Background image hook — set by [data-bgimage=1] */
-body[data-bgimage="1"] { background: var(--bg-image) center/cover fixed, var(--bg); }
+/* ─── BACKGROUNDS (independent from theme/colors) ─────────────────
+   The active background image is selected by [data-bg="..."]. The shorthand
+   layers it over --bg so each colour scheme still controls fallback / tint. */
+body[data-bg="frutiger"]  { --bg-image: linear-gradient(180deg,#c8e0f8,#88b8e8 30%,#60a0d8 60%,#4090c8); background: var(--bg-image) center/cover fixed, var(--bg); }
+body[data-bg="canola"]    { --bg-image: url('backgrounds/canola.jpg');    background: var(--bg-image) center/cover fixed, var(--bg); }
+body[data-bg="mountains"] { --bg-image: url('backgrounds/mountains.jpg'); background: var(--bg-image) center/cover fixed, var(--bg); }
+body[data-bg="fortress"]  { --bg-image: url('backgrounds/fortress.jpg'); background: var(--bg-image) center/cover fixed, var(--bg); }
+/* "custom" — JS sets --bg-image inline from the uploaded data: URL */
+body[data-bg="custom"]    { background: var(--bg-image) center/cover fixed, var(--bg); }
+/* "none" — no image, just the colour scheme's --bg (no rule needed) */
 
-/* ─── THEMES (color/background only, no layout) ───────────────── */
+/* ─── COLOUR SCHEMES (kept in [data-theme="..."] for back-compat) ──
+   These set palette tokens only — no background-image rules here. The
+   wallpaper is chosen separately via [data-bg="..."] above. */
 body[data-theme="frutiger"] {
   --bg: #c8e0f8;
   --surface: rgba(255,255,255,0.78);
@@ -121,7 +131,8 @@ body[data-theme="frutiger"] {
   --bg-image: linear-gradient(180deg,#c8e0f8,#88b8e8 30%,#60a0d8 60%,#4090c8);
   --font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-body[data-theme="frutiger"] { background: var(--bg-image) center/cover fixed; }
+/* (background line moved to [data-bg="..."] rules above so colour and
+   wallpaper can be chosen independently) */
 
 body[data-theme="canola"] {
   --bg: #6b8e23;
@@ -168,7 +179,7 @@ body[data-theme="canola"] {
   --bg-image: url('backgrounds/canola.jpg');
   --font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-body[data-theme="canola"] { background: var(--bg-image) center/cover fixed; }
+/* canola colour scheme — wallpaper chosen separately via [data-bg] */
 
 body[data-theme="mountains"] {
   --bg: #1a3a5a;
@@ -214,7 +225,7 @@ body[data-theme="mountains"] {
   --content-bg: rgba(10,20,30,0.55);
   --bg-image: url('backgrounds/mountains.jpg');
 }
-body[data-theme="mountains"] { background: var(--bg-image) center/cover fixed; }
+/* mountains colour scheme — wallpaper chosen separately via [data-bg] */
 
 body[data-theme="fortress"] {
   --bg: #3a2a1a;
@@ -260,7 +271,7 @@ body[data-theme="fortress"] {
   --content-bg: rgba(0,0,0,0.55);
   --bg-image: url('backgrounds/fortress.jpg');
 }
-body[data-theme="fortress"] { background: var(--bg-image) center/cover fixed; }
+/* fortress colour scheme — wallpaper chosen separately via [data-bg] */
 
 body[data-theme="retrowave"] {
   --bg: #1a0a2e;
@@ -306,7 +317,10 @@ body[data-theme="retrowave"] {
   --content-bg: #0a0420;
   --bg-image: linear-gradient(180deg, #1a0a2e 0%, #2a0a4e 50%, #4a0a6e 100%);
 }
-body[data-theme="retrowave"] { background: var(--bg-image) fixed; }
+/* retrowave colour scheme — its --bg-image gradient still applies via the
+   default body background below when no [data-bg="..."] is set */
+body[data-theme="retrowave"]:not([data-bg]):not([data-bg="none"]),
+body[data-theme="retrowave"][data-bg="none"] { background: var(--bg-image) fixed; }
 
 /* "custom" theme — uses --bg-image which is set inline by JS from settings.customBg */
 body[data-theme="custom"] {
@@ -352,7 +366,85 @@ body[data-theme="custom"] {
   --input-focus: #fff;
   --content-bg: rgba(0,0,0,0.55);
 }
-body[data-theme="custom"] { background: var(--bg-image) center/cover fixed, #0a0a0a; }
+/* "custom" theme is gone — custom is now a BACKGROUND, not a colour scheme.
+   Migration in main.js converts old `theme: 'custom'` to `background: 'custom'`
+   plus default colours. The body[data-bg="custom"] rule above paints it. */
+
+/* Rose — pink/magenta */
+body[data-theme="rose"] {
+  --bg: #1a0a14; --surface: #2a0e1d; --surface2: #3a142a; --border: #4a1a35;
+  --text: #fce7f3; --text2: #f9a8d4;
+  --accent: #ec4899; --accent2: #f472b6; --accent-on: #fff;
+  --shield: #22c55e; --shield-bg: #2a0e1d; --danger: #ef4444;
+  --tab-bar-bg: #2a0e1d; --tab-bar-border: #4a1a35;
+  --tab-active-bg: #3a142a; --tab-active-text: #fff;
+  --tab-inactive-bg: transparent; --tab-inactive-text: #f9a8d4;
+  --tab-border: transparent;
+  --toolbar-bg: #2a0e1d; --toolbar-border: #4a1a35;
+  --toolbar-btn-bg: #2a0e1d; --toolbar-btn-text: #f9a8d4; --toolbar-btn-border: #4a1a35;
+  --toolbar-btn-hover-bg: #3a142a; --toolbar-btn-hover-text: #fce7f3; --toolbar-btn-hover-border: #ec4899;
+  --menubar-bg: #2a0e1d; --menubar-border: #4a1a35; --menubar-text: #f9a8d4;
+  --statusbar-bg: #2a0e1d; --statusbar-text: #f9a8d4; --statusbar-border: #4a1a35;
+  --input-bg: #2a0e1d; --input-text: #fce7f3; --input-border: #4a1a35; --input-focus: #ec4899;
+  --content-bg: #1a0a14;
+}
+
+/* Emerald — deep green */
+body[data-theme="emerald"] {
+  --bg: #0a1a14; --surface: #0e2a20; --surface2: #14352a; --border: #1a4a35;
+  --text: #d1fae5; --text2: #6ee7b7;
+  --accent: #10b981; --accent2: #34d399; --accent-on: #062a20;
+  --shield: #34d399; --shield-bg: #0e2a20; --danger: #ef4444;
+  --tab-bar-bg: #0e2a20; --tab-bar-border: #1a4a35;
+  --tab-active-bg: #14352a; --tab-active-text: #fff;
+  --tab-inactive-bg: transparent; --tab-inactive-text: #6ee7b7;
+  --tab-border: transparent;
+  --toolbar-bg: #0e2a20; --toolbar-border: #1a4a35;
+  --toolbar-btn-bg: #0e2a20; --toolbar-btn-text: #6ee7b7; --toolbar-btn-border: #1a4a35;
+  --toolbar-btn-hover-bg: #14352a; --toolbar-btn-hover-text: #d1fae5; --toolbar-btn-hover-border: #10b981;
+  --menubar-bg: #0e2a20; --menubar-border: #1a4a35; --menubar-text: #6ee7b7;
+  --statusbar-bg: #0e2a20; --statusbar-text: #6ee7b7; --statusbar-border: #1a4a35;
+  --input-bg: #0e2a20; --input-text: #d1fae5; --input-border: #1a4a35; --input-focus: #10b981;
+  --content-bg: #0a1a14;
+}
+
+/* Sunset — warm orange */
+body[data-theme="sunset"] {
+  --bg: #1a0a05; --surface: #2a1208; --surface2: #3a1a0d; --border: #4a2510;
+  --text: #fed7aa; --text2: #fb923c;
+  --accent: #f97316; --accent2: #fb923c; --accent-on: #fff;
+  --shield: #22c55e; --shield-bg: #2a1208; --danger: #ef4444;
+  --tab-bar-bg: #2a1208; --tab-bar-border: #4a2510;
+  --tab-active-bg: #3a1a0d; --tab-active-text: #fff;
+  --tab-inactive-bg: transparent; --tab-inactive-text: #fb923c;
+  --tab-border: transparent;
+  --toolbar-bg: #2a1208; --toolbar-border: #4a2510;
+  --toolbar-btn-bg: #2a1208; --toolbar-btn-text: #fb923c; --toolbar-btn-border: #4a2510;
+  --toolbar-btn-hover-bg: #3a1a0d; --toolbar-btn-hover-text: #fed7aa; --toolbar-btn-hover-border: #f97316;
+  --menubar-bg: #2a1208; --menubar-border: #4a2510; --menubar-text: #fb923c;
+  --statusbar-bg: #2a1208; --statusbar-text: #fb923c; --statusbar-border: #4a2510;
+  --input-bg: #2a1208; --input-text: #fed7aa; --input-border: #4a2510; --input-focus: #f97316;
+  --content-bg: #1a0a05;
+}
+
+/* Monochrome — neutral grayscale */
+body[data-theme="monochrome"] {
+  --bg: #0d0d0d; --surface: #1a1a1a; --surface2: #222; --border: #2e2e2e;
+  --text: #e5e5e5; --text2: #999;
+  --accent: #aaa; --accent2: #ccc; --accent-on: #0d0d0d;
+  --shield: #999; --shield-bg: #1a1a1a; --danger: #ef4444;
+  --tab-bar-bg: #1a1a1a; --tab-bar-border: #2e2e2e;
+  --tab-active-bg: #2a2a2a; --tab-active-text: #fff;
+  --tab-inactive-bg: transparent; --tab-inactive-text: #999;
+  --tab-border: transparent;
+  --toolbar-bg: #1a1a1a; --toolbar-border: #2e2e2e;
+  --toolbar-btn-bg: #1a1a1a; --toolbar-btn-text: #ccc; --toolbar-btn-border: #2e2e2e;
+  --toolbar-btn-hover-bg: #2a2a2a; --toolbar-btn-hover-text: #fff; --toolbar-btn-hover-border: #999;
+  --menubar-bg: #1a1a1a; --menubar-border: #2e2e2e; --menubar-text: #ccc;
+  --statusbar-bg: #1a1a1a; --statusbar-text: #999; --statusbar-border: #2e2e2e;
+  --input-bg: #1a1a1a; --input-text: #e5e5e5; --input-border: #2e2e2e; --input-focus: #ccc;
+  --content-bg: #0d0d0d;
+}
 
 /* ─── MODIFIERS ──────────────────────────────────────────────── */
 body[data-sharp="1"] {
@@ -1031,13 +1123,14 @@ function applyAppearance(s) {
   body.dataset.theme  = s.theme  || 'default';
   body.dataset.sharp  = s.sharpEdges ? '1' : '0';
   body.dataset.glossy = s.glossyUI   ? '1' : '0';
-  // bg-image: themed themes set their own; "custom" theme uses uploaded data URL
-  if (s.theme === 'custom' && s.customBg) {
+  // Background is independent of colour scheme. CSS rules on [data-bg="..."]
+  // paint the wallpaper; "custom" reads the data: URL from --bg-image.
+  const bg = s.background || 'none';
+  body.dataset.bg = bg;
+  if (bg === 'custom' && s.customBg) {
     body.style.setProperty('--bg-image', `url(${s.customBg})`);
-    body.dataset.bgimage = '1';
   } else {
     body.style.removeProperty('--bg-image');
-    body.dataset.bgimage = (s.theme && s.theme !== 'default') ? '1' : '0';
   }
 }
 

@@ -50,13 +50,15 @@ function saveJSON(p, data) {
 }
 
 let settings = loadJSON(settingsPath, {
-  // Theme system v3: layout + theme + modifiers all independent
+  // Appearance v4 — Chrome-style: theme (color scheme) and background are
+  // independent axes. You can pair any color scheme with any background.
   layout: 'default',             // 'default' | 'win7'
-  theme: 'default',              // 'default' | 'frutiger' | 'canola' | 'mountains' | 'fortress' | 'retrowave' | 'custom'
+  theme: 'default',              // color scheme: 'default' | 'frutiger' | 'canola' | 'mountains' | 'fortress' | 'retrowave' | 'rose' | 'emerald' | 'sunset' | 'monochrome'
+  background: 'none',            // 'none' | 'frutiger' | 'canola' | 'mountains' | 'fortress' | 'custom'
+  customBg: '',                  // data URL — used when background === 'custom'
   sharpEdges: false,             // applies to every layout/theme
   glossyUI: false,               // applies to every layout/theme
-  customBg: '',                  // data URL — used by 'custom' theme, available under any layout
-  // Legacy keys (kept for migration; ignored once layout/theme set)
+  // Legacy keys (kept for migration; ignored once layout/theme/background set)
   themeMode: 'default',
   aeroBackground: 'fruiter',
   doNotTrack: true,
@@ -74,21 +76,33 @@ let settings = loadJSON(settingsPath, {
   ]
 });
 
-// Migrate previous theme system to layout + theme
-(function migrateTheme() {
-  // If new keys missing, derive from old themeMode/aeroBackground
-  if (settings.layout && settings.theme && settings.theme !== 'default-needs-migration') return;
-  const tm = settings.themeMode || 'default';
-  const ab = settings.aeroBackground || 'fruiter';
-  if (tm === 'aero') {
-    settings.layout = settings.layout || 'default';
-    settings.theme  = ab === 'fruiter' ? 'frutiger' : ab; // canola | mountains | fortress | custom
-  } else if (tm === 'retrowave') {
-    settings.layout = settings.layout || 'default';
-    settings.theme  = 'retrowave';
-  } else {
-    settings.layout = settings.layout || 'default';
-    settings.theme  = settings.theme  || 'default';
+// Migrate older settings shapes onto the new (theme, background) split.
+(function migrateAppearance() {
+  // Stage 1: themeMode/aeroBackground → unified `theme`
+  if (!settings.theme || settings.theme === 'default-needs-migration') {
+    const tm = settings.themeMode || 'default';
+    const ab = settings.aeroBackground || 'fruiter';
+    if (tm === 'aero')           settings.theme = ab === 'fruiter' ? 'frutiger' : ab;
+    else if (tm === 'retrowave') settings.theme = 'retrowave';
+    else                         settings.theme = 'default';
+  }
+  settings.layout = settings.layout || 'default';
+
+  // Stage 2: split combined `theme` into (color scheme, background) IF
+  // `background` hasn't been set yet (i.e. user hasn't seen the new picker).
+  if (settings.background == null) {
+    const t = settings.theme;
+    if (t === 'frutiger' || t === 'canola' || t === 'mountains' || t === 'fortress') {
+      // Old combined: keep colour scheme matching the theme + same-name bg
+      settings.background = t;
+    } else if (t === 'custom') {
+      // Old "custom" theme had no real colour palette (neutral gray) — move
+      // it to the default scheme over the user's image.
+      settings.background = 'custom';
+      settings.theme = 'default';
+    } else {
+      settings.background = 'none';
+    }
   }
   saveJSON(settingsPath, settings);
 })();
