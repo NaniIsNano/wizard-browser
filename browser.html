@@ -645,6 +645,42 @@ body[data-layout="win7"] #shield { height: 26px; font-size: 11px; }
 .toolbar-btn svg { width: 14px; height: 14px; fill: currentColor; }
 body[data-layout="win7"] .toolbar-btn { height: 26px; font-size: 11px; padding: 0 8px; }
 
+/* WizardScript extension toolbar buttons. Same look as built-ins but with
+   space for a numeric badge in the corner. */
+.toolbar-btn.ext-btn {
+  position: relative;
+  font-size: 13px;
+  min-width: 32px;
+  padding: 0 8px;
+}
+.toolbar-btn.ext-btn .ext-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+}
+.toolbar-btn.ext-btn .ext-badge {
+  position: absolute;
+  top: 1px;
+  right: -2px;
+  min-width: 16px;
+  height: 14px;
+  padding: 0 3px;
+  background: var(--accent, #7c3aed);
+  color: var(--accent-on, #fff);
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px var(--toolbar-bg, #0d0d0d);
+}
+.toolbar-btn.ext-btn .ext-badge:empty,
+.toolbar-btn.ext-btn .ext-badge[hidden] { display: none; }
+
 /* "Update ready" dot on the Settings button */
 .toolbar-btn.has-update { position: relative; }
 .toolbar-btn.has-update::after {
@@ -909,6 +945,8 @@ webview.active { display: flex; }
   <button class="toolbar-btn" id="dl-btn" title="Downloads (Ctrl+J)">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
   </button>
+  <!-- WizardScript extensions inject toolbar buttons here via wizard.ui.addButton -->
+  <span id="ext-buttons" style="display:contents"></span>
   <button class="toolbar-btn" id="ext-btn" title="WizardScript Extensions">
     <svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
   </button>
@@ -1504,6 +1542,54 @@ const WizardRuntime = (() => {
     notify._t = setTimeout(() => { el.style.opacity = '0'; }, opts.duration || 3000);
   }
 
+  // ────── Toolbar button registry (wizard.ui.addButton) ──────
+  // Buttons are owned by extensions and removed when the runtime reloads.
+  const extButtons = []; // [{ extId, el }]
+  function addExtButton(ext, opts) {
+    const slot = document.getElementById('ext-buttons');
+    if (!slot) return { setBadge(){}, setTooltip(){}, remove(){} };
+    const el = document.createElement('button');
+    el.className = 'toolbar-btn ext-btn';
+    el.setAttribute('data-ext-id', ext.id);
+    if (opts.tooltip) el.title = String(opts.tooltip);
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'ext-icon';
+    iconSpan.textContent = String(opts.icon || '🧩').slice(0, 2);
+    el.appendChild(iconSpan);
+    const badge = document.createElement('span');
+    badge.className = 'ext-badge';
+    badge.hidden = true;
+    el.appendChild(badge);
+    if (typeof opts.onClick === 'function') {
+      el.addEventListener('click', () => {
+        try { opts.onClick(); } catch (e) { console.warn(`[ext:${ext.id}]`, e); }
+      });
+    }
+    slot.appendChild(el);
+    const entry = { extId: ext.id, el };
+    extButtons.push(entry);
+    return {
+      setBadge(text) {
+        const t = (text == null || text === '') ? '' : String(text);
+        if (!t) { badge.hidden = true; badge.textContent = ''; }
+        else    { badge.hidden = false; badge.textContent = t; }
+      },
+      setTooltip(t) { el.title = String(t || ''); },
+      setIcon(icon) { iconSpan.textContent = String(icon || '🧩').slice(0, 2); },
+      remove() {
+        try { el.remove(); } catch {}
+        const i = extButtons.indexOf(entry);
+        if (i >= 0) extButtons.splice(i, 1);
+      }
+    };
+  }
+  function clearExtButtons() {
+    while (extButtons.length) {
+      const e = extButtons.pop();
+      try { e.el.remove(); } catch {}
+    }
+  }
+
   function urlMatches(patterns, url) {
     if (!patterns || !patterns.length) return true;
     for (const p of patterns) {
@@ -1539,13 +1625,22 @@ const WizardRuntime = (() => {
     };
     if (has('ui')) api.ui = {
       notify:    (msg, opts) => notify(msg, opts),
-      getTheme:  () => wb.extUiGetTheme()
-      // setTitle + addButton are v1.1 — they need a toolbar registry.
+      getTheme:  () => wb.extUiGetTheme(),
+      addButton: (opts) => addExtButton(ext, opts || {})
     };
     if (has('privacy')) api.privacy = {
       getSettings:      () => wb.extPrivacyGetSettings(),
       isTrackerBlocked: (d) => wb.extPrivacyIsTrackerBlocked(d),
       getBlockedCount:  () => wb.extPrivacyGetBlockedCount()
+    };
+    if (has('adblock')) api.adblock = {
+      getStatus:        () => wb.getAdblockerStatus(),
+      refresh:          () => wb.refreshAdblocker(),
+      getBlockedCount:  () => wb.extPrivacyGetBlockedCount(),
+      onStatus:         (cb) => {
+        if (typeof cb !== 'function' || !wb.onAdblockerStatus) return;
+        wb.onAdblockerStatus(safeCb(cb));
+      }
     };
     if (has('net')) api.net = {
       fetch: async (url, opts) => {
@@ -1571,6 +1666,7 @@ const WizardRuntime = (() => {
   async function reload() {
     if (!window.wizardBrowser || !window.wizardBrowser.extListRuntime) return;
     loaded = [];
+    clearExtButtons();
     let list = [];
     try { list = await window.wizardBrowser.extListRuntime(); } catch { return; }
     for (const ext of list) {

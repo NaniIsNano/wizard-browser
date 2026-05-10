@@ -677,6 +677,57 @@ ipcMain.on('open-url',      (_, url) => {
 const extensionsDir = path.join(app.getPath('userData'), 'extensions');
 try { fs.mkdirSync(extensionsDir, { recursive: true }); } catch {}
 
+// Built-in extensions ship inside the app bundle. On every boot we copy
+// them into userData/extensions/ if missing OR if our shipped version is
+// newer than what's on disk (so updates land automatically). Their manifests
+// declare `"builtIn": true`, which the UI uses to hide Uninstall.
+const builtInsDir = path.join(__dirname, 'built-in-extensions');
+function installBuiltInExtensions() {
+  let entries = [];
+  try { entries = fs.readdirSync(builtInsDir, { withFileTypes: true }); } catch { return; }
+  for (const ent of entries) {
+    if (!ent.isDirectory()) continue;
+    const src = path.join(builtInsDir, ent.name);
+    let manifest;
+    try { manifest = JSON.parse(fs.readFileSync(path.join(src, 'wizard.json'), 'utf-8')); } catch { continue; }
+    manifest.builtIn = true;
+    const id  = ent.name;                    // keep folder name stable for built-ins
+    const dst = path.join(extensionsDir, id);
+    let needsCopy = true;
+    try {
+      const installed = JSON.parse(fs.readFileSync(path.join(dst, 'wizard.json'), 'utf-8'));
+      // Same version already installed — leave alone (preserve _disabled state)
+      if (installed.version === manifest.version) needsCopy = false;
+    } catch {}
+    if (!needsCopy) continue;
+
+    // Preserve the user's _disabled flag across updates
+    let disabled = false;
+    try {
+      const old = JSON.parse(fs.readFileSync(path.join(dst, 'wizard.json'), 'utf-8'));
+      disabled = !!old._disabled;
+    } catch {}
+
+    try {
+      fs.mkdirSync(dst, { recursive: true });
+      // Copy script + icon if present (manifest is rewritten with builtIn flag)
+      if (manifest.script) {
+        const scriptSrc = path.join(src, manifest.script);
+        if (fs.existsSync(scriptSrc)) fs.copyFileSync(scriptSrc, path.join(dst, manifest.script));
+      }
+      if (manifest.icon) {
+        const iconSrc = path.join(src, manifest.icon);
+        if (fs.existsSync(iconSrc)) fs.copyFileSync(iconSrc, path.join(dst, manifest.icon));
+      }
+      manifest._disabled = disabled;
+      fs.writeFileSync(path.join(dst, 'wizard.json'), JSON.stringify(manifest, null, 2));
+    } catch (e) {
+      console.warn('[built-in ext]', id, 'install failed:', e.message);
+    }
+  }
+}
+installBuiltInExtensions();
+
 function slugifyId(name, version) {
   return ((name || 'unnamed') + '-' + (version || '0.0.0'))
     .toLowerCase()
@@ -743,6 +794,9 @@ ipcMain.handle('ext-toggle', (_, id) => {
 ipcMain.handle('ext-uninstall', (_, id) => {
   const ext = extensions.find(e => e.id === id);
   if (!ext) return false;
+  // Built-in extensions can be disabled but not uninstalled — they'd just
+  // get re-extracted on next boot anyway. UI also hides the button.
+  if (ext.manifest && ext.manifest.builtIn) return false;
   try { fs.rmSync(ext.dir, { recursive: true, force: true }); } catch {}
   extensions = loadExtensions();
   broadcastExtensionsChanged();

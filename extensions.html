@@ -132,6 +132,11 @@ body {
   color: var(--red); background: rgba(239,68,68,0.1);
   border: 1px solid rgba(239,68,68,0.3); padding: 1px 6px; border-radius: 3px;
 }
+.ext-builtin-tag {
+  font-size: 0.65em; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--accent2); background: rgba(168,85,247,0.12);
+  border: 1px solid rgba(168,85,247,0.35); padding: 1px 6px; border-radius: 3px;
+}
 .ext-desc { font-size: 0.82em; color: var(--text2); line-height: 1.5; margin-bottom: 6px; }
 .ext-author { font-size: 0.72em; color: var(--text2); }
 .ext-perms {
@@ -239,12 +244,14 @@ async function render() {
     const card = document.createElement('div');
     card.className = 'ext-card' + (ext.enabled ? '' : ' disabled');
     const initial = (m.name || ext.id).charAt(0).toUpperCase();
+    const isBuiltIn = !!m.builtIn;
     card.innerHTML = `
       <div class="ext-icon">${escHtml(initial)}</div>
       <div class="ext-meta">
         <div class="ext-name">
           ${escHtml(m.name || ext.id)}
           <span class="ext-version">v${escHtml(m.version || '0.0.0')}</span>
+          ${isBuiltIn ? '<span class="ext-builtin-tag">built-in</span>' : ''}
           ${ext.enabled ? '' : '<span class="ext-disabled-tag">disabled</span>'}
         </div>
         ${m.description ? `<div class="ext-desc">${escHtml(m.description)}</div>` : ''}
@@ -255,14 +262,16 @@ async function render() {
       </div>
       <div class="ext-actions">
         <label class="toggle"><input type="checkbox" ${ext.enabled ? 'checked' : ''} data-act="toggle" data-id="${escHtml(ext.id)}"/><span class="toggle-slider"></span></label>
-        <button class="btn btn-danger" data-act="uninstall" data-id="${escHtml(ext.id)}">Uninstall</button>
+        ${isBuiltIn
+          ? '<button class="btn btn-danger" data-act="uninstall" disabled title="Built-in extensions can be disabled but not removed.">Built-in</button>'
+          : `<button class="btn btn-danger" data-act="uninstall" data-id="${escHtml(ext.id)}">Uninstall</button>`}
       </div>`;
     card.querySelector('[data-act="toggle"]').addEventListener('change', async () => {
       await wb.extToggle(ext.id);
       render();
       showToast(ext.enabled ? 'Disabled' : 'Enabled');
     });
-    card.querySelector('[data-act="uninstall"]').addEventListener('click', async () => {
+    if (!isBuiltIn) card.querySelector('[data-act="uninstall"]').addEventListener('click', async () => {
       if (!confirm(`Uninstall "${m.name || ext.id}"?\nThis also removes its stored data.`)) return;
       await wb.extUninstall(ext.id);
       render();

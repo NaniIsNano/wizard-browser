@@ -1,0 +1,11 @@
+{
+  "name": "Wizard Adblocker",
+  "version": "1.0.0",
+  "author": "NaniIsNano",
+  "description": "Native Wizard ad/tracker blocker. Powered by EasyList, EasyPrivacy, uBlock Origin's filter engine and Peter Lowe's lists — same matching engine that powers Ghostery.",
+  "script": "index.js",
+  "homepage": "https://github.com/NaniIsNano/wizard-browser",
+  "permissions": ["adblock", "ui", "storage"],
+  "match": ["*"],
+  "builtIn": true
+}
