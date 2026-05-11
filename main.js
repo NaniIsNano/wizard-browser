@@ -25,6 +25,31 @@ let mainWindow;
 let blockedCount = 0;
 let downloads = [];
 
+// Ring buffer of recently blocked requests — populated from the Ghostery
+// engine's request-blocked event AND from session-level onErrorOccurred
+// (catches ERR_BLOCKED_BY_CLIENT from uBO/extensions). Read by the
+// Wizard-native uBO dashboard for the live "recent blocks" log.
+const RECENT_BLOCKS_MAX = 200;
+let recentBlocks = [];   // [{ url, host, ts, source }] — newest first
+
+function pushRecentBlock(url, source) {
+  if (typeof url !== 'string' || !url) return;
+  let host = '';
+  try { host = new URL(url).hostname; } catch {}
+  // Suppress duplicate hits from the same URL within 250ms (chromium fires
+  // both onBeforeRequest+onErrorOccurred for some cancelled requests)
+  const head = recentBlocks[0];
+  if (head && head.url === url && (Date.now() - head.ts) < 250) return;
+  const entry = { url: url.slice(0, 500), host, ts: Date.now(), source: source || 'unknown' };
+  recentBlocks.unshift(entry);
+  if (recentBlocks.length > RECENT_BLOCKS_MAX) recentBlocks.length = RECENT_BLOCKS_MAX;
+  try {
+    webContents.getAllWebContents().forEach(wc => {
+      try { wc.send('recent-block', entry); } catch {}
+    });
+  } catch {}
+}
+
 // Adblocker state — populated by initAdblocker() after Electron is ready
 let adblockerEngine = null;
 let adblockerReady = false;
@@ -168,12 +193,31 @@ function configureContentSession() {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('blocked-update', blockedCount);
         }
+        pushRecentBlock(details.url, 'static');
         callback({ cancel: true });
         return;
       }
       callback({});
     });
   }
+
+  // Catch blocks from whatever engine is in front of us (Ghostery or uBO).
+  // When uBO is active it owns onBeforeRequest, so this is the only way to
+  // see what it cancels at the session level. ERR_BLOCKED_BY_CLIENT is the
+  // Chromium error code for "an extension cancelled this request".
+  ses.webRequest.onErrorOccurred((details) => {
+    if (!details || !details.error) return;
+    const err = details.error;
+    if (err === 'net::ERR_BLOCKED_BY_CLIENT'
+     || err === 'net::ERR_BLOCKED_BY_RESPONSE'
+     || err === 'net::ERR_BLOCKED_BY_ADMINISTRATOR') {
+      // Source label: prefer the active engine if known
+      const src = (uboState && uboState.state === 'active') ? 'ublock-origin'
+                : adblockerReady ? 'ghostery'
+                : 'static';
+      pushRecentBlock(details.url, src);
+    }
+  });
 
   ses.webRequest.onBeforeSendHeaders((details, callback) => {
     const headers = details.requestHeaders;
@@ -334,18 +378,22 @@ async function initAdblocker({ forceRefresh = false } = {}) {
   }
 
   // Count blocks. Ghostery emits 'request-blocked' / 'request-redirected' /
-  // 'request-whitelisted' events on the engine.
-  engine.on('request-blocked', () => {
+  // 'request-whitelisted' events on the engine. The first arg is a Request
+  // object with .url / .tabId / .sourceUrl — we use it to populate the
+  // recent-blocks ring buffer for the Wizard-native dashboard.
+  engine.on('request-blocked', (req) => {
     blockedCount++;
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('blocked-update', blockedCount);
     }
+    if (req && req.url) pushRecentBlock(req.url, 'ghostery');
   });
-  engine.on('request-redirected', () => {
+  engine.on('request-redirected', (req) => {
     blockedCount++;
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('blocked-update', blockedCount);
     }
+    if (req && req.url) pushRecentBlock(req.url, 'ghostery');
   });
 
   // Engine stats — totalFilters across network + cosmetic buckets
@@ -1329,6 +1377,186 @@ ipcMain.handle('refresh-adblocker', async () => {
   await initAdblocker({ forceRefresh: true });
   return adblockerStatus;
 });
+
+// =====================================================================
+// Wizard-native uBO Dashboard — talks to uBO's background script via
+// executeJavaScript and exposes a tidy state object the dashboard
+// HTML can render. Falls back gracefully when uBO's internal API
+// shape changes or the background page isn't loaded yet.
+// =====================================================================
+
+function findUboBackground() {
+  if (!uboExtension) return null;
+  const idPrefix = 'chrome-extension://' + uboExtension.id + '/';
+  try {
+    for (const wc of webContents.getAllWebContents()) {
+      try {
+        const u = wc.getURL();
+        if (!u || !u.startsWith(idPrefix)) continue;
+        const t = wc.getType();
+        // Electron exposes background pages as 'backgroundPage'. Some
+        // builds also return 'remote' / 'window'. Filter to anything
+        // that looks like the background context (not a popup/options page).
+        if (t === 'backgroundPage') return wc;
+        if (/background|_generated_background_page/.test(u)) return wc;
+      } catch {}
+    }
+  } catch {}
+  return null;
+}
+
+async function uboExec(code, timeoutMs = 4000) {
+  const wc = findUboBackground();
+  if (!wc) throw new Error('uBO background page not loaded');
+  return await Promise.race([
+    wc.executeJavaScript(code, true),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('uBO exec timed out')), timeoutMs))
+  ]);
+}
+
+// Probe uBO state via its internal globals. uBO MV2 exposes µBlock (Greek
+// mu, U+00B5) on the background page; some forks expose it as µb or
+// ublock. Try them in order. Returns null on failure.
+async function uboReadState() {
+  const code = `(function(){
+    try {
+      var µ = globalThis['\\u00b5Block'] || globalThis['\\u00b5b'] || globalThis.uBlock || globalThis.ublock;
+      if (!µ) return { ok: false, reason: 'no-globals' };
+
+      var sel    = Array.isArray(µ.selectedFilterLists) ? µ.selectedFilterLists.slice() : [];
+      var avail  = µ.availableFilterLists || (µ.assets && µ.assets.entries) || {};
+      var lists  = [];
+      try {
+        var keys = Object.keys(avail);
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i], v = avail[k] || {};
+          lists.push({
+            key:        k,
+            title:      v.title || k,
+            group:      v.group || (v.lang ? 'regions' : 'misc'),
+            enabled:    sel.indexOf(k) !== -1,
+            entryCount: v.entryCount || v.entryUsedCount || 0,
+            off:        !!v.off,
+            supportURL: v.supportURL || v.homeURL || ''
+          });
+        }
+      } catch (e) {}
+
+      var blockedTotal = 0;
+      try { blockedTotal = (µ.localSettings && µ.localSettings.blockedRequestCount) || 0; } catch (e) {}
+
+      return { ok: true, lists: lists, blockedRequestCount: blockedTotal };
+    } catch (err) {
+      return { ok: false, reason: 'exception', message: String(err && err.message || err) };
+    }
+  })()`;
+  try { return await uboExec(code); }
+  catch (e) { return { ok: false, reason: 'exec-failed', message: e && e.message }; }
+}
+
+async function uboGetUserFilters() {
+  const code = `(async function(){
+    try {
+      var µ = globalThis['\\u00b5Block'] || globalThis['\\u00b5b'] || globalThis.uBlock;
+      if (!µ) return null;
+      if (typeof µ.loadUserFilters === 'function') {
+        var r = await µ.loadUserFilters();
+        return (r && (r.content || r.userFilters)) || '';
+      }
+      // Fallback path: some forks expose userFilters as a getter on µ
+      if (µ.userFiltersText != null) return µ.userFiltersText;
+      return null;
+    } catch (e) { return null; }
+  })()`;
+  try { return await uboExec(code); }
+  catch { return null; }
+}
+
+async function uboSetUserFilters(text) {
+  const safe = JSON.stringify(text == null ? '' : String(text));
+  const code = `(async function(){
+    try {
+      var µ = globalThis['\\u00b5Block'] || globalThis['\\u00b5b'] || globalThis.uBlock;
+      if (!µ) return false;
+      if (typeof µ.saveUserFilters === 'function') {
+        await µ.saveUserFilters(${safe});
+        // Re-arm the engine so new rules take effect immediately
+        if (typeof µ.loadFilterLists === 'function') { try { await µ.loadFilterLists(); } catch (e) {} }
+        return true;
+      }
+      return false;
+    } catch (e) { return false; }
+  })()`;
+  try { return !!(await uboExec(code)); }
+  catch { return false; }
+}
+
+async function uboToggleList(key, enable) {
+  const safeKey = JSON.stringify(String(key));
+  const safeOn  = JSON.stringify(!!enable);
+  const code = `(async function(){
+    try {
+      var µ = globalThis['\\u00b5Block'] || globalThis['\\u00b5b'] || globalThis.uBlock;
+      if (!µ) return false;
+      var key = ${safeKey};
+      var enable = ${safeOn};
+      var set = Array.isArray(µ.selectedFilterLists) ? µ.selectedFilterLists.slice() : [];
+      var idx = set.indexOf(key);
+      if (enable && idx === -1) set.push(key);
+      if (!enable && idx !== -1) set.splice(idx, 1);
+      µ.selectedFilterLists = set;
+      // Try a few persist paths — uBO's API has churned over the years
+      if (typeof µ.applyFilterListSelection === 'function') {
+        try { await µ.applyFilterListSelection({ toSelect: set }); } catch (e) {}
+      }
+      if (typeof µ.saveSelectedFilterLists === 'function') {
+        try { await µ.saveSelectedFilterLists(); } catch (e) {}
+      }
+      if (typeof µ.loadFilterLists === 'function') {
+        try { await µ.loadFilterLists(); } catch (e) {}
+      }
+      // Persist via chrome.storage as a final fallback
+      try { chrome.storage.local.set({ selectedFilterLists: set }); } catch (e) {}
+      return true;
+    } catch (e) { return false; }
+  })()`;
+  try { return !!(await uboExec(code)); }
+  catch { return false; }
+}
+
+// Aggregated state read by the dashboard. Returns:
+//   {
+//     engineSource: 'ublock-origin'|'ghostery'|'static'|'off',
+//     sessionBlockedCount, uboBlockedCount,
+//     adblockerStatus, uboState,
+//     lists: [...], listsError: string|null
+//   }
+ipcMain.handle('ubo-dash-get-state', async () => {
+  const out = {
+    engineSource:        adblockerStatus.enabled === false ? 'off' : (adblockerStatus.source || 'static'),
+    sessionBlockedCount: blockedCount,
+    uboBlockedCount:     null,
+    adblockerStatus,
+    uboState,
+    lists:               [],
+    listsError:          null
+  };
+  if (uboState.state === 'active') {
+    const probe = await uboReadState();
+    if (probe && probe.ok) {
+      out.lists = probe.lists || [];
+      out.uboBlockedCount = probe.blockedRequestCount != null ? probe.blockedRequestCount : null;
+    } else {
+      out.listsError = (probe && (probe.reason || probe.message)) || 'unknown';
+    }
+  }
+  return out;
+});
+
+ipcMain.handle('ubo-dash-toggle-list',      (_, key, enable) => uboToggleList(key, enable));
+ipcMain.handle('ubo-dash-get-user-filters', () => uboGetUserFilters());
+ipcMain.handle('ubo-dash-set-user-filters', (_, text) => uboSetUserFilters(text));
+ipcMain.handle('ubo-dash-recent-blocks',    () => recentBlocks);
 ipcMain.handle('check-update', async () => { await runUpdateCheck('manual'); return updateState; });
 ipcMain.on('install-update', () => autoUpdater.quitAndInstall(false, true));
 

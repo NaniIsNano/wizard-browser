@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ad Blocker — Wizard Browser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #181818;
+  --border: #222;
+  --text: #e5e5e5;
+  --text2: #888;
+  --accent: #7c3aed;
+  --accent2: #a855f7;
+  --green: #22c55e;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --blue: #3b82f6;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.4em;
+  font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  cursor: pointer;
+}
+
+.title {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.title-shield {
+  width: 18px;
+  height: 18px;
+  fill: var(--green);
+  vertical-align: -3px;
+  margin-right: 4px;
+}
+
+.section { margin-bottom: 28px; }
+
+.section-title {
+  font-weight: 600;
+  color: var(--accent2);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.75em;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+/* ── Status block ────────────────────────────────────────────────── */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.stat-label {
+  font-size: 0.7em;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text2);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #888;
+}
+
+.stat-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1.7em;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  line-height: 1;
+}
+
+.stat-sub {
+  font-size: 0.7em;
+  color: var(--text2);
+  margin-top: 6px;
+}
+
+.engine-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.7em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.engine-badge.ubo      { background: rgba(34, 197, 94, 0.12); color: var(--green);  border: 1px solid rgba(34, 197, 94, 0.3); }
+.engine-badge.ghostery { background: rgba(124, 58, 237, 0.12); color: var(--accent2); border: 1px solid rgba(124, 58, 237, 0.3); }
+.engine-badge.static   { background: rgba(245, 158, 11, 0.12); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+.engine-badge.off      { background: rgba(239, 68, 68, 0.12); color: var(--red);   border: 1px solid rgba(239, 68, 68, 0.3); }
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+.btn {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn:hover { background: var(--accent2); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.btn.ghost:hover { background: var(--surface2); color: var(--text); }
+
+.btn.danger {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+.btn.danger:hover { background: #2e0a0a; }
+
+/* ── Filter lists ────────────────────────────────────────────────── */
+.list-group { margin-bottom: 16px; }
+.list-group-title {
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text2);
+  margin: 14px 0 6px;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.list-info { flex: 1; min-width: 0; }
+.list-name {
+  font-size: 0.88em;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-meta {
+  font-size: 0.7em;
+  color: var(--text2);
+}
+
+.notice {
+  font-size: 0.8em;
+  color: var(--text2);
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+.notice.warn { color: var(--amber); border-color: rgba(245, 158, 11, 0.3); }
+
+/* Toggle (matches settings.html) */
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #333;
+  border-radius: 22px;
+  transition: 0.2s;
+  cursor: pointer;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--green); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+.toggle input:disabled + .toggle-slider { opacity: 0.4; cursor: not-allowed; }
+
+/* ── User filters textarea ───────────────────────────────────────── */
+.filter-editor {
+  width: 100%;
+  min-height: 200px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.82em;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+}
+.filter-editor:focus { border-color: var(--accent); }
+.filter-editor:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.editor-hint { font-size: 0.72em; color: var(--text2); margin-top: 8px; }
+
+/* ── Recent blocks log ───────────────────────────────────────────── */
+.log {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.78em;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.log-row {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #181818;
+  align-items: baseline;
+}
+.log-row:last-child { border-bottom: 0; }
+.log-row:hover { background: #161616; }
+.log-time { color: var(--text2); }
+.log-url {
+  color: var(--text);
+  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.log-host { color: var(--accent2); font-weight: 500; }
+.log-empty {
+  padding: 24px;
+  color: var(--text2);
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85em;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--green);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-weight: 500;
+  display: none;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.toast.show { display: block; }
+.toast.err { background: var(--red); }
+
+/* Scrollbar styling for the log */
+.log::-webkit-scrollbar { width: 8px; }
+.log::-webkit-scrollbar-track { background: var(--surface); }
+.log::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+.log::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <span class="logo" id="logo-home">Wizard</span>
+    <span class="title">
+      <svg class="title-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+      Ad Blocker
+    </span>
+  </div>
+
+  <!-- ── Status ─────────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Status</div>
+    <div class="card">
+      <div class="status-grid">
+        <div class="stat">
+          <div class="stat-label"><span class="dot" id="engine-dot"></span>Engine</div>
+          <div class="stat-value" id="engine-badge"><span class="engine-badge static">Loading…</span></div>
+          <div class="stat-sub" id="engine-sub">&nbsp;</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Blocked this session</div>
+          <div class="stat-value" id="stat-session">0</div>
+          <div class="stat-sub">requests since launch</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Blocked all-time</div>
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-sub" id="stat-total-sub">requires uBO</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Filter lists</div>
+          <div class="stat-value" id="stat-lists">—</div>
+          <div class="stat-sub" id="stat-lists-sub">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="btn-refresh">Refresh filter lists</button>
+        <button class="btn ghost" id="btn-classic">Open uBO's classic dashboard</button>
+        <button class="btn ghost" id="btn-logger">Open uBO's logger</button>
+        <button class="btn ghost" id="btn-popup">Open uBO popup</button>
+        <button class="btn ghost" id="btn-settings">Browser settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Filter lists ───────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Filter lists</div>
+    <div class="card" id="lists-card">
+      <div class="notice" id="lists-notice">Loading filter lists from uBlock Origin…</div>
+      <div id="lists-container" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ── My rules ───────────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">My rules</div>
+    <div class="card">
+      <div class="notice" id="rules-notice" style="margin-bottom: 12px;">Loading your custom filters…</div>
+      <textarea class="filter-editor" id="rules-editor" spellcheck="false" disabled placeholder="! Custom uBO filter rules — one per line&#10;! Example: ||tracker.example.com^"></textarea>
+      <div class="editor-hint">
+        Uses uBlock Origin's filter syntax (same as EasyList / ABP). Lines starting with <code>!</code> are comments.
+        Changes apply instantly to all tabs.
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="rules-save" disabled>Save rules</button>
+        <button class="btn ghost" id="rules-revert" disabled>Discard changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Recent blocks ──────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-title">Recent blocks <span style="color: var(--text2); text-transform: none; letter-spacing: 0; font-weight: 400;">(live)</span></div>
+    <div class="card" style="padding: 0;">
+      <div class="log" id="log">
+        <div class="log-empty">Waiting for blocked requests… browse a few sites and they'll show up here.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const wb = window.wizardBrowser;
+
+/* ── Toast ───────────────────────────────────────────────────────── */
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ── Format helpers ──────────────────────────────────────────────── */
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+}
+function fmtNum(n) {
+  if (n == null) return '—';
+  if (n < 1000) return String(n);
+  if (n < 1_000_000) return (n / 1000).toFixed(n < 10_000 ? 1 : 0) + 'k';
+  return (n / 1_000_000).toFixed(1) + 'M';
+}
+function fmtAge(ts) {
+  if (!ts) return 'never';
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60)    return s + 's ago';
+  if (s < 3600)  return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+/* ── Logo → home ─────────────────────────────────────────────────── */
+$('#logo-home').addEventListener('click', () => wb && wb.openHome && wb.openHome());
+
+/* ── Status rendering ────────────────────────────────────────────── */
+function renderStatus(s) {
+  if (!s) return;
+
+  // Engine badge
+  const badge = $('#engine-badge');
+  const dot   = $('#engine-dot');
+  const sub   = $('#engine-sub');
+  let engineLabel, engineClass, dotColor, subText;
+  if (s.adblockerStatus && s.adblockerStatus.enabled === false) {
+    engineLabel = 'Off'; engineClass = 'off'; dotColor = '#888';
+    subText = (s.adblockerStatus.message) || 'Tracker blocking disabled.';
+  } else if (s.engineSource === 'ublock-origin') {
+    engineLabel = 'uBlock Origin'; engineClass = 'ubo'; dotColor = '#22c55e';
+    subText = s.uboState && s.uboState.version ? 'v' + s.uboState.version : 'gorhill MV2 build';
+  } else if (s.engineSource === 'static') {
+    engineLabel = 'Static (offline)'; engineClass = 'static'; dotColor = '#f59e0b';
+    subText = 'Fallback blocklist — no network';
+  } else {
+    engineLabel = 'Ghostery'; engineClass = 'ghostery'; dotColor = '#a855f7';
+    subText = 'EasyList + EasyPrivacy + uBO unbreak + Peter Lowe\'s';
+  }
+  badge.innerHTML = '<span class="engine-badge ' + engineClass + '">' + engineLabel + '</span>';
+  dot.style.background = dotColor;
+  sub.textContent = subText;
+
+  $('#stat-session').textContent = fmtNum(s.sessionBlockedCount || 0);
+
+  if (s.uboBlockedCount != null) {
+    $('#stat-total').textContent = fmtNum(s.uboBlockedCount);
+    $('#stat-total-sub').textContent = 'lifetime (uBO counter)';
+  } else {
+    $('#stat-total').textContent = '—';
+    $('#stat-total-sub').textContent = s.engineSource === 'ublock-origin' ? 'uBO counter not yet ready' : 'requires uBO';
+  }
+
+  if (s.lists && s.lists.length) {
+    const enabled = s.lists.filter(l => l.enabled).length;
+    $('#stat-lists').textContent = enabled;
+    $('#stat-lists-sub').textContent = 'of ' + s.lists.length + ' available';
+  } else if (s.adblockerStatus && s.adblockerStatus.totalFilters) {
+    $('#stat-lists').textContent = fmtNum(s.adblockerStatus.totalFilters);
+    $('#stat-lists-sub').textContent = 'rules loaded';
+  } else {
+    $('#stat-lists').textContent = '—';
+    $('#stat-lists-sub').textContent = 'no data';
+  }
+
+  // uBO action buttons enabled only when uBO is the engine
+  const uboActive = s.engineSource === 'ublock-origin' && s.uboState && s.uboState.state === 'active';
+  $('#btn-classic').disabled = !uboActive;
+  $('#btn-logger').disabled  = !uboActive;
+  $('#btn-popup').disabled   = !uboActive;
+}
+
+function renderLists(state) {
+  const container = $('#lists-container');
+  const notice    = $('#lists-notice');
+  if (!state || state.engineSource !== 'ublock-origin') {
+    notice.textContent = 'Filter list management requires uBlock Origin. Currently using the ' +
+      (state && state.engineSource === 'ghostery' ? 'Ghostery filter engine' :
+       state && state.engineSource === 'static'   ? 'static fallback blocklist' : 'default engine') +
+      '. Install uBO from Settings → Privacy to enable per-list toggles.';
+    notice.classList.remove('warn');
+    notice.style.display = '';
+    container.style.display = 'none';
+    return;
+  }
+  if (!state.lists || !state.lists.length) {
+    notice.textContent = state.listsError
+      ? 'Couldn\'t read filter list configuration from uBO (' + state.listsError + '). Use the classic dashboard.'
+      : 'uBlock Origin is starting up — filter lists not yet loaded. Refresh in a moment.';
+    notice.classList.toggle('warn', !!state.listsError);
+    notice.style.display = '';
+    container.style.display = 'none';
+    return;
+  }
+
+  // Group by .group field; uBO uses 'ads' / 'privacy' / 'malware' / 'multipurpose' / 'annoyances' / 'regions' / 'custom'
+  const groups = {};
+  for (const l of state.lists) {
+    const g = l.group || 'misc';
+    (groups[g] = groups[g] || []).push(l);
+  }
+  const order = ['ads', 'privacy', 'malware', 'multipurpose', 'annoyances', 'regions', 'custom', 'misc'];
+  const groupTitles = {
+    ads:           'Ads',
+    privacy:       'Privacy',
+    malware:       'Malware domains',
+    multipurpose:  'Multipurpose',
+    annoyances:    'Annoyances',
+    regions:       'Regions, languages',
+    custom:        'Custom',
+    misc:          'Other'
+  };
+  const seen = new Set(order);
+  const finalOrder = order.concat(Object.keys(groups).filter(k => !seen.has(k)));
+
+  let html = '';
+  for (const g of finalOrder) {
+    if (!groups[g] || !groups[g].length) continue;
+    html += '<div class="list-group">';
+    html += '<div class="list-group-title">' + (groupTitles[g] || g) + '</div>';
+    for (const l of groups[g]) {
+      const entries = l.entryCount ? ' · ' + fmtNum(l.entryCount) + ' rules' : '';
+      const safeKey = l.key.replace(/"/g, '&quot;');
+      html += '<div class="list-row">'
+            +   '<div class="list-info">'
+            +     '<div class="list-name">' + escapeHtml(l.title || l.key) + '</div>'
+            +     '<div class="list-meta">' + escapeHtml(l.key) + entries + '</div>'
+            +   '</div>'
+            +   '<label class="toggle"><input type="checkbox" data-key="' + safeKey + '" '
+            +     (l.enabled ? 'checked' : '') + ' /><span class="toggle-slider"></span></label>'
+            + '</div>';
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+  container.style.display = '';
+  notice.style.display = 'none';
+
+  // Wire toggles
+  container.querySelectorAll('input[data-key]').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      const key = cb.dataset.key;
+      const enable = cb.checked;
+      cb.disabled = true;
+      try {
+        const ok = await wb.uboDashToggleList(key, enable);
+        if (!ok) {
+          cb.checked = !enable;
+          toast('Could not toggle list — uBO may not expose this API yet', true);
+        } else {
+          toast(enable ? 'Enabled: ' + key : 'Disabled: ' + key);
+        }
+      } catch (e) {
+        cb.checked = !enable;
+        toast('Toggle failed: ' + (e && e.message || 'unknown'), true);
+      } finally {
+        cb.disabled = false;
+      }
+    });
+  });
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+/* ── User filters editor ─────────────────────────────────────────── */
+let userFiltersOriginal = '';
+
+async function loadUserFilters(state) {
+  const editor  = $('#rules-editor');
+  const notice  = $('#rules-notice');
+  const saveBtn = $('#rules-save');
+  const revBtn  = $('#rules-revert');
+
+  if (!state || state.engineSource !== 'ublock-origin') {
+    notice.textContent = 'Custom filter rules require uBlock Origin. Switch to uBO in Settings → Privacy.';
+    notice.classList.remove('warn');
+    editor.disabled = true;
+    saveBtn.disabled = true;
+    revBtn.disabled = true;
+    editor.value = '';
+    return;
+  }
+
+  try {
+    const text = await wb.uboDashGetUserFilters();
+    if (text == null) throw new Error('null');
+    userFiltersOriginal = text || '';
+    editor.value = userFiltersOriginal;
+    editor.disabled = false;
+    notice.style.display = 'none';
+    saveBtn.disabled = true; // nothing changed yet
+    revBtn.disabled = true;
+  } catch (e) {
+    notice.textContent = 'Couldn\'t read user filters from uBO. The classic dashboard\'s "My filters" tab still works.';
+    notice.classList.add('warn');
+    editor.disabled = true;
+    saveBtn.disabled = true;
+    revBtn.disabled = true;
+  }
+}
+
+$('#rules-editor').addEventListener('input', () => {
+  const dirty = $('#rules-editor').value !== userFiltersOriginal;
+  $('#rules-save').disabled = !dirty;
+  $('#rules-revert').disabled = !dirty;
+});
+
+$('#rules-save').addEventListener('click', async () => {
+  const editor = $('#rules-editor');
+  const btn = $('#rules-save');
+  const text = editor.value;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const ok = await wb.uboDashSetUserFilters(text);
+    if (!ok) throw new Error('uBO refused save');
+    userFiltersOriginal = text;
+    $('#rules-revert').disabled = true;
+    toast('Custom filters saved');
+  } catch (e) {
+    toast('Save failed: ' + (e && e.message || 'unknown'), true);
+    btn.disabled = false;
+  } finally {
+    btn.textContent = 'Save rules';
+  }
+});
+
+$('#rules-revert').addEventListener('click', () => {
+  $('#rules-editor').value = userFiltersOriginal;
+  $('#rules-save').disabled = true;
+  $('#rules-revert').disabled = true;
+});
+
+/* ── Recent blocks log ───────────────────────────────────────────── */
+const LOG_MAX = 200;
+let logEntries = [];
+
+function renderLog() {
+  const el = $('#log');
+  if (!logEntries.length) {
+    el.innerHTML = '<div class="log-empty">Waiting for blocked requests… browse a few sites and they\'ll show up here.</div>';
+    return;
+  }
+  const html = logEntries.slice(0, LOG_MAX).map(e => {
+    const host = e.host || '(no host)';
+    const url  = e.url  || '';
+    const rest = url.length > host.length + 12 ? url.slice(url.indexOf(host) + host.length, host.length + 80) : '';
+    return '<div class="log-row">'
+         +   '<div class="log-time">' + fmtTime(e.ts) + '</div>'
+         +   '<div class="log-url"><span class="log-host">' + escapeHtml(host) + '</span>' + escapeHtml(rest) + '</div>'
+         + '</div>';
+  }).join('');
+  el.innerHTML = html;
+}
+
+function pushLog(entry) {
+  if (!entry) return;
+  logEntries.unshift(entry);
+  if (logEntries.length > LOG_MAX) logEntries.length = LOG_MAX;
+  renderLog();
+}
+
+/* ── Button wiring ───────────────────────────────────────────────── */
+$('#btn-refresh').addEventListener('click', async () => {
+  const btn = $('#btn-refresh');
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = 'Refreshing…';
+  try { await wb.refreshAdblocker(); toast('Filter lists refreshed'); }
+  catch (e) { toast('Refresh failed', true); }
+  finally   { btn.disabled = false; btn.textContent = orig; refreshAll(); }
+});
+
+$('#btn-classic').addEventListener('click', () => wb.openUboWindow && wb.openUboWindow('options'));
+$('#btn-logger').addEventListener('click',  () => wb.openUboWindow && wb.openUboWindow('logger'));
+$('#btn-popup').addEventListener('click',   () => wb.openUboWindow && wb.openUboWindow('popup'));
+$('#btn-settings').addEventListener('click', () => wb.openSettings && wb.openSettings());
+
+/* ── Refresh cycle ───────────────────────────────────────────────── */
+async function refreshAll() {
+  if (!wb || !wb.uboDashGetState) {
+    $('#engine-sub').textContent = 'IPC bridge unavailable';
+    return;
+  }
+  try {
+    const state = await wb.uboDashGetState();
+    renderStatus(state);
+    renderLists(state);
+    // Only reload user filters if we don't have unsaved changes
+    if ($('#rules-save').disabled) loadUserFilters(state);
+  } catch (e) {
+    $('#engine-sub').textContent = 'Failed to read state: ' + (e && e.message || 'unknown');
+  }
+}
+
+async function loadInitialAppearance() {
+  if (!wb || !wb.getSettings) return;
+  try {
+    const s = await wb.getSettings();
+    document.body.dataset.theme = s.theme || 'default';
+  } catch {}
+}
+
+/* ── Live event subscriptions ────────────────────────────────────── */
+if (wb && wb.onBlockedUpdate) {
+  // Reuse the existing toolbar counter signal for the live "session blocked"
+  // stat. The 5s polling loop handles the uBO lifetime counter so this stays
+  // a cheap DOM update on every block.
+  wb.onBlockedUpdate((count) => {
+    $('#stat-session').textContent = fmtNum(count || 0);
+  });
+}
+if (wb && wb.onRecentBlock) {
+  wb.onRecentBlock(pushLog);
+}
+if (wb && wb.onAdblockerStatus) {
+  wb.onAdblockerStatus(() => refreshAll());
+}
+if (wb && wb.onUboStatus) {
+  wb.onUboStatus(() => refreshAll());
+}
+
+/* ── Boot ────────────────────────────────────────────────────────── */
+(async () => {
+  await loadInitialAppearance();
+  await refreshAll();
+  // Pull the initial recent blocks ring buffer
+  if (wb && wb.uboDashGetRecentBlocks) {
+    try {
+      const initial = await wb.uboDashGetRecentBlocks();
+      logEntries = initial || [];
+      renderLog();
+    } catch {}
+  }
+})();
+
+// Periodic light refresh in case events get missed
+setInterval(refreshAll, 5000);
+</script>
+
+</body>
+</html>
