@@ -701,7 +701,11 @@ body[data-layout="win7"] #url-bar { height: 26px; padding: 0 10px; font-size: 12
   font-weight: 500;
   color: var(--shield);
   user-select: none;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.05s;
 }
+#shield:hover  { filter: brightness(1.15); }
+#shield:active { transform: scale(0.97); }
 #shield svg { width: 14px; height: 14px; fill: var(--shield); }
 body[data-layout="win7"] #shield { height: 26px; font-size: 11px; }
 
@@ -1019,7 +1023,7 @@ webview.active { display: flex; }
     <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
   </button>
   <input type="text" id="url-bar" placeholder="Search the web or enter a URL..." spellcheck="false" />
-  <div id="shield" title="Trackers blocked this session">
+  <div id="shield" title="Open Ad Blocker dashboard (trackers blocked this session)">
     <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
     <span id="blocked-count">0</span>
   </div>
@@ -1094,9 +1098,10 @@ webview.active { display: flex; }
 </div>
 
 <script>
-const HOME_URL     = new URL('search.html',     location.href).href;
-const SETTINGS_URL = new URL('settings.html',   location.href).href;
-const EXT_URL      = new URL('extensions.html', location.href).href;
+const HOME_URL     = new URL('search.html',       location.href).href;
+const SETTINGS_URL = new URL('settings.html',     location.href).href;
+const EXT_URL      = new URL('extensions.html',   location.href).href;
+const UBO_DASH_URL = new URL('ubo-dashboard.html', location.href).href;
 
 const $ = (s) => document.querySelector(s);
 const tabBar    = $('#tab-bar');
@@ -1369,6 +1374,7 @@ $('#btn-reload').addEventListener('click', () => { const wv = activeView(); try 
 $('#btn-home').addEventListener('click',   () => { const wv = activeView(); wv && wv.loadURL(HOME_URL); });
 $('#settings-btn').addEventListener('click', () => { const wv = activeView(); wv && wv.loadURL(SETTINGS_URL); });
 $('#ext-btn').addEventListener('click',      () => { const wv = activeView(); wv && wv.loadURL(EXT_URL); });
+$('#shield').addEventListener('click',       () => { const wv = activeView(); wv && wv.loadURL(UBO_DASH_URL); });
 
 $('#clear-btn').addEventListener('click', async () => {
   if (window.wizardBrowser) await window.wizardBrowser.clearAllData();

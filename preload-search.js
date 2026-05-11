@@ -46,6 +46,15 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   openUboWindow:      (which) => ipcRenderer.invoke('open-ubo-window', which),
   onUboStatus:        (cb) => ipcRenderer.on('ubo-status', (_, data) => cb(data)),
 
+  // ─── Wizard-native uBO dashboard (ubo-dashboard.html) ───
+  uboDashGetState:        () => ipcRenderer.invoke('ubo-dash-get-state'),
+  uboDashToggleList:      (key, enable) => ipcRenderer.invoke('ubo-dash-toggle-list', key, enable),
+  uboDashGetUserFilters:  () => ipcRenderer.invoke('ubo-dash-get-user-filters'),
+  uboDashSetUserFilters:  (text) => ipcRenderer.invoke('ubo-dash-set-user-filters', text),
+  uboDashGetRecentBlocks: () => ipcRenderer.invoke('ubo-dash-recent-blocks'),
+  onRecentBlock:          (cb) => ipcRenderer.on('recent-block', (_, entry) => cb(entry)),
+  onBlockedUpdate:        (cb) => ipcRenderer.on('blocked-update', (_, count) => cb(count)),
+
   // ─── WizardScript management (used by extensions.html) ───
   extList:                () => ipcRenderer.invoke('ext-list'),
   extToggle:              (id) => ipcRenderer.invoke('ext-toggle', id),
