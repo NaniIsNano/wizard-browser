@@ -1530,9 +1530,10 @@ if (window.wizardBrowser.onSearchSelection) {
 if (window.wizardBrowser.onNavigateShell) {
   window.wizardBrowser.onNavigateShell((where) => {
     const wv = activeView(); if (!wv) return;
-    if (where === 'settings') wv.loadURL(SETTINGS_URL);
-    else if (where === 'home') wv.loadURL(HOME_URL);
-    else if (where === 'newtab') newTab();
+    if (where === 'settings')      wv.loadURL(SETTINGS_URL);
+    else if (where === 'home')     wv.loadURL(HOME_URL);
+    else if (where === 'newtab')   newTab();
+    else if (where === 'ubo')      wv.loadURL(UBO_DASH_URL);
   });
 }
 if (window.wizardBrowser.onNavigateShellUrl) {
@@ -1748,10 +1749,19 @@ const WizardRuntime = (() => {
         if (typeof cb !== 'function' || !wb.onUboStatus) return;
         wb.onUboStatus(safeCb(cb));
       },
-      // Open uBO's own popup HTML in a real BrowserWindow (chrome.* APIs
-      // only fully work in BrowserWindow contexts — webview tabs can't
-      // talk to the extension's background script, so the page renders
-      // blank). Returns false if uBO isn't active.
+      // Open the Wizard-native ad blocker dashboard in the active tab.
+      // This is the canonical adblocker UI — preferred over openUboOptions
+      // because uBO's own dashboard.html doesn't fully render under
+      // Electron's extension host.
+      openDashboard:    () => {
+        if (wb.openUboDashboard) { wb.openUboDashboard(); return true; }
+        return false;
+      },
+      // Legacy: open uBO's own chrome-extension://-hosted pages in a
+      // real BrowserWindow. KNOWN BROKEN — uBO's dashboard.html depends
+      // on chrome.runtime messaging that Electron only partially wires
+      // through, so these pages render blank. Kept for extension authors
+      // who want to try them anyway. Prefer openDashboard() above.
       openUboPopup:     async () => {
         if (!wb.openUboWindow) return false;
         try { return !!(await wb.openUboWindow('popup')); } catch { return false; }

@@ -388,9 +388,6 @@ body {
 
       <div class="btn-row">
         <button class="btn" id="btn-refresh">Refresh filter lists</button>
-        <button class="btn ghost" id="btn-classic">Open uBO's classic dashboard</button>
-        <button class="btn ghost" id="btn-logger">Open uBO's logger</button>
-        <button class="btn ghost" id="btn-popup">Open uBO popup</button>
         <button class="btn ghost" id="btn-settings">Browser settings</button>
       </div>
     </div>
@@ -522,11 +519,6 @@ function renderStatus(s) {
     $('#stat-lists-sub').textContent = 'no data';
   }
 
-  // uBO action buttons enabled only when uBO is the engine
-  const uboActive = s.engineSource === 'ublock-origin' && s.uboState && s.uboState.state === 'active';
-  $('#btn-classic').disabled = !uboActive;
-  $('#btn-logger').disabled  = !uboActive;
-  $('#btn-popup').disabled   = !uboActive;
 }
 
 function renderLists(state) {
@@ -734,9 +726,6 @@ $('#btn-refresh').addEventListener('click', async () => {
   finally   { btn.disabled = false; btn.textContent = orig; refreshAll(); }
 });
 
-$('#btn-classic').addEventListener('click', () => wb.openUboWindow && wb.openUboWindow('options'));
-$('#btn-logger').addEventListener('click',  () => wb.openUboWindow && wb.openUboWindow('logger'));
-$('#btn-popup').addEventListener('click',   () => wb.openUboWindow && wb.openUboWindow('popup'));
 $('#btn-settings').addEventListener('click', () => wb.openSettings && wb.openSettings());
 
 /* ── Refresh cycle ───────────────────────────────────────────────── */

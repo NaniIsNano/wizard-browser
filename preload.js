@@ -53,6 +53,7 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   removeUbo:          () => ipcRenderer.invoke('remove-ubo'),
   checkUboUpdate:     () => ipcRenderer.invoke('check-ubo-update'),
   openUboWindow:      (which) => ipcRenderer.invoke('open-ubo-window', which),
+  openUboDashboard:   () => ipcRenderer.send('open-ubo-dashboard'),
   onUboStatus:        (cb) => ipcRenderer.on('ubo-status', (_, data) => cb(data)),
 
   // Browser-shell events
