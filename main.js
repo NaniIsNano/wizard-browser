@@ -986,9 +986,10 @@ ipcMain.handle('skip-pin-setup',   () => { pinData.asked = true; saveJSON(pinPat
 
 // Webview navigation requested from inside the inner page (search/settings).
 // Forward to the shell so it can drive `<webview>.loadURL(...)`.
-ipcMain.on('open-settings', () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'settings'); });
-ipcMain.on('open-home',     () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'home'); });
-ipcMain.on('open-newtab',   () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'newtab'); });
+ipcMain.on('open-settings',      () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'settings'); });
+ipcMain.on('open-home',          () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'home'); });
+ipcMain.on('open-newtab',        () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'newtab'); });
+ipcMain.on('open-ubo-dashboard', () => { if (mainWindow) mainWindow.webContents.send('navigate-shell', 'ubo'); });
 
 // Open a URL in a new browser tab (used by inner pages e.g. Support button).
 ipcMain.on('open-newtab-url', (_, url) => {

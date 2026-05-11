@@ -13,24 +13,17 @@ const btn = wizard.ui.addButton({
   icon: '🛡',
   tooltip: 'Wizard Adblocker',
   onClick: async () => {
-    const ubo = cachedUbo || (wizard.adblock.getUboStatus
-      ? await wizard.adblock.getUboStatus()
-      : { state: 'idle' });
-    // If the real uBO is loaded, jump to its UI. Prefer the dashboard
-    // (`options_ui` page) because it's designed for full-tab rendering
-    // — uBO's popup-fenix.html depends on a popup-window context with
-    // a parent active tab, which doesn't exist when it IS the tab,
-    // so it renders blank.
-    if (ubo && ubo.state === 'active') {
-      if (wizard.adblock.openUboOptions) {
-        const opened = await wizard.adblock.openUboOptions();
-        if (opened) return;
-      }
-      if (wizard.adblock.openUboPopup) {
-        const opened = await wizard.adblock.openUboPopup();
-        if (opened) return;
-      }
+    // Always route to the Wizard-native dashboard. The previous build
+    // tried to open uBO's own dashboard.html, which renders blank under
+    // Electron because chrome.runtime messaging isn't fully wired. Our
+    // dashboard talks to the same engine via main-process IPC.
+    if (wizard.adblock.openDashboard) {
+      const opened = wizard.adblock.openDashboard();
+      if (opened) return;
     }
+    // Fallback (very old shell that doesn't know openDashboard yet) —
+    // surface a notification with the live state instead of trying to
+    // open a window that won't render.
     const s = cachedStatus || await wizard.adblock.getStatus();
     if (!s.enabled) {
       wizard.ui.notify('Tracker blocking is OFF. Turn it on in Settings → Privacy.', { type: 'warn', duration: 4000 });
@@ -43,7 +36,7 @@ const btn = wizard.ui.addButton({
     const blocked = await wizard.adblock.getBlockedCount();
     const filters = s.totalFilters ? s.totalFilters.toLocaleString() : '—';
     const engineName = s.source === 'ublock-origin'
-      ? "uBlock Origin"
+      ? 'uBlock Origin'
       : 'Wizard Adblocker (Ghostery engine)';
     wizard.ui.notify(
       `${engineName} · ${filters} rules · ${blocked.toLocaleString()} blocked this session`,
