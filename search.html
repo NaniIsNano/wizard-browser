@@ -1630,7 +1630,13 @@ function tryCalculator(raw) {
   // Strip a leading "= " or "calc " prefix some people type
   let expr = term.replace(/^=\s*/, '').replace(/^calc(?:ulate)?\s+/i, '').trim();
   // Thousands separators inside numbers: 1,234.5 -> 1234.5
-  expr = expr.replace(/(\d),(?=\d{3}\b)/g, '$1');
+  expr = expr.replace(/(\d),(?=\d{3}(?!\d))/g, '$1');
+  // Friendly operator symbols people actually type:
+  //   × · → *   ÷ → /   − (U+2212) → -
+  expr = expr.replace(/[×·]/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+  // "x" / "X" as multiplication, but ONLY between number-ish things
+  // (5x10, 2 x 2, (2+3)x4) so "xbox 360" / "2x4 lumber" stay searches.
+  expr = expr.replace(/(?<=[\d).])\s*[xX]\s*(?=[\d(.])/g, '*');
   // Must contain a digit, OR be a known-function call (sqrt(pi), ln(e))
   if (!/\d/.test(expr) &&
       !/\b(sqrt|cbrt|abs|round|floor|ceil|ln|log|log2|log10|exp|sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sign|trunc)\s*\(/i.test(expr)) return null;
