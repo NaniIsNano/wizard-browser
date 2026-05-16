@@ -709,6 +709,88 @@ body[data-layout="win7"] #url-bar { height: 26px; padding: 0 10px; font-size: 12
 #shield svg { width: 14px; height: 14px; fill: var(--shield); }
 body[data-layout="win7"] #shield { height: 26px; font-size: 11px; }
 
+/* ── Padlock (site info & permissions) ── */
+#padlock {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 32px; flex-shrink: 0;
+  margin-right: -2px;
+  background: none; border: none; cursor: pointer;
+  border-radius: var(--radius);
+  transition: background 0.12s;
+}
+#padlock:hover { background: rgba(255,255,255,0.07); }
+#padlock svg { width: 15px; height: 15px; }
+#padlock[data-state="secure"]   svg { fill: #22c55e; }
+#padlock[data-state="insecure"] svg { fill: #f59e0b; }
+#padlock[data-state="internal"] svg { fill: var(--text2); }
+body[data-layout="win7"] #padlock { height: 26px; }
+
+#site-panel {
+  display: none;
+  position: fixed;
+  top: 44px; left: 12px;
+  width: 312px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 1200;
+  overflow: hidden;
+  font-size: 13px;
+}
+#site-panel.show { display: block; }
+#sp-conn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+#sp-conn-icon { width: 18px; height: 18px; flex-shrink: 0; }
+#site-panel[data-state="secure"]   #sp-conn-icon { fill: #22c55e; }
+#site-panel[data-state="insecure"] #sp-conn-icon { fill: #f59e0b; }
+#site-panel[data-state="internal"] #sp-conn-icon { fill: var(--text2); }
+#sp-conn-title { font-weight: 600; color: var(--text); }
+#sp-conn-host { font-size: 11px; color: var(--text2); word-break: break-all; }
+#sp-body { padding: 6px 0 10px; }
+#site-panel[data-state="internal"] #sp-body { display: none; }
+#sp-internal { display: none; padding: 16px; color: var(--text2); font-size: 12px; }
+#site-panel[data-state="internal"] #sp-internal { display: block; }
+.sp-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 16px;
+}
+.sp-label { color: var(--text); display: flex; flex-direction: column; }
+.sp-sub { font-size: 11px; color: var(--text2); font-weight: 400; }
+.sp-sec {
+  padding: 10px 16px 4px; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.6px; color: var(--text2);
+}
+.sp-sel {
+  background: var(--bg, #0a0a0a); color: var(--text);
+  border: 1px solid var(--input-border); border-radius: 6px;
+  padding: 4px 8px; font-size: 12px; cursor: pointer; outline: none;
+}
+.sp-toggle { position: relative; width: 38px; height: 20px; flex-shrink: 0; }
+.sp-toggle input { opacity: 0; width: 0; height: 0; }
+.sp-slider {
+  position: absolute; inset: 0; cursor: pointer;
+  background: #444; border-radius: 20px; transition: 0.18s;
+}
+.sp-slider::before {
+  content: ''; position: absolute; width: 14px; height: 14px;
+  left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.18s;
+}
+.sp-toggle input:checked + .sp-slider { background: #22c55e; }
+.sp-toggle input:checked + .sp-slider::before { transform: translateX(18px); }
+#sp-reset {
+  display: block; margin: 8px 16px 4px; padding: 7px 12px;
+  width: calc(100% - 32px);
+  background: transparent; color: var(--danger);
+  border: 1px solid var(--danger); border-radius: 7px;
+  font-size: 12px; cursor: pointer; transition: background 0.12s;
+}
+#sp-reset:hover { background: rgba(239,68,68,0.12); }
+#sp-note { padding: 8px 16px 4px; font-size: 11px; color: var(--text2); }
+
 .toolbar-btn {
   display: flex;
   align-items: center;
@@ -1022,6 +1104,9 @@ webview.active { display: flex; }
   <button class="nav-btn" id="btn-home" title="Home">
     <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
   </button>
+  <button id="padlock" title="Site information & permissions" data-state="internal">
+    <svg id="padlock-icon" viewBox="0 0 24 24"></svg>
+  </button>
   <input type="text" id="url-bar" placeholder="Search the web or enter a URL..." spellcheck="false" />
   <div id="shield" title="Open Ad Blocker dashboard (trackers blocked this session)">
     <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
@@ -1073,6 +1158,38 @@ webview.active { display: flex; }
   <div id="download-panel">
     <div id="dl-header"><span>Downloads</span><button id="dl-close">&times;</button></div>
     <div id="dl-list"></div>
+  </div>
+
+  <div id="site-panel">
+    <div id="sp-conn">
+      <svg id="sp-conn-icon" viewBox="0 0 24 24"></svg>
+      <div>
+        <div id="sp-conn-title">—</div>
+        <div id="sp-conn-host"></div>
+      </div>
+    </div>
+    <div id="sp-body">
+      <div class="sp-row">
+        <div class="sp-label">JavaScript<span class="sp-sub">Run scripts on this site</span></div>
+        <label class="sp-toggle"><input type="checkbox" id="sp-js"><span class="sp-slider"></span></label>
+      </div>
+      <div class="sp-sec">Permissions</div>
+      <div class="sp-row">
+        <div class="sp-label">Location</div>
+        <select class="sp-sel" id="sp-geolocation"><option value="block">Block</option><option value="allow">Allow</option></select>
+      </div>
+      <div class="sp-row">
+        <div class="sp-label">Camera &amp; Microphone</div>
+        <select class="sp-sel" id="sp-media"><option value="block">Block</option><option value="allow">Allow</option></select>
+      </div>
+      <div class="sp-row">
+        <div class="sp-label">Notifications</div>
+        <select class="sp-sel" id="sp-notifications"><option value="block">Block</option><option value="allow">Allow</option></select>
+      </div>
+      <button id="sp-reset">Reset for this site</button>
+      <div id="sp-note">Changes to JavaScript reload the page.</div>
+    </div>
+    <div id="sp-internal">Site settings aren't available for internal&nbsp;/&nbsp;local pages.</div>
   </div>
 </div>
 
@@ -1172,6 +1289,8 @@ function createWebview(initialUrl) {
       urlBar.value = e.url.startsWith('file://') ? '' : e.url;
       $('#onion-banner').classList.remove('show');
       updateNav();
+      refreshPadlock();
+      closeSitePanel();
       // WizardScript: fire onNavigate for extensions
       try { WizardRuntime.fireNavigate(e.url); } catch {}
     }
@@ -1193,6 +1312,7 @@ function createWebview(initialUrl) {
   wv.addEventListener('dom-ready', () => {
     if (isActive(wv)) {
       updateNav();
+      refreshPadlock();
       try {
         const u = wv.getURL();
         if (u && !u.startsWith('file://')) urlBar.value = u;
@@ -1235,6 +1355,8 @@ function activateTab(id) {
   if (t) {
     try { urlBar.value = t.wv.getURL().startsWith('file://') ? '' : t.wv.getURL(); } catch {}
     updateNav();
+    refreshPadlock();
+    closeSitePanel();
   }
 }
 
@@ -1333,6 +1455,109 @@ tabCtx.addEventListener('click', (e) => {
 document.addEventListener('click', () => { if (tabCtx.classList.contains('show')) { tabCtx.classList.remove('show'); ctxTabId = null; } });
 
 function activeView() { const t = tabs.find(x => x.id === activeTabId); return t ? t.wv : null; }
+
+// ─────────── Padlock: site info & permissions ───────────
+const PAD_ICONS = {
+  secure:   '<path d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm-3 8V6a3 3 0 016 0v3H9z"/>',
+  insecure: '<path d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm0 2a3 3 0 013 3v3h-2V6a1 1 0 00-2 0v3H9V6a3 3 0 013-3zm0 10a1.5 1.5 0 011 2.6V18a1 1 0 01-2 0v-2.4A1.5 1.5 0 0112 13z"/>',
+  internal: '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>'
+};
+const sitePanel = $('#site-panel');
+const padlockEl = $('#padlock');
+let sitePanelOrigin = null;
+
+function siteStateFor(url) {
+  if (!url || /^(file:|about:|chrome:|data:)/.test(url) || url.startsWith(location.origin)) return 'internal';
+  if (/^https:\/\//i.test(url)) return 'secure';
+  if (/^http:\/\//i.test(url)) return 'insecure';
+  return 'internal';
+}
+function refreshPadlock() {
+  const wv = activeView();
+  let url = '';
+  try { url = wv ? wv.getURL() : ''; } catch {}
+  const st = siteStateFor(url);
+  padlockEl.dataset.state = st;
+  $('#padlock-icon').innerHTML = PAD_ICONS[st];
+  padlockEl.title = st === 'secure' ? 'Connection is secure — site info & permissions'
+                  : st === 'insecure' ? 'Connection is not secure — site info & permissions'
+                  : 'Internal page';
+}
+
+async function openSitePanel() {
+  const wv = activeView();
+  let url = '';
+  try { url = wv ? wv.getURL() : ''; } catch {}
+  const st = siteStateFor(url);
+  sitePanel.dataset.state = st;
+  $('#sp-conn-icon').innerHTML = PAD_ICONS[st];
+  $('#sp-conn-title').textContent = st === 'secure' ? 'Connection is secure'
+                                  : st === 'insecure' ? 'Connection is not secure'
+                                  : 'Internal page';
+  let host = '';
+  try { host = new URL(url).host; } catch {}
+  $('#sp-conn-host').textContent = host;
+
+  if (st !== 'internal' && window.wizardBrowser && window.wizardBrowser.getSiteSettings) {
+    try {
+      const { origin, settings } = await window.wizardBrowser.getSiteSettings(url);
+      sitePanelOrigin = origin;
+      $('#sp-js').checked = settings.javascript === 'on';
+      $('#sp-geolocation').value = settings.geolocation;
+      $('#sp-media').value = settings.media;
+      $('#sp-notifications').value = settings.notifications;
+    } catch { sitePanelOrigin = null; }
+  } else {
+    sitePanelOrigin = null;
+  }
+
+  // Anchor under the padlock
+  const r = padlockEl.getBoundingClientRect();
+  sitePanel.style.left = Math.max(8, Math.round(r.left)) + 'px';
+  sitePanel.style.top  = Math.round(r.bottom + 6) + 'px';
+  sitePanel.classList.add('show');
+}
+function closeSitePanel() { sitePanel.classList.remove('show'); }
+
+padlockEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (sitePanel.classList.contains('show')) closeSitePanel();
+  else openSitePanel();
+});
+document.addEventListener('click', (e) => {
+  if (sitePanel.classList.contains('show') && !sitePanel.contains(e.target) && e.target !== padlockEl && !padlockEl.contains(e.target)) {
+    closeSitePanel();
+  }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSitePanel(); });
+
+async function applySiteSetting(key, value) {
+  const wv = activeView();
+  let url = '';
+  try { url = wv ? wv.getURL() : ''; } catch {}
+  if (!url || !window.wizardBrowser || !window.wizardBrowser.setSiteSetting) return;
+  try {
+    const r = await window.wizardBrowser.setSiteSetting(url, key, value);
+    if (r && r.ok && key === 'javascript' && wv) {
+      try { wv.reload(); } catch {}   // CSP only applies on the next load
+    }
+  } catch {}
+}
+$('#sp-js').addEventListener('change', (e) => applySiteSetting('javascript', e.target.checked ? 'on' : 'off'));
+$('#sp-geolocation').addEventListener('change', (e) => applySiteSetting('geolocation', e.target.value));
+$('#sp-media').addEventListener('change', (e) => applySiteSetting('media', e.target.value));
+$('#sp-notifications').addEventListener('change', (e) => applySiteSetting('notifications', e.target.value));
+$('#sp-reset').addEventListener('click', async () => {
+  const wv = activeView();
+  let url = '';
+  try { url = wv ? wv.getURL() : ''; } catch {}
+  if (!url || !window.wizardBrowser || !window.wizardBrowser.clearSiteSettings) return;
+  try {
+    await window.wizardBrowser.clearSiteSettings(url);
+    await openSitePanel();          // repopulate with defaults
+    if (wv) try { wv.reload(); } catch {}
+  } catch {}
+});
 
 function navigate(input) {
   const target = (input || '').trim();
@@ -1841,6 +2066,13 @@ const WizardRuntime = (() => {
 loadInitialAppearance();
 WizardRuntime.reload();
 newTab();
+refreshPadlock();
+// Keep the open panel in sync if settings change elsewhere (e.g. another tab)
+if (window.wizardBrowser && window.wizardBrowser.onSiteSettingsChanged) {
+  window.wizardBrowser.onSiteSettingsChanged(({ origin }) => {
+    if (sitePanel.classList.contains('show') && origin && origin === sitePanelOrigin) openSitePanel();
+  });
+}
 </script>
 </body>
 </html>
