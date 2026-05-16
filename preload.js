@@ -77,5 +77,9 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   extPrivacyIsTrackerBlocked: (d) => ipcRenderer.invoke('ext-privacy-isTrackerBlocked', d),
   extPrivacyGetBlockedCount: ()   => ipcRenderer.invoke('ext-privacy-getBlockedCount'),
   extUiGetTheme:         ()       => ipcRenderer.invoke('ext-ui-getTheme'),
-  onExtensionsChanged:   (cb)     => ipcRenderer.on('extensions-changed', () => cb())
+  onExtensionsChanged:   (cb)     => ipcRenderer.on('extensions-changed', () => cb()),
+
+  // ─── Extension Store (Settings → Extensions → Store) ───
+  storeList:    () => ipcRenderer.invoke('store-list'),
+  storeInstall: (fileUrl, manifestData) => ipcRenderer.invoke('store-install', fileUrl, manifestData)
 });

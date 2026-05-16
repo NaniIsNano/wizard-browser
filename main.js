@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, session, Menu, clipboard, shell, webContent
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
+const { SUPABASE_URL, SUPABASE_ANON } = require('./config');
 
 // Built-in adblocker (uBO / EasyList / EasyPrivacy / Peter Lowe's filter
 // engine) — same matching engine that powers Ghostery, used by many
@@ -1177,6 +1178,189 @@ ipcMain.handle('ext-install-from-folder', async () => {
   extensions = loadExtensions();
   broadcastExtensionsChanged();
   return { ok: true, id };
+});
+
+// =====================================================================
+// Extension Store — browse + install from the live store at
+// wizardextensionstore.netlify.app (Supabase-backed). Config (URL +
+// publishable anon key) lives in ./config.js, not hardcoded here.
+//
+// SECURITY: everything below the network boundary is treated as hostile.
+// The store does moderation, but the install path is defense-in-depth:
+//   - http(s)-only file URLs
+//   - compressed + uncompressed size caps (zip-bomb guard)
+//   - file-count cap
+//   - per-entry zip-slip validation (no abs paths / .. / backslashes /
+//     drive letters; every target must resolve inside the ext dir)
+//   - manifest required-field validation
+//   - builtIn / _disabled stripped from any submitted manifest
+//   - manifest.script must be a safe relative path that actually exists
+// =====================================================================
+
+const STORE_MAX_BYTES = 10 * 1024 * 1024;  // 10 MB (compressed + uncompressed)
+const STORE_MAX_FILES = 100;
+
+// List live extensions from the store. RLS only returns status='live'.
+ipcMain.handle('store-list', async () => {
+  try {
+    const res = await new Promise((resolve, reject) => {
+      const https = require('https');
+      const url = `${SUPABASE_URL}/rest/v1/extensions`
+        + `?status=eq.live&order=created_at.desc`
+        + `&select=id,name,version,description,permissions,file_url,installs,icon_url,profiles(username,verified)`;
+      const req = https.get(url, {
+        headers: {
+          'apikey':        SUPABASE_ANON,
+          'Authorization': 'Bearer ' + SUPABASE_ANON,
+          'Accept':        'application/json'
+        },
+        timeout: 10000
+      }, (r) => {
+        let data = '';
+        r.on('data', c => data += c);
+        r.on('end', () => {
+          try { resolve(JSON.parse(data)); } catch { resolve([]); }
+        });
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    });
+    return Array.isArray(res) ? res : [];
+  } catch (e) {
+    return [];
+  }
+});
+
+// Download + install an extension package (.wizext = zip) by file_url.
+ipcMain.handle('store-install', async (_, fileUrl, manifestData) => {
+  let dest = null;
+  try {
+    if (!fileUrl || typeof fileUrl !== 'string') {
+      return { ok: false, error: 'Missing file URL' };
+    }
+    let parsed;
+    try { parsed = new URL(fileUrl); }
+    catch { return { ok: false, error: 'Malformed file URL' }; }
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return { ok: false, error: 'Refusing non-http(s) file URL' };
+    }
+    if (!manifestData || !manifestData.name || !manifestData.version) {
+      return { ok: false, error: 'Invalid extension metadata' };
+    }
+
+    const buf = await httpGet(fileUrl);
+    if (!buf || !buf.length) return { ok: false, error: 'Empty download' };
+    if (buf.length > STORE_MAX_BYTES) {
+      return { ok: false, error: 'Package exceeds 10MB' };
+    }
+
+    const AdmZip = require('adm-zip');
+    let zip, entries;
+    try {
+      zip = new AdmZip(buf);
+      entries = zip.getEntries();
+    } catch {
+      return { ok: false, error: 'Not a valid .wizext archive' };
+    }
+    if (!entries.length) return { ok: false, error: 'Empty archive' };
+
+    const id = slugifyId(manifestData.name, manifestData.version);
+    if (!id) return { ok: false, error: 'Could not derive a safe extension id' };
+    dest = path.join(extensionsDir, id);
+    const destResolved = path.resolve(dest);
+
+    // ── Validation pass: zip-slip + size + count. No writes yet. ──
+    let fileCount = 0;
+    let totalBytes = 0;
+    for (const e of entries) {
+      const name = e.entryName;
+      if (typeof name !== 'string' || !name) {
+        return { ok: false, error: 'Archive contains an unnamed entry' };
+      }
+      // Reject absolute paths, drive letters, backslashes, parent refs.
+      if (path.isAbsolute(name)
+       || /^[a-zA-Z]:/.test(name)
+       || name.includes('\\')
+       || name.split('/').includes('..')) {
+        return { ok: false, error: 'Unsafe path in archive: ' + name };
+      }
+      const target = path.resolve(destResolved, name);
+      if (target !== destResolved && !target.startsWith(destResolved + path.sep)) {
+        return { ok: false, error: 'Archive entry escapes extension dir: ' + name };
+      }
+      if (!e.isDirectory) {
+        fileCount++;
+        if (fileCount > STORE_MAX_FILES) {
+          return { ok: false, error: 'Archive has too many files (>' + STORE_MAX_FILES + ')' };
+        }
+        totalBytes += (e.header && e.header.size) || 0;
+        if (totalBytes > STORE_MAX_BYTES) {
+          return { ok: false, error: 'Extracted size exceeds 10MB (zip bomb?)' };
+        }
+      }
+    }
+
+    // ── Safe to extract: write entry-by-entry into dest ──
+    if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+    fs.mkdirSync(dest, { recursive: true });
+    for (const e of entries) {
+      const target = path.join(dest, e.entryName);
+      if (e.isDirectory) { fs.mkdirSync(target, { recursive: true }); continue; }
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, e.getData());
+    }
+
+    // ── Manifest validation ──
+    const manifestPath = path.join(dest, 'wizard.json');
+    if (!fs.existsSync(manifestPath)) {
+      fs.rmSync(dest, { recursive: true, force: true });
+      return { ok: false, error: 'No wizard.json in extension package' };
+    }
+    let m;
+    try { m = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')); }
+    catch {
+      fs.rmSync(dest, { recursive: true, force: true });
+      return { ok: false, error: 'wizard.json is not valid JSON' };
+    }
+
+    // Strip privilege-escalation flags from anything off the wire. A
+    // store package must never masquerade as a built-in extension
+    // (built-ins can't be uninstalled and get auto-re-extracted).
+    delete m.builtIn;
+    delete m._disabled;
+
+    const missing = ['name', 'version', 'script', 'permissions']
+      .filter(k => m[k] === undefined || m[k] === null || m[k] === '');
+    if (missing.length) {
+      fs.rmSync(dest, { recursive: true, force: true });
+      return { ok: false, error: 'Manifest missing required field(s): ' + missing.join(', ') };
+    }
+    if (!Array.isArray(m.permissions)) {
+      fs.rmSync(dest, { recursive: true, force: true });
+      return { ok: false, error: 'Manifest "permissions" must be an array' };
+    }
+    if (typeof m.script !== 'string'
+     || path.isAbsolute(m.script)
+     || m.script.includes('\\')
+     || m.script.split('/').includes('..')) {
+      fs.rmSync(dest, { recursive: true, force: true });
+      return { ok: false, error: 'Manifest "script" path is unsafe' };
+    }
+    const scriptPath = path.resolve(dest, m.script);
+    if (!scriptPath.startsWith(destResolved + path.sep) || !fs.existsSync(scriptPath)) {
+      fs.rmSync(dest, { recursive: true, force: true });
+      return { ok: false, error: 'Manifest "script" file not found in package: ' + m.script };
+    }
+
+    fs.writeFileSync(manifestPath, JSON.stringify(m, null, 2));
+
+    extensions = loadExtensions();
+    broadcastExtensionsChanged();
+    return { ok: true, id };
+  } catch (e) {
+    if (dest) { try { fs.rmSync(dest, { recursive: true, force: true }); } catch {} }
+    return { ok: false, error: 'Install failed: ' + (e && e.message || 'unknown') };
+  }
 });
 
 // Per-extension scoped key/value storage on disk.
