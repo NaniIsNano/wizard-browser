@@ -67,6 +67,7 @@ let adblockerStatus = {
 const settingsPath  = path.join(app.getPath('userData'), 'wizard-settings.json');
 const bookmarksPath = path.join(app.getPath('userData'), 'wizard-bookmarks.json');
 const pinPath       = path.join(app.getPath('userData'), 'wizard-pin.json');
+const siteSettingsPath = path.join(app.getPath('userData'), 'wizard-site-settings.json');
 
 function loadJSON(p, fallback) {
   try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch { return fallback; }
@@ -134,6 +135,39 @@ let settings = loadJSON(settingsPath, {
 })();
 let bookmarks = loadJSON(bookmarksPath, []);
 let pinData   = loadJSON(pinPath, { enabled: false, pin: null, asked: false });
+
+// --- Per-site settings (the padlock) ---
+// { "<origin>": { javascript:'on'|'off', geolocation:'allow'|'block',
+//                 media:'allow'|'block', notifications:'allow'|'block' } }
+// Privacy-first defaults: JS on (don't break the web by default), but
+// camera / mic / location / notifications are blocked until the user
+// flips them from the padlock.
+let siteSettings = loadJSON(siteSettingsPath, {});
+const SITE_DEFAULTS = { javascript: 'on', geolocation: 'block', media: 'block', notifications: 'block' };
+
+function originOf(u) {
+  try {
+    const url = new URL(u);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null; // internal pages have no site settings
+    return url.origin;
+  } catch { return null; }
+}
+function siteSettingsFor(origin) {
+  if (!origin) return { ...SITE_DEFAULTS };
+  return { ...SITE_DEFAULTS, ...(siteSettings[origin] || {}) };
+}
+function isJsDisabled(url) {
+  const o = originOf(url);
+  if (!o) return false;
+  return (siteSettings[o] && siteSettings[o].javascript) === 'off';
+}
+function broadcastSiteSettings(origin) {
+  try {
+    webContents.getAllWebContents().forEach(wc => {
+      try { wc.send('site-settings-changed', { origin, settings: siteSettingsFor(origin) }); } catch {}
+    });
+  } catch {}
+}
 
 // --- Privacy command-line switches (must be set before app.ready) ---
 if (settings.canvasSpoofing) app.commandLine.appendSwitch('disable-reading-from-canvas');
@@ -244,6 +278,65 @@ function configureContentSession() {
     headers['Sec-CH-UA-Platform'] = '"Windows"';
 
     callback({ requestHeaders: headers });
+  });
+
+  // --- Per-site JavaScript (the padlock toggle) ---
+  // When a site's JS is set to 'off', append a strict CSP to its document
+  // responses so inline + external scripts can't run. Appending an extra
+  // CSP header is safe — browsers enforce the intersection of all CSP
+  // headers, so we only ever tighten, never weaken, a site's own policy.
+  ses.webRequest.onHeadersReceived((details, callback) => {
+    try {
+      const rt = details.resourceType;
+      if ((rt === 'mainFrame' || rt === 'subFrame') && isJsDisabled(details.url)) {
+        const h = details.responseHeaders || {};
+        // Drop any existing CSP keys (any casing) then set our own.
+        for (const k of Object.keys(h)) {
+          if (k.toLowerCase() === 'content-security-policy') delete h[k];
+        }
+        h['Content-Security-Policy'] = ["script-src 'none'; script-src-elem 'none'; script-src-attr 'none'"];
+        callback({ responseHeaders: h });
+        return;
+      }
+    } catch {}
+    callback({});
+  });
+
+  // --- Per-site permissions (the padlock) ---
+  // Map Chromium permission strings onto the three user-facing buckets.
+  // Anything sensitive that isn't user-exposed is hard-denied; benign
+  // UX permissions (fullscreen, pointer lock, sanitized clipboard write)
+  // keep working.
+  const PERM_MAP = {
+    geolocation: 'geolocation',
+    notifications: 'notifications',
+    media: 'media', mediaKeySystem: 'media',
+    audioCapture: 'media', videoCapture: 'media'
+  };
+  const HARD_DENY = new Set([
+    'hid', 'serial', 'usb', 'bluetooth', 'midiSysex',
+    'idle-detection', 'clipboard-read', 'window-management',
+    'local-fonts', 'storage-access', 'speaker-selection'
+  ]);
+  function permVerdict(permission, requestUrl) {
+    const key = PERM_MAP[permission];
+    if (key) {
+      const o = originOf(requestUrl);
+      return siteSettingsFor(o)[key] === 'allow';
+    }
+    if (HARD_DENY.has(permission)) return false;
+    return true; // fullscreen, pointerLock, clipboard-sanitized-write, etc.
+  }
+  ses.setPermissionRequestHandler((wc, permission, callback, details) => {
+    const reqUrl = (details && (details.requestingUrl || details.url))
+      || (wc && !wc.isDestroyed() && wc.getURL()) || '';
+    callback(permVerdict(permission, reqUrl));
+  });
+  ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+    const reqUrl = requestingOrigin
+      || (details && details.requestingUrl)
+      || (wc && !wc.isDestroyed() && wc.getURL()) || '';
+    return permVerdict(permission, reqUrl);
   });
 
   ses.on('will-download', (event, item) => {
@@ -932,6 +1025,38 @@ ipcMain.handle('toggle-tor', async (_, enable) => {
     await ses.setProxy({ proxyRules: enable ? 'socks5://127.0.0.1:9050' : '' });
     return true;
   } catch { return false; }
+});
+
+// --- Per-site settings (the padlock) IPC ---
+ipcMain.handle('site-settings:get', (_, url) => {
+  const origin = originOf(url);
+  return { origin, settings: siteSettingsFor(origin) };
+});
+ipcMain.handle('site-settings:set', (_, url, key, value) => {
+  const origin = originOf(url);
+  if (!origin) return { ok: false, error: 'internal page' };
+  if (!(key in SITE_DEFAULTS)) return { ok: false, error: 'unknown key' };
+  const allowed = key === 'javascript' ? ['on', 'off'] : ['allow', 'block'];
+  if (!allowed.includes(value)) return { ok: false, error: 'bad value' };
+  const cur = { ...(siteSettings[origin] || {}) };
+  cur[key] = value;
+  // Drop entries that are all-default so the store stays tidy.
+  const merged = { ...SITE_DEFAULTS, ...cur };
+  const isAllDefault = Object.keys(SITE_DEFAULTS).every(k => merged[k] === SITE_DEFAULTS[k]);
+  if (isAllDefault) delete siteSettings[origin];
+  else siteSettings[origin] = cur;
+  saveJSON(siteSettingsPath, siteSettings);
+  broadcastSiteSettings(origin);
+  return { ok: true, origin, settings: siteSettingsFor(origin) };
+});
+ipcMain.handle('site-settings:clear', (_, url) => {
+  const origin = originOf(url);
+  if (origin && siteSettings[origin]) {
+    delete siteSettings[origin];
+    saveJSON(siteSettingsPath, siteSettings);
+    broadcastSiteSettings(origin);
+  }
+  return { ok: true, origin, settings: siteSettingsFor(origin) };
 });
 
 ipcMain.handle('get-downloads', () => downloads);

@@ -81,5 +81,11 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
 
   // ─── Extension Store (Settings → Extensions → Store) ───
   storeList:    () => ipcRenderer.invoke('store-list'),
-  storeInstall: (fileUrl, manifestData) => ipcRenderer.invoke('store-install', fileUrl, manifestData)
+  storeInstall: (fileUrl, manifestData) => ipcRenderer.invoke('store-install', fileUrl, manifestData),
+
+  // ─── Per-site settings (the padlock) ───
+  getSiteSettings:    (url)            => ipcRenderer.invoke('site-settings:get', url),
+  setSiteSetting:     (url, key, val)  => ipcRenderer.invoke('site-settings:set', url, key, val),
+  clearSiteSettings:  (url)            => ipcRenderer.invoke('site-settings:clear', url),
+  onSiteSettingsChanged: (cb) => ipcRenderer.on('site-settings-changed', (_, data) => cb(data))
 });
