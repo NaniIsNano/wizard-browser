@@ -820,6 +820,8 @@ body[data-layout="win7"] #padlock { height: 26px; }
   color: var(--accent-on);
   border-color: var(--accent);
 }
+.toolbar-btn.tor-busy { border-color: #f59e0b; color: #f59e0b; animation: tor-pulse 1.1s ease-in-out infinite; }
+@keyframes tor-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
 .toolbar-btn svg { width: 14px; height: 14px; fill: currentColor; }
 body[data-layout="win7"] .toolbar-btn { height: 26px; font-size: 11px; padding: 0 8px; }
 
@@ -1616,6 +1618,38 @@ torBtn.addEventListener('click', async () => {
   else { torActive = false; torBtn.classList.remove('active'); }
   updateStatusbar();
 });
+
+// Tor daemon status (detect existing / bundled bootstrap progress)
+function renderTorStatus(s) {
+  if (!s) return;
+  let tip;
+  if (s.status === 'ready') {
+    tip = s.source === 'external'
+      ? 'Tor ready (using your running daemon on 127.0.0.1:9050). .onion auto-routes; click to route ALL traffic.'
+      : 'Tor ready (bundled). .onion auto-routes; click to route ALL traffic via Tor.';
+    torBtn.classList.remove('tor-busy');
+    onionBanner.classList.remove('show');
+  } else if (s.status === 'bootstrapping' || s.status === 'starting' || s.status === 'detecting') {
+    tip = 'Starting Tor… ' + (s.bootstrap || 0) + '%';
+    torBtn.classList.add('tor-busy');
+    $('#onion-text').textContent = 'Starting bundled Tor… ' + (s.bootstrap || 0) + '%';
+    $('#onion-go').style.display = 'none';
+    onionBanner.classList.remove('error');
+    onionBanner.classList.add('show');
+  } else if (s.status === 'failed') {
+    tip = 'Tor unavailable' + (s.message ? ' — ' + s.message : '') + '. .onion sites need Tor.';
+    torBtn.classList.remove('tor-busy');
+  } else {
+    tip = 'Tor: ' + s.status;
+  }
+  torBtn.title = tip;
+}
+if (window.wizardBrowser.getTorStatus) {
+  window.wizardBrowser.getTorStatus().then(renderTorStatus).catch(() => {});
+}
+if (window.wizardBrowser.onTorStatus) {
+  window.wizardBrowser.onTorStatus(renderTorStatus);
+}
 
 // Menubar wiring (Win 7)
 $('#mb-tjr').addEventListener('click', () => { const wv = activeView(); wv && wv.loadURL(HOME_URL + '#tjr'); });
