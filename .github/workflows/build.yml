@@ -8,6 +8,10 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # Tor Expert Bundle version (tracks a Tor Browser release). Bump here
+  # to ship a newer bundled Tor. Published by The Tor Project at
+  # https://archive.torproject.org/tor-package-archive/torbrowser/
+  TOR_BUNDLE_VERSION: "14.0.1"
 
 jobs:
   build-windows:
@@ -20,6 +24,9 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - name: Fetch bundled Tor (Expert Bundle)
+        shell: bash
+        run: bash .github/scripts/fetch-tor.sh windows x86_64
       - run: npx electron-builder --win nsis --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -34,6 +41,9 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - name: Fetch bundled Tor (Expert Bundle)
+        shell: bash
+        run: bash .github/scripts/fetch-tor.sh linux x86_64
       - run: npx electron-builder --linux AppImage deb --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

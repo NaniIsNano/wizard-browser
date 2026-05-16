@@ -1032,26 +1032,202 @@ ipcMain.handle('clear-all-data', async () => {
   } catch { return false; }
 });
 
-// Tor / .onion routing.
+// =====================================================================
+// Tor manager + .onion routing
+// =====================================================================
 //   torEnabled = true  -> ALL traffic through the Tor SOCKS5 proxy
 //   torEnabled = false -> only *.onion goes through Tor (via PAC),
 //                         everything else stays DIRECT
-// This means .onion sites work as soon as Tor is running locally,
-// without the user having to flip the global Tor toggle first.
+//
+// Endpoint resolution (initTor):
+//   1. If a SOCKS5 server is already answering on 127.0.0.1:9050
+//      (the user's own Tor / Tor Browser-less daemon), use it.
+//      We never spawn a second instance — simplest, no port/data
+//      collisions.
+//   2. Otherwise, if a bundled `tor` binary ships with the app,
+//      spawn it on a private port with its own DataDirectory and
+//      wait for it to bootstrap.
+//   3. Otherwise Tor is unavailable; .onion shows the existing hint
+//      and the global toggle reports it can't route.
+const TOR_HOST          = '127.0.0.1';
+const TOR_EXTERNAL_PORT = 9050;   // system / standalone tor default
+const TOR_BUNDLED_PORT  = 9151;   // our managed instance (avoids 9050 + Tor Browser's 9150)
+const TOR_DIR           = path.join(app.getPath('userData'), 'tor');
+
 let torEnabled = false;
-const TOR_SOCKS = '127.0.0.1:9050';
+let torProc = null;
+let torRestarts = 0;
+let torState = {
+  source: 'none',      // 'none' | 'external' | 'bundled'
+  status: 'idle',      // 'idle' | 'detecting' | 'starting' | 'bootstrapping' | 'ready' | 'failed'
+  port: null,
+  bootstrap: 0,
+  message: null
+};
+function setTorState(patch) {
+  torState = { ...torState, ...patch };
+  try {
+    webContents.getAllWebContents().forEach(wc => {
+      try { wc.send('tor-status', torState); } catch {}
+    });
+  } catch {}
+}
+function torEndpoint() {
+  return torState.port ? (TOR_HOST + ':' + torState.port) : null;
+}
+
+// Minimal SOCKS5 no-auth handshake: confirms a real SOCKS5 server
+// (not just an open port). Sends 05 01 00, expects 05 00.
+function probeSocks5(host, port, timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    const net = require('net');
+    let done = false;
+    const finish = (v) => { if (!done) { done = true; try { sock.destroy(); } catch {} resolve(v); } };
+    const sock = net.connect({ host, port });
+    sock.setTimeout(timeoutMs);
+    sock.on('connect', () => { try { sock.write(Buffer.from([0x05, 0x01, 0x00])); } catch { finish(false); } });
+    sock.on('data', (d) => finish(d && d.length >= 2 && d[0] === 0x05 && d[1] === 0x00));
+    sock.on('timeout', () => finish(false));
+    sock.on('error', () => finish(false));
+  });
+}
+
+function torBinaryPath() {
+  const exe = process.platform === 'win32' ? 'tor.exe' : 'tor';
+  // Packaged: extraResources lands at <resources>/tor/<exe>
+  const packaged = path.join(process.resourcesPath || '', 'tor', exe);
+  if (fs.existsSync(packaged)) return packaged;
+  // Dev: tor/<platform>/<exe> in the repo if the dev dropped one in
+  const dev = path.join(__dirname, 'tor', process.platform, exe);
+  if (fs.existsSync(dev)) return dev;
+  return null;
+}
+
+function buildTorrc() {
+  const dataDir = path.join(TOR_DIR, 'data');
+  fs.mkdirSync(dataDir, { recursive: true });
+  const lines = [
+    'SocksPort ' + TOR_HOST + ':' + TOR_BUNDLED_PORT,
+    'DataDirectory ' + dataDir,
+    'Log notice stdout',
+    'ClientOnly 1',
+    'AvoidDiskWrites 1'
+  ];
+  // GeoIP files ship next to the binary in the Expert Bundle; optional.
+  const bin = torBinaryPath();
+  if (bin) {
+    const base = path.dirname(bin);
+    for (const [opt, rel] of [['GeoIPFile', 'geoip'], ['GeoIPv6File', 'geoip6'],
+                              ['GeoIPFile', path.join('data', 'geoip')], ['GeoIPv6File', path.join('data', 'geoip6')]]) {
+      const p = path.join(base, rel);
+      if (fs.existsSync(p)) lines.push(opt + ' ' + p);
+    }
+  }
+  const torrc = path.join(TOR_DIR, 'torrc');
+  fs.mkdirSync(TOR_DIR, { recursive: true });
+  fs.writeFileSync(torrc, lines.join('\n') + '\n', 'utf-8');
+  return torrc;
+}
+
+function startBundledTor() {
+  const bin = torBinaryPath();
+  if (!bin) { setTorState({ source: 'none', status: 'failed', message: 'No bundled Tor binary.' }); return; }
+  let torrc;
+  try { torrc = buildTorrc(); }
+  catch (e) { setTorState({ status: 'failed', message: 'torrc write failed: ' + (e && e.message) }); return; }
+
+  setTorState({ source: 'bundled', status: 'starting', port: null, bootstrap: 0, message: null });
+  const { spawn } = require('child_process');
+  let proc;
+  try {
+    proc = spawn(bin, ['-f', torrc], { cwd: path.dirname(bin), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+  } catch (e) {
+    setTorState({ status: 'failed', message: 'spawn failed: ' + (e && e.message) });
+    return;
+  }
+  torProc = proc;
+
+  const onLine = (buf) => {
+    const s = buf.toString();
+    const m = s.match(/Bootstrapped (\d+)%/);
+    if (m) {
+      const pct = parseInt(m[1], 10);
+      if (pct >= 100) setTorState({ status: 'ready', port: TOR_BUNDLED_PORT, bootstrap: 100, message: null });
+      else            setTorState({ status: 'bootstrapping', bootstrap: pct });
+    }
+  };
+  proc.stdout.on('data', onLine);
+  proc.stderr.on('data', onLine);
+  proc.on('exit', (code) => {
+    torProc = null;
+    if (torState.status === 'ready') return;            // intentional shutdown after ready handled elsewhere
+    if (torRestarts < 2) {
+      torRestarts++;
+      setTorState({ status: 'starting', message: 'Tor exited (code ' + code + '); retrying…' });
+      setTimeout(() => startBundledTor(), 1500);
+    } else {
+      setTorState({ status: 'failed', message: 'Bundled Tor failed to start (exit ' + code + ').' });
+    }
+  });
+  proc.on('error', (e) => {
+    torProc = null;
+    setTorState({ status: 'failed', message: 'Tor process error: ' + (e && e.message) });
+  });
+}
+
+async function initTor() {
+  setTorState({ status: 'detecting', message: null });
+  // 1. Reuse an already-running daemon (the simple path).
+  if (await probeSocks5(TOR_HOST, TOR_EXTERNAL_PORT)) {
+    torRestarts = 0;
+    setTorState({ source: 'external', status: 'ready', port: TOR_EXTERNAL_PORT, bootstrap: 100, message: null });
+    await applyTorProxy();
+    return;
+  }
+  // 2. Spawn the bundled one if we shipped a binary.
+  if (torBinaryPath()) {
+    startBundledTor();
+    return; // applyTorProxy is re-run when state flips to 'ready' (see initTor caller / toggle)
+  }
+  // 3. Nothing available.
+  setTorState({ source: 'none', status: 'failed', port: null, message: 'Tor is not installed and no bundled binary is present.' });
+  await applyTorProxy();
+}
+
+// Re-apply the proxy whenever Tor becomes ready.
+function watchTorReady() {
+  let last = torState.status;
+  setInterval(() => {
+    if (torState.status !== last) {
+      last = torState.status;
+      if (torState.status === 'ready') applyTorProxy().catch(() => {});
+    }
+  }, 800);
+}
+
+function stopBundledTor() {
+  if (torProc) {
+    try { torProc.kill(); } catch {}
+    torProc = null;
+  }
+}
 
 async function applyTorProxy() {
   const ses = session.fromPartition(PARTITION);
-  if (torEnabled) {
-    await ses.setProxy({ proxyRules: 'socks5://' + TOR_SOCKS });
+  const ep = torEndpoint();        // null when Tor unavailable
+  if (torEnabled && ep) {
+    await ses.setProxy({ proxyRules: 'socks5://' + ep });
     return;
   }
+  // PAC: route *.onion through Tor when we have an endpoint; otherwise
+  // (no Tor) every host is DIRECT — .onion will fail and the UI shows
+  // the "Tor isn't running" hint.
+  const onionTarget = ep ? ('SOCKS5 ' + ep) : 'DIRECT';
   const pac =
     'function FindProxyForURL(url, host){' +
     'if(host){var h=(""+host).toLowerCase();' +
     'if(h==="onion"||h.substr(-6)===".onion")' +
-    'return "SOCKS5 ' + TOR_SOCKS + '";}' +
+    'return "' + onionTarget + '";}' +
     'return "DIRECT";}';
   const dataUrl = 'data:application/x-ns-proxy-autoconfig;base64,' +
     Buffer.from(pac, 'utf-8').toString('base64');
@@ -1061,10 +1237,16 @@ async function applyTorProxy() {
 ipcMain.handle('toggle-tor', async (_, enable) => {
   try {
     torEnabled = !!enable;
+    // Turning Tor on while it isn't up yet — kick a (re)detect/spawn.
+    if (torEnabled && torState.status !== 'ready') {
+      torRestarts = 0;
+      initTor().catch(() => {});
+    }
     await applyTorProxy();
     return true;
   } catch { return false; }
 });
+ipcMain.handle('get-tor-status', () => torState);
 
 // --- Per-site settings (the padlock) IPC ---
 ipcMain.handle('site-settings:get', (_, url) => {
@@ -1913,6 +2095,7 @@ ipcMain.on('install-update', () => autoUpdater.quitAndInstall(false, true));
 // Lifecycle
 // =====================================================================
 app.on('before-quit', async () => {
+  stopBundledTor();
   if (settings.clearOnExit) {
     try {
       const ses = session.fromPartition(PARTITION);
@@ -1921,11 +2104,14 @@ app.on('before-quit', async () => {
     } catch {}
   }
 });
+app.on('will-quit', () => stopBundledTor());
 
 app.whenReady().then(() => {
   createWindow();
-  // Route *.onion through Tor from boot (no need to toggle Tor first).
-  applyTorProxy().catch(() => {});
+  // Detect an existing Tor daemon (reuse it) or spawn the bundled one,
+  // then route *.onion through it — no user action required.
+  initTor().catch(() => {});
+  watchTorReady();
   // Initial check shortly after boot, then re-check every 2 hours while the
   // app stays open. (Chrome polls every few hours via its background service;
   // we can't run when closed, but periodic in-app keeps users current.)
