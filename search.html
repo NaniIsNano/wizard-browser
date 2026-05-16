@@ -922,6 +922,57 @@ body {
 #knowledge-panel::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 #knowledge-panel::-webkit-scrollbar-thumb:hover { background: #444; }
 
+#instant-answer {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+#instant-answer .ia-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+#instant-answer .ia-expr {
+  font-size: 15px;
+  color: var(--text2);
+  font-family: ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+#instant-answer .ia-result {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 4px;
+}
+#instant-answer .ia-eq { font-size: 26px; color: var(--text2); }
+#instant-answer .ia-value {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+  word-break: break-all;
+  line-height: 1.2;
+}
+#instant-answer .ia-copy {
+  margin-left: auto;
+  align-self: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+#instant-answer .ia-copy:hover { color: var(--text); border-color: var(--accent); }
+
 .kp-image-wrap {
   width: 100%;
   overflow: hidden;
@@ -1288,6 +1339,7 @@ body {
 
       <div id="loading"><div class="spinner"></div><br>Searching...</div>
       <div id="stats"></div>
+      <div id="instant-answer"></div>
       <div id="no-results">No results found. Try different keywords.</div>
 
       <div id="web-results"></div>
@@ -1455,6 +1507,188 @@ function goHome() {
   document.getElementById('searchbar').focus();
 }
 
+// ============================================================
+// Instant-answer calculator — safe recursive-descent parser.
+// NO eval / Function: every token is validated; unknown input
+// throws and the card simply doesn't show.
+// ============================================================
+const CALC_CONSTS = { pi: Math.PI, e: Math.E, tau: Math.PI * 2 };
+const CALC_FUNCS = {
+  sqrt: Math.sqrt, cbrt: Math.cbrt, abs: Math.abs,
+  round: Math.round, floor: Math.floor, ceil: Math.ceil,
+  ln: Math.log, log: Math.log10, log10: Math.log10, log2: Math.log2,
+  exp: Math.exp, sin: Math.sin, cos: Math.cos, tan: Math.tan,
+  asin: Math.asin, acos: Math.acos, atan: Math.atan,
+  sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh,
+  sign: Math.sign, trunc: Math.trunc
+};
+
+function calcTokenize(src) {
+  const tokens = [];
+  let i = 0;
+  const s = src.replace(/\s+/g, '');
+  while (i < s.length) {
+    const c = s[i];
+    if (/[0-9.]/.test(c)) {
+      let num = '';
+      while (i < s.length && /[0-9.]/.test(s[i])) { num += s[i++]; }
+      // scientific notation: 1e3, 2.5e-4
+      if (i < s.length && (s[i] === 'e' || s[i] === 'E') && /[0-9+\-]/.test(s[i + 1] || '')) {
+        num += s[i++];
+        if (s[i] === '+' || s[i] === '-') num += s[i++];
+        while (i < s.length && /[0-9]/.test(s[i])) { num += s[i++]; }
+      }
+      if (!/^\d*\.?\d+(?:[eE][+\-]?\d+)?$|^\d+\.$|^\d+$/.test(num) || num === '.') throw new Error('bad number');
+      tokens.push({ t: 'num', v: parseFloat(num) });
+    } else if (/[a-zA-Z_]/.test(c)) {
+      let id = '';
+      while (i < s.length && /[a-zA-Z0-9_]/.test(s[i])) { id += s[i++]; }
+      const lid = id.toLowerCase();
+      if (lid in CALC_CONSTS) tokens.push({ t: 'num', v: CALC_CONSTS[lid] });
+      else if (lid in CALC_FUNCS) tokens.push({ t: 'func', v: lid });
+      else throw new Error('unknown identifier: ' + id);
+    } else if ('+-*/%^()'.includes(c)) {
+      // ** => ^
+      if (c === '*' && s[i + 1] === '*') { tokens.push({ t: 'op', v: '^' }); i += 2; }
+      else { tokens.push({ t: c === '(' ? 'lp' : c === ')' ? 'rp' : 'op', v: c }); i++; }
+    } else {
+      throw new Error('illegal char: ' + c);
+    }
+  }
+  return tokens;
+}
+
+function calcParse(tokens) {
+  let pos = 0;
+  const peek = () => tokens[pos];
+  const eat = (pred) => { const tk = tokens[pos]; if (!tk || (pred && !pred(tk))) throw new Error('parse error'); pos++; return tk; };
+
+  function parseExpr() {
+    let v = parseTerm();
+    while (peek() && peek().t === 'op' && (peek().v === '+' || peek().v === '-')) {
+      const op = eat().v;
+      const r = parseTerm();
+      v = op === '+' ? v + r : v - r;
+    }
+    return v;
+  }
+  function parseTerm() {
+    let v = parsePower();
+    while (peek() && peek().t === 'op' && (peek().v === '*' || peek().v === '/' || peek().v === '%')) {
+      const op = eat().v;
+      const r = parsePower();
+      v = op === '*' ? v * r : op === '/' ? v / r : v % r;
+    }
+    return v;
+  }
+  function parsePower() {
+    const base = parseUnary();
+    if (peek() && peek().t === 'op' && peek().v === '^') {
+      eat();
+      return Math.pow(base, parsePower()); // right-assoc
+    }
+    return base;
+  }
+  function parseUnary() {
+    if (peek() && peek().t === 'op' && (peek().v === '-' || peek().v === '+')) {
+      const op = eat().v;
+      const v = parseUnary();
+      return op === '-' ? -v : v;
+    }
+    return parsePrimary();
+  }
+  function parsePrimary() {
+    const tk = peek();
+    if (!tk) throw new Error('unexpected end');
+    if (tk.t === 'num') { eat(); return tk.v; }
+    if (tk.t === 'func') {
+      eat();
+      eat(t => t.t === 'lp');
+      const arg = parseExpr();
+      eat(t => t.t === 'rp');
+      return CALC_FUNCS[tk.v](arg);
+    }
+    if (tk.t === 'lp') {
+      eat();
+      const v = parseExpr();
+      eat(t => t.t === 'rp');
+      return v;
+    }
+    throw new Error('unexpected token');
+  }
+
+  const result = parseExpr();
+  if (pos !== tokens.length) throw new Error('trailing tokens');
+  return result;
+}
+
+// Returns { expr, value } or null. Conservative: only fires when the
+// query clearly looks like arithmetic, so normal searches are untouched.
+function tryCalculator(raw) {
+  const term = (raw || '').trim();
+  if (!term || term.length > 120) return null;
+  // Strip a leading "= " or "calc " prefix some people type
+  let expr = term.replace(/^=\s*/, '').replace(/^calc(?:ulate)?\s+/i, '').trim();
+  // Thousands separators inside numbers: 1,234.5 -> 1234.5
+  expr = expr.replace(/(\d),(?=\d{3}\b)/g, '$1');
+  // Must contain a digit, OR be a known-function call (sqrt(pi), ln(e))
+  if (!/\d/.test(expr) &&
+      !/\b(sqrt|cbrt|abs|round|floor|ceil|ln|log|log2|log10|exp|sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sign|trunc)\s*\(/i.test(expr)) return null;
+  if (!/[-+*/%^()]|sqrt|sin|cos|tan|log|ln|abs|exp|pi|e\b|round|floor|ceil/i.test(expr)) return null;
+  if (/[a-zA-Z]{2,}/.test(expr) &&
+      !/\b(sqrt|cbrt|abs|round|floor|ceil|ln|log|log2|log10|exp|sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sign|trunc|pi|tau|e)\b/i.test(expr)) {
+    return null; // has words that aren't known funcs/consts -> it's a normal query
+  }
+  try {
+    const tokens = calcTokenize(expr);
+    if (!tokens.some(t => t.t === 'op' || t.t === 'func')) return null; // bare number isn't a calc
+    const value = calcParse(tokens);
+    if (typeof value !== 'number' || !isFinite(value)) return null;
+    return { expr, value };
+  } catch {
+    return null;
+  }
+}
+
+function fmtCalcResult(n) {
+  if (Number.isInteger(n) && Math.abs(n) < 1e15) return n.toLocaleString('en-US');
+  // Trim float noise (0.1+0.2) without lying about big/small magnitudes
+  let s = parseFloat(n.toPrecision(12)).toString();
+  if (/e/i.test(s)) return s;
+  if (s.includes('.')) {
+    const [a, b] = s.split('.');
+    return Number(a).toLocaleString('en-US') + '.' + b;
+  }
+  return Number(s).toLocaleString('en-US');
+}
+
+function renderInstantAnswer(term) {
+  const el = document.getElementById('instant-answer');
+  if (!el) return;
+  const calc = tryCalculator(term);
+  if (!calc) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const valueStr = fmtCalcResult(calc.value);
+  el.innerHTML =
+    '<div class="ia-label">Calculator</div>' +
+    '<div class="ia-expr"></div>' +
+    '<div class="ia-result">' +
+      '<span class="ia-eq">=</span>' +
+      '<span class="ia-value"></span>' +
+      '<button class="ia-copy" type="button">Copy</button>' +
+    '</div>';
+  el.querySelector('.ia-expr').textContent = calc.expr;
+  el.querySelector('.ia-value').textContent = valueStr;
+  const copyBtn = el.querySelector('.ia-copy');
+  copyBtn.addEventListener('click', () => {
+    try {
+      navigator.clipboard.writeText(String(calc.value));
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+    } catch {}
+  });
+  el.style.display = 'block';
+}
+
 function handleSearch(e) {
   e.preventDefault();
   const term = document.getElementById('searchbar').value.trim();
@@ -1487,6 +1721,10 @@ function startSearch(term) {
   document.getElementById('pagination').innerHTML = '';
   document.getElementById('stats').textContent = '';
   document.getElementById('knowledge-panel').style.display = 'none';
+
+  // Instant calculator answer — zero network, shows before results load.
+  // Also clears itself when the query isn't math.
+  renderInstantAnswer(term);
 
   searchStartTime = performance.now();
   search(term);
