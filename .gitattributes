@@ -1,0 +1,5 @@
+# Build-critical scripts must stay LF — a CRLF shebang breaks bash on
+# the Linux CI runner.
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
