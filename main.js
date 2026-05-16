@@ -828,6 +828,19 @@ app.on('web-contents-created', (event, contents) => {
     }
   });
 
+  // A .onion main-frame load that fails is almost always "Tor isn't
+  // running locally" — surface a clear hint instead of a blank error.
+  contents.on('did-fail-load', (_, errorCode, errorDesc, validatedURL, isMainFrame) => {
+    if (!isMainFrame || errorCode === -3 /* ERR_ABORTED */) return;
+    let host = '';
+    try { host = new URL(validatedURL).hostname.toLowerCase(); } catch { return; }
+    if (host === 'onion' || host.endsWith('.onion')) {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('onion-error', { host, error: errorDesc || 'load failed' });
+      }
+    }
+  });
+
   contents.on('context-menu', (_, params) => {
     const tmpl = [];
     if (contents.canGoBack())    tmpl.push({ label: 'Back',    click: () => contents.goBack() });
@@ -1019,10 +1032,36 @@ ipcMain.handle('clear-all-data', async () => {
   } catch { return false; }
 });
 
+// Tor / .onion routing.
+//   torEnabled = true  -> ALL traffic through the Tor SOCKS5 proxy
+//   torEnabled = false -> only *.onion goes through Tor (via PAC),
+//                         everything else stays DIRECT
+// This means .onion sites work as soon as Tor is running locally,
+// without the user having to flip the global Tor toggle first.
+let torEnabled = false;
+const TOR_SOCKS = '127.0.0.1:9050';
+
+async function applyTorProxy() {
+  const ses = session.fromPartition(PARTITION);
+  if (torEnabled) {
+    await ses.setProxy({ proxyRules: 'socks5://' + TOR_SOCKS });
+    return;
+  }
+  const pac =
+    'function FindProxyForURL(url, host){' +
+    'if(host){var h=(""+host).toLowerCase();' +
+    'if(h==="onion"||h.substr(-6)===".onion")' +
+    'return "SOCKS5 ' + TOR_SOCKS + '";}' +
+    'return "DIRECT";}';
+  const dataUrl = 'data:application/x-ns-proxy-autoconfig;base64,' +
+    Buffer.from(pac, 'utf-8').toString('base64');
+  await ses.setProxy({ mode: 'pac_script', pacScript: dataUrl });
+}
+
 ipcMain.handle('toggle-tor', async (_, enable) => {
   try {
-    const ses = session.fromPartition(PARTITION);
-    await ses.setProxy({ proxyRules: enable ? 'socks5://127.0.0.1:9050' : '' });
+    torEnabled = !!enable;
+    await applyTorProxy();
     return true;
   } catch { return false; }
 });
@@ -1885,6 +1924,8 @@ app.on('before-quit', async () => {
 
 app.whenReady().then(() => {
   createWindow();
+  // Route *.onion through Tor from boot (no need to toggle Tor first).
+  applyTorProxy().catch(() => {});
   // Initial check shortly after boot, then re-check every 2 hours while the
   // app stays open. (Chrome polls every few hours via its background service;
   // we can't run when closed, but periodic in-app keeps users current.)

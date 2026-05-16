@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
 
   // Browser-shell events
   onOnionAvailable: (cb) => ipcRenderer.on('onion-available', (_, data) => cb(data)),
+  onOnionError:     (cb) => ipcRenderer.on('onion-error', (_, data) => cb(data)),
   onBlockedUpdate:  (cb) => ipcRenderer.on('blocked-update', (_, count) => cb(count)),
   onSearchSelection:(cb) => ipcRenderer.on('search-selection', (_, text) => cb(text)),
   onNavigateShell:  (cb) => ipcRenderer.on('navigate-shell', (_, where) => cb(where)),
