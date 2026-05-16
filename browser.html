@@ -950,6 +950,7 @@ webview.active { display: flex; }
 }
 .banner .dismiss:hover { color: var(--text); }
 #onion-banner { background: rgba(124, 58, 237, 0.15); border-bottom: 1px solid var(--accent); color: var(--text); }
+#onion-banner.error { background: rgba(245, 158, 11, 0.15); border-bottom-color: #f59e0b; }
 #update-banner { background: rgba(34, 197, 94, 0.15); border-bottom: 1px solid var(--shield); color: var(--text); top: 36px; }
 #update-banner button:not(.dismiss) { background: var(--shield); color: #fff; }
 
@@ -1118,7 +1119,7 @@ webview.active { display: flex; }
   <button class="toolbar-btn" id="bookmarks-toggle" title="Bookmarks (Ctrl+B)">
     <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
   </button>
-  <button class="toolbar-btn" id="tor-btn" title="Connect via Tor (SOCKS5 on 127.0.0.1:9050)">
+  <button class="toolbar-btn" id="tor-btn" title="Route ALL traffic via Tor (SOCKS5 127.0.0.1:9050). .onion sites auto-route through Tor even with this off.">
     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
     <span>TOR</span>
   </button>
@@ -1693,12 +1694,24 @@ window.wizardBrowser.onDownloadDone(renderDownload);
 // ─────────── Onion + update banners ───────────
 const onionBanner = $('#onion-banner');
 let currentOnion = null;
+// .onion now auto-routes through Tor whether or not the global Tor
+// toggle is on, so suggest the .onion mirror regardless of torActive.
 window.wizardBrowser.onOnionAvailable((data) => {
-  if (!torActive) return;
   currentOnion = data.onion;
   $('#onion-text').textContent = `.onion version available for ${data.clearnet}`;
+  $('#onion-go').style.display = '';
+  onionBanner.classList.remove('error');
   onionBanner.classList.add('show');
 });
+if (window.wizardBrowser.onOnionError) {
+  window.wizardBrowser.onOnionError(() => {
+    currentOnion = null;
+    $('#onion-text').textContent =
+      "Couldn't reach this .onion site. It needs Tor running locally (SOCKS5 on 127.0.0.1:9050).";
+    $('#onion-go').style.display = 'none';
+    onionBanner.classList.add('error', 'show');
+  });
+}
 $('#onion-go').addEventListener('click', () => {
   if (currentOnion) { const wv = activeView(); wv && wv.loadURL(currentOnion); }
   onionBanner.classList.remove('show');
