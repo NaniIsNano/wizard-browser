@@ -225,6 +225,17 @@ body {
 .store-install-btn:disabled { background: var(--green); cursor: default; }
 .store-install-btn.unavailable { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); cursor: not-allowed; }
 .store-empty { padding: 40px; text-align: center; color: var(--text2); }
+.store-cta {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: linear-gradient(135deg, rgba(124,58,237,0.16), rgba(168,85,247,0.10));
+  border: 1px solid rgba(168,85,247,0.4);
+  border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;
+}
+.store-cta .cta-text { flex: 1; min-width: 220px; }
+.store-cta .cta-title { font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.store-cta .cta-sub { font-size: 0.82em; color: var(--text2); line-height: 1.5; }
+.store-cta .btn { white-space: nowrap; }
+.store-empty .btn { margin-top: 14px; }
 </style>
 </head>
 <body>
@@ -267,12 +278,23 @@ body {
 
   <!-- STORE TAB -->
   <div id="tab-store" style="display:none">
+    <div class="store-cta">
+      <div class="cta-text">
+        <div class="cta-title">🧩 Wizard Extension Store</div>
+        <div class="cta-sub">Browse the full catalogue, read reviews, and <b>publish your own</b> extensions on the Store website. Approved extensions show up below for one-click install.</div>
+      </div>
+      <button class="btn" id="store-web-btn">Open Extension Store&nbsp;↗</button>
+    </div>
     <div class="toolbar">
       <button class="btn-ghost btn" id="store-refresh-btn">↻ Refresh</button>
       <span class="count" id="store-count"></span>
     </div>
     <div id="store-grid" class="store-grid"></div>
-    <div id="store-empty" class="store-empty" style="display:none">No extensions available right now.</div>
+    <div id="store-empty" class="store-empty" style="display:none">
+      No installable extensions here yet.
+      <p style="margin-top:6px;font-size:0.85em;opacity:0.85">New extensions are submitted and reviewed on the Store website.</p>
+      <button class="btn" id="store-empty-web-btn">Browse the Extension Store&nbsp;↗</button>
+    </div>
   </div>
 </div>
 
@@ -427,7 +449,14 @@ async function renderStore() {
   }
 }
 
+const STORE_WEBSITE = 'https://wizardextensionstore.netlify.app';
+function openStoreWebsite() {
+  if (wb && wb.openInNewTab) wb.openInNewTab(STORE_WEBSITE);
+  else window.open(STORE_WEBSITE, '_blank');
+}
 document.getElementById('store-refresh-btn').addEventListener('click', () => renderStore());
+document.getElementById('store-web-btn').addEventListener('click', openStoreWebsite);
+document.getElementById('store-empty-web-btn').addEventListener('click', openStoreWebsite);
 
 render();
 </script>
