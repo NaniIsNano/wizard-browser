@@ -1841,7 +1841,9 @@ let updateState = {
   status: 'idle',          // 'idle' | 'checking' | 'downloading' | 'ready' | 'up-to-date' | 'error' | 'disabled'
   currentVersion: app.getVersion(),
   availableVersion: null,
-  lastChecked: null,       // ms epoch
+  // Restored from settings on boot so we can skip the startup check when
+  // we polled recently. Persisted on every terminal update event.
+  lastChecked: typeof settings.lastUpdateCheck === 'number' ? settings.lastUpdateCheck : null,
   message: null,
   // Populated while status === 'downloading' (from electron-updater's
   // 'download-progress' event). Cleared when status leaves 'downloading'.
@@ -1850,6 +1852,17 @@ let updateState = {
   transferred: 0,
   total: 0
 };
+
+// Skip the boot check when we've polled within this window. Chrome polls
+// every ~5h; one full day on boot keeps us current without being noisy on
+// every relaunch.
+const BOOT_CHECK_MIN_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+function persistLastChecked(ts) {
+  if (!ts) return;
+  settings.lastUpdateCheck = ts;
+  try { saveJSON(settingsPath, settings); } catch {}
+}
 
 function setUpdateState(patch) {
   updateState = { ...updateState, ...patch };
@@ -1883,16 +1896,22 @@ autoUpdater.on('download-progress', (p) => {
   });
 });
 autoUpdater.on('update-downloaded', (info) => {
+  const now = Date.now();
+  persistLastChecked(now);
   setUpdateState({
     status: 'ready', availableVersion: info && info.version, message: null,
-    percent: 100
+    percent: 100, lastChecked: now
   });
 });
 autoUpdater.on('update-not-available', () => {
-  setUpdateState({ status: 'up-to-date', availableVersion: null, message: null, lastChecked: Date.now() });
+  const now = Date.now();
+  persistLastChecked(now);
+  setUpdateState({ status: 'up-to-date', availableVersion: null, message: null, lastChecked: now });
 });
 autoUpdater.on('error', (err) => {
-  setUpdateState({ status: 'error', message: err ? err.message : 'Unknown error', lastChecked: Date.now() });
+  const now = Date.now();
+  persistLastChecked(now);
+  setUpdateState({ status: 'error', message: err ? err.message : 'Unknown error', lastChecked: now });
 });
 
 async function runUpdateCheck(reason = 'manual') {
@@ -2190,10 +2209,18 @@ app.whenReady().then(() => {
   // then route *.onion through it — no user action required.
   initTor().catch(() => {});
   watchTorReady();
-  // Initial check shortly after boot, then re-check every 2 hours while the
-  // app stays open. (Chrome polls every few hours via its background service;
-  // we can't run when closed, but periodic in-app keeps users current.)
-  setTimeout(() => { runUpdateCheck('startup'); }, 3000);
+  // Initial check shortly after boot — but only if we haven't polled within
+  // the last 24 hours. Re-checks happen every 2 hours while the app stays
+  // open. (Chrome polls every few hours via its background service; we can't
+  // run when closed, but periodic in-app keeps users current.)
+  const sinceLast = updateState.lastChecked ? Date.now() - updateState.lastChecked : Infinity;
+  if (sinceLast >= BOOT_CHECK_MIN_INTERVAL_MS) {
+    setTimeout(() => { runUpdateCheck('startup'); }, 3000);
+  } else {
+    // Surface the cached "up-to-date" state so the UI doesn't sit on an
+    // 'idle' label until the periodic interval fires.
+    setUpdateState({ status: 'up-to-date' });
+  }
   setInterval(() => { runUpdateCheck('periodic'); }, 2 * 60 * 60 * 1000);
 
   // Spin up the Ghostery filter engine first (fast, always-on safety net).

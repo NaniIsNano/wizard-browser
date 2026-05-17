@@ -2102,11 +2102,9 @@ window.wizardBrowser.onUpdateStatus((data) => {
   updateBanner.dataset.percent = Math.round(data.percent || 0);
 
   if (data.status === 'checking') {
-    title.textContent = 'Checking for updates…';
-    meta.textContent  = '';
-    installBtn.style.display = 'none';
-    fill.style.width = '';
-    updateBanner.classList.add('show');
+    // Routine background poll — don't surface the banner. Settings panel
+    // still shows the spinner if the user is watching. Banner only opens
+    // when something actionable happens (downloading / ready / error).
     settingsBtn && settingsBtn.classList.remove('has-update');
   } else if (data.status === 'downloading') {
     const pct = Math.max(0, Math.min(100, data.percent || 0));
@@ -2137,7 +2135,13 @@ window.wizardBrowser.onUpdateStatus((data) => {
     settingsBtn && settingsBtn.classList.remove('has-update');
   } else if (data.status === 'up-to-date') {
     settingsBtn && settingsBtn.classList.remove('has-update');
-    // Don't surface the banner for the routine "you're current" result.
+    // Routine "you're current" result — hide the banner so it doesn't
+    // linger from a prior 'checking' state.
+    updateBanner.classList.remove('show');
+  } else if (data.status === 'idle' || data.status === 'disabled') {
+    // No active flow — make sure the banner isn't stuck open.
+    updateBanner.classList.remove('show');
+    settingsBtn && settingsBtn.classList.remove('has-update');
   }
 });
 $('#update-install').addEventListener('click', () => {
