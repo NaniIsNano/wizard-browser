@@ -512,7 +512,12 @@ body[data-layout="win7"] #statusbar { display: flex; }
   background: var(--tab-bar-bg);
   background-image: var(--gloss-overlay), var(--tab-bar-bg);
   border-bottom: 1px solid var(--tab-bar-border);
-  padding: 4px 4px 0;
+  padding: 4px 4px 0 4px;
+  /* Reserve space at the right for the OS-overlay window controls
+     (min/max/close on Windows). When the overlay isn't active (Linux),
+     env(titlebar-area-width) falls back to 100vw and this evaluates to 0,
+     so there's no wasted padding. */
+  padding-right: max(4px, calc(100vw - env(titlebar-area-width, 100vw) - env(titlebar-area-x, 0px)));
   gap: 2px;
   position: relative;
   z-index: 11;
@@ -520,6 +525,15 @@ body[data-layout="win7"] #statusbar { display: flex; }
   overflow-y: hidden;
   white-space: nowrap;
   scrollbar-width: thin;
+  /* Whole tab bar is a drag handle — empty space lets you move the
+     window. Interactive children (tabs, new-tab button) opt back out
+     below with no-drag. */
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+.tab, #new-tab-btn {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 #tab-bar::-webkit-scrollbar { height: 4px; }
 #tab-bar::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.4); }

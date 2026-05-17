@@ -823,6 +823,9 @@ function createWindow() {
   configureContentSession();
   createSplash();
 
+  const isWin = process.platform === 'win32';
+  const isMac = process.platform === 'darwin';
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 900,
@@ -830,6 +833,16 @@ function createWindow() {
     title: 'Wizard Browser',
     backgroundColor: '#0a0a0a',
     icon: path.join(__dirname, 'icon.png'),
+    // Chrome-style integrated title bar: drop the OS chrome on Windows/macOS
+    // and let the tab bar live where the title bar used to. titleBarOverlay
+    // keeps the native min/max/close buttons as an OS overlay so we don't
+    // have to ship custom window controls.
+    ...(isWin ? {
+      titleBarStyle: 'hidden',
+      titleBarOverlay: { color: '#0d0d0d', symbolColor: '#aaaaaa', height: 32 }
+    } : isMac ? {
+      titleBarStyle: 'hiddenInset'
+    } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
