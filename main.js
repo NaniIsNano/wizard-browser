@@ -1870,11 +1870,6 @@ let updateState = {
   total: 0
 };
 
-// Skip the boot check when we've polled within this window. Chrome polls
-// every ~5h; one full day on boot keeps us current without being noisy on
-// every relaunch.
-const BOOT_CHECK_MIN_INTERVAL_MS = 24 * 60 * 60 * 1000;
-
 function persistLastChecked(ts) {
   if (!ts) return;
   settings.lastUpdateCheck = ts;
@@ -2226,18 +2221,12 @@ app.whenReady().then(() => {
   // then route *.onion through it — no user action required.
   initTor().catch(() => {});
   watchTorReady();
-  // Initial check shortly after boot — but only if we haven't polled within
-  // the last 24 hours. Re-checks happen every 2 hours while the app stays
-  // open. (Chrome polls every few hours via its background service; we can't
-  // run when closed, but periodic in-app keeps users current.)
-  const sinceLast = updateState.lastChecked ? Date.now() - updateState.lastChecked : Infinity;
-  if (sinceLast >= BOOT_CHECK_MIN_INTERVAL_MS) {
-    setTimeout(() => { runUpdateCheck('startup'); }, 3000);
-  } else {
-    // Surface the cached "up-to-date" state so the UI doesn't sit on an
-    // 'idle' label until the periodic interval fires.
-    setUpdateState({ status: 'up-to-date' });
-  }
+  // Always run a boot check — it's a single HTTP request and electron-updater
+  // is the *only* code path that fires the in-app banner / settings card.
+  // (We persist lastChecked separately for the "Last checked X ago" label,
+  // but skipping the actual check left the banner mute even when a new
+  // release was published.) Re-check every 2 hours while the app stays open.
+  setTimeout(() => { runUpdateCheck('startup'); }, 3000);
   setInterval(() => { runUpdateCheck('periodic'); }, 2 * 60 * 60 * 1000);
 
   // Spin up the Ghostery filter engine first (fast, always-on safety net).
