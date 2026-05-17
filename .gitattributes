@@ -3,3 +3,8 @@
 *.sh   text eol=lf
 *.yml  text eol=lf
 *.yaml text eol=lf
+
+# Keep GitHub's language stats honest: build helpers shouldn't make this
+# look like a PowerShell project.
+build/**          linguist-vendored
+*.ps1             linguist-vendored
