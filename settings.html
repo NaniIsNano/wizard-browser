@@ -411,6 +411,195 @@ body[data-glossy="1"] .toggle input:checked + .toggle-slider {
   background-image: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 50%, rgba(0,0,0,0.04) 100%) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
 }
+
+/* =============================================================
+   UPDATES CARD — animated state-driven card for the auto-updater
+   ============================================================= */
+.upd-card {
+  position: relative;
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(168, 85, 247, 0.12), transparent 55%),
+    linear-gradient(180deg, #141022, #0e0a1c);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+}
+.upd-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(168,85,247,0.5), transparent 40%, transparent 60%, rgba(124,58,237,0.5));
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.upd-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.upd-state-glyph {
+  width: 44px; height: 44px;
+  flex-shrink: 0;
+  position: relative;
+  display: grid; place-items: center;
+  border-radius: 12px;
+  background: radial-gradient(circle, rgba(168,85,247,0.25), transparent 70%);
+}
+.upd-state-glyph svg { width: 28px; height: 28px; transition: filter 0.3s ease; }
+.upd-card[data-state="checking"]    .upd-state-glyph svg,
+.upd-card[data-state="downloading"] .upd-state-glyph svg { animation: upd-spin-s 6s linear infinite; }
+@keyframes upd-spin-s { to { transform: rotate(360deg); } }
+
+.upd-card[data-state="ready"] .upd-state-glyph {
+  background: radial-gradient(circle, rgba(34,197,94,0.35), transparent 70%);
+  animation: upd-pulse-s 1.8s ease-in-out infinite;
+}
+@keyframes upd-pulse-s {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(34,197,94,0.55); }
+  50%      { box-shadow: 0 0 0 10px rgba(34,197,94,0);   }
+}
+.upd-card[data-state="error"] .upd-state-glyph { background: radial-gradient(circle, rgba(239,68,68,0.3), transparent 70%); }
+.upd-card[data-state="up-to-date"] .upd-state-glyph { background: radial-gradient(circle, rgba(34,197,94,0.25), transparent 70%); }
+
+.upd-info { flex: 1; min-width: 0; }
+.upd-status-label {
+  font-size: 1em;
+  font-weight: 600;
+  color: #f5f3ff;
+  letter-spacing: -0.01em;
+  margin-bottom: 3px;
+}
+.upd-sub {
+  font-size: 0.78em;
+  color: #9a98ad;
+  font-variant-numeric: tabular-nums;
+}
+.upd-sub span + span::before { content: '  ·  '; opacity: 0.4; }
+
+.upd-version-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  font-size: 0.7em;
+  font-weight: 500;
+  color: #d8b4fe;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.upd-version-chip .arrow { opacity: 0.5; }
+
+.upd-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.upd-actions .btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e5e5e5;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 0.82em;
+}
+.upd-actions .btn:hover { background: rgba(255,255,255,0.1); }
+.upd-actions .btn.primary {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.45);
+}
+.upd-actions .btn.primary:hover { box-shadow: 0 6px 18px rgba(168, 85, 247, 0.55); }
+.upd-actions .btn.success {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.45);
+}
+
+/* Progress bar (visible while downloading) */
+.upd-progress {
+  margin-top: 14px;
+  display: none;
+}
+.upd-card[data-state="downloading"] .upd-progress,
+.upd-card[data-state="ready"]       .upd-progress { display: block; }
+
+.upd-progress-track {
+  position: relative;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.upd-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7c3aed, #a855f7, #c084fc);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+  transition: width 0.4s ease;
+}
+.upd-progress-fill::after {
+  /* shimmer travelling along the fill */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+  transform: translateX(-100%);
+  animation: upd-shimmer 1.6s linear infinite;
+}
+@keyframes upd-shimmer {
+  to { transform: translateX(100%); }
+}
+.upd-card[data-state="ready"] .upd-progress-fill {
+  background: linear-gradient(90deg, #16a34a, #22c55e, #4ade80);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+}
+/* Indeterminate fallback while we don't have a real percent yet */
+.upd-card[data-state="downloading"][data-percent="0"] .upd-progress-fill {
+  width: 35%;
+  animation: upd-indeterm 1.4s cubic-bezier(.6,.1,.4,.9) infinite;
+}
+@keyframes upd-indeterm {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(370%); }
+}
+.upd-card[data-state="downloading"][data-percent="0"] .upd-progress-fill::after { display: none; }
+
+.upd-progress-meta {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74em;
+  color: #9a98ad;
+  font-variant-numeric: tabular-nums;
+}
+
+.upd-error-msg {
+  display: none;
+  margin-top: 10px;
+  font-size: 0.78em;
+  color: #f59e0b;
+  padding: 8px 12px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 8px;
+}
+.upd-card[data-state="error"] .upd-error-msg { display: block; }
 </style>
 </head>
 <body>
@@ -636,22 +825,55 @@ body[data-glossy="1"] .toggle input:checked + .toggle-slider {
   <div class="section">
     <div class="section-title">Updates</div>
 
-    <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
-      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 0;">
-          <div class="setting-label">
-            <span id="upd-status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:8px;vertical-align:middle;"></span>
-            <span id="upd-status-label">Checking…</span>
-          </div>
-          <div class="setting-desc" id="upd-current-version">Current version: …</div>
-          <div class="setting-desc" id="upd-last-checked" style="margin-top: 2px; opacity: 0.7;">Last checked: never</div>
-          <div class="setting-desc" id="upd-message"   style="margin-top: 4px; color: #f59e0b; display:none;"></div>
+    <div class="upd-card" id="upd-card" data-state="idle" data-percent="0">
+      <div class="upd-head">
+        <div class="upd-state-glyph">
+          <svg viewBox="0 0 24 24" fill="none" id="upd-glyph-svg">
+            <defs>
+              <linearGradient id="updcg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#c084fc"/>
+                <stop offset="100%" stop-color="#7c3aed"/>
+              </linearGradient>
+              <linearGradient id="updcg-green" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#4ade80"/>
+                <stop offset="100%" stop-color="#16a34a"/>
+              </linearGradient>
+              <linearGradient id="updcg-red" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f87171"/>
+                <stop offset="100%" stop-color="#dc2626"/>
+              </linearGradient>
+            </defs>
+            <polygon id="upd-glyph-hex" points="12,2 21,7 21,17 12,22 3,17 3,7"
+                     stroke="url(#updcg)" stroke-width="1.4" stroke-linejoin="round" fill="rgba(168,85,247,0.1)"/>
+            <path id="upd-glyph-star" d="M12 6 L13 11 L18 12 L13 13 L12 18 L11 13 L6 12 L11 11 Z" fill="#ffffff" opacity="0.95"/>
+          </svg>
         </div>
-        <div style="display: flex; gap: 8px; flex-shrink: 0;">
+        <div class="upd-info">
+          <div class="upd-status-label" id="upd-status-label">Checking for updates…</div>
+          <div class="upd-sub">
+            <span id="upd-current-version">v…</span><span id="upd-last-checked">Last checked: never</span>
+          </div>
+          <div id="upd-version-chip" class="upd-version-chip" style="display:none;">
+            <span id="upd-chip-from"></span>
+            <span class="arrow">→</span>
+            <span id="upd-chip-to"></span>
+          </div>
+        </div>
+        <div class="upd-actions">
           <button class="btn" id="upd-check-btn">Check for updates</button>
-          <button class="btn" id="upd-install-btn" style="background: var(--green); display: none;">Restart &amp; Update</button>
+          <button class="btn success" id="upd-install-btn" style="display:none;">Restart &amp; Update</button>
         </div>
       </div>
+
+      <div class="upd-progress">
+        <div class="upd-progress-track"><div class="upd-progress-fill" id="upd-progress-fill"></div></div>
+        <div class="upd-progress-meta">
+          <span id="upd-progress-left">0%</span>
+          <span id="upd-progress-right"></span>
+        </div>
+      </div>
+
+      <div class="upd-error-msg" id="upd-message"></div>
     </div>
 
     <div class="setting-row">
@@ -1072,13 +1294,13 @@ if (uboCheck) uboCheck.addEventListener('click', async () => {
 // Update panel
 // =====================================================================
 const STATUS_LABELS = {
-  idle:         { text: 'Idle',                              color: '#888' },
-  checking:     { text: 'Checking for updates…',             color: '#3b82f6' },
-  downloading:  { text: 'Downloading update…',               color: '#3b82f6' },
-  ready:        { text: 'Update ready — click Restart & Update', color: '#22c55e' },
-  'up-to-date': { text: 'Wizard Browser is up to date',      color: '#22c55e' },
-  error:        { text: 'Update check failed',               color: '#ef4444' },
-  disabled:     { text: 'Auto-update is disabled',           color: '#888'    }
+  idle:         'Idle',
+  checking:     'Checking for updates…',
+  downloading:  'Downloading update…',
+  ready:        'Update ready — click Restart & Update',
+  'up-to-date': 'Wizard Browser is up to date',
+  error:        'Update check failed',
+  disabled:     'Auto-update is disabled'
 };
 
 function fmtRelative(ts) {
@@ -1090,27 +1312,107 @@ function fmtRelative(ts) {
   return new Date(ts).toLocaleString();
 }
 
+function fmtBytes(n) {
+  if (!n || n < 1) return '0 B';
+  const u = ['B','KB','MB','GB'];
+  let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return n.toFixed(n < 10 && i > 0 ? 1 : 0) + ' ' + u[i];
+}
+
+function fmtEta(transferred, total, bps) {
+  if (!bps || !total || transferred >= total) return '';
+  const sec = (total - transferred) / bps;
+  if (sec < 60)  return Math.ceil(sec) + 's left';
+  if (sec < 3600) return Math.ceil(sec / 60) + ' min left';
+  return Math.ceil(sec / 3600) + ' hr left';
+}
+
+function setGlyphTint(state) {
+  const hex  = document.getElementById('upd-glyph-hex');
+  const star = document.getElementById('upd-glyph-star');
+  if (!hex || !star) return;
+  if (state === 'ready' || state === 'up-to-date') {
+    hex.setAttribute('stroke', 'url(#updcg-green)');
+    hex.setAttribute('fill',   'rgba(34,197,94,0.1)');
+  } else if (state === 'error') {
+    hex.setAttribute('stroke', 'url(#updcg-red)');
+    hex.setAttribute('fill',   'rgba(239,68,68,0.1)');
+  } else {
+    hex.setAttribute('stroke', 'url(#updcg)');
+    hex.setAttribute('fill',   'rgba(168,85,247,0.1)');
+  }
+}
+
 function renderUpdate(state) {
   if (!state) return;
-  const dot   = document.getElementById('upd-status-dot');
-  const label = document.getElementById('upd-status-label');
-  const cur   = document.getElementById('upd-current-version');
-  const last  = document.getElementById('upd-last-checked');
-  const msg   = document.getElementById('upd-message');
-  const inst  = document.getElementById('upd-install-btn');
-  const chk   = document.getElementById('upd-check-btn');
-  const meta  = STATUS_LABELS[state.status] || STATUS_LABELS.idle;
+  const card   = document.getElementById('upd-card');
+  const label  = document.getElementById('upd-status-label');
+  const cur    = document.getElementById('upd-current-version');
+  const last   = document.getElementById('upd-last-checked');
+  const msg    = document.getElementById('upd-message');
+  const inst   = document.getElementById('upd-install-btn');
+  const chk    = document.getElementById('upd-check-btn');
+  const chip   = document.getElementById('upd-version-chip');
+  const chipFrom = document.getElementById('upd-chip-from');
+  const chipTo   = document.getElementById('upd-chip-to');
+  const fill   = document.getElementById('upd-progress-fill');
+  const pLeft  = document.getElementById('upd-progress-left');
+  const pRight = document.getElementById('upd-progress-right');
 
-  dot.style.background = meta.color;
-  let text = meta.text;
-  if (state.status === 'downloading' && state.availableVersion) text += ` (v${state.availableVersion})`;
+  const pct = Math.max(0, Math.min(100, state.percent || 0));
+  card.dataset.state   = state.status;
+  card.dataset.percent = Math.round(pct);
+  setGlyphTint(state.status);
+
+  // Status line
+  let text = STATUS_LABELS[state.status] || STATUS_LABELS.idle;
+  if (state.status === 'downloading' && state.availableVersion) text = `Updating to v${state.availableVersion}`;
   if (state.status === 'ready'       && state.availableVersion) text = `v${state.availableVersion} ready — click Restart & Update`;
   label.textContent = text;
-  cur.textContent  = 'Current version: ' + (state.currentVersion || 'unknown');
-  last.textContent = 'Last checked: ' + fmtRelative(state.lastChecked);
-  if (state.message) { msg.textContent = state.message; msg.style.display = ''; }
-  else               { msg.textContent = '';            msg.style.display = 'none'; }
 
+  cur.textContent  = 'v' + (state.currentVersion || '?');
+  last.textContent = 'Last checked ' + fmtRelative(state.lastChecked);
+
+  // Version chip (shown when there is an available version different from current)
+  if (state.availableVersion && state.availableVersion !== state.currentVersion &&
+      (state.status === 'downloading' || state.status === 'ready')) {
+    chipFrom.textContent = 'v' + state.currentVersion;
+    chipTo.textContent   = 'v' + state.availableVersion;
+    chip.style.display = '';
+  } else {
+    chip.style.display = 'none';
+  }
+
+  // Error message
+  if (state.status === 'error' && state.message) {
+    msg.textContent = state.message;
+  } else {
+    msg.textContent = '';
+  }
+
+  // Progress bar
+  if (state.status === 'downloading') {
+    fill.style.width = pct + '%';
+    pLeft.textContent  = pct.toFixed(0) + '%';
+    if (state.total) {
+      const speed = state.bytesPerSecond ? fmtBytes(state.bytesPerSecond) + '/s' : '';
+      const eta   = fmtEta(state.transferred, state.total, state.bytesPerSecond);
+      pRight.textContent = [
+        fmtBytes(state.transferred) + ' / ' + fmtBytes(state.total),
+        speed,
+        eta
+      ].filter(Boolean).join('  ·  ');
+    } else {
+      pRight.textContent = '';
+    }
+  } else if (state.status === 'ready') {
+    fill.style.width = '100%';
+    pLeft.textContent  = '100%';
+    pRight.textContent = 'Ready to install';
+  }
+
+  // Buttons
   inst.style.display = (state.status === 'ready') ? '' : 'none';
   chk.disabled = (state.status === 'checking' || state.status === 'downloading');
   chk.textContent = (state.status === 'checking' || state.status === 'downloading') ? 'Checking…' : 'Check for updates';

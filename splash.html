@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Wizard Browser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #e5e5e5;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  -webkit-app-region: drag;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(168, 85, 247, 0.35) 0%, rgba(124, 58, 237, 0.18) 25%, rgba(10, 10, 12, 0.96) 55%, rgba(8, 8, 10, 0.98) 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(168, 85, 247, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.02) inset,
+    0 40px 80px rgba(0,0,0,0.6),
+    0 0 60px rgba(124, 58, 237, 0.22);
+  overflow: hidden;
+  animation: stageIn 0.5s cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes stageIn {
+  from { opacity: 0; transform: scale(0.985); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.stage.exit {
+  animation: stageOut 0.32s cubic-bezier(.4,0,1,1) forwards;
+}
+@keyframes stageOut {
+  to { opacity: 0; transform: scale(1.02); }
+}
+
+/* Drifting grain/sparkle layer */
+.grain {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.4;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* Floating particle dots */
+.particles {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.particles span {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: #c084fc;
+  box-shadow: 0 0 8px #a855f7, 0 0 16px rgba(168,85,247,0.6);
+  opacity: 0;
+  animation: float 4s linear infinite;
+}
+@keyframes float {
+  0%   { transform: translateY(20px) scale(0.6); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateY(-180px) scale(1.1); opacity: 0; }
+}
+/* Stagger 12 particles across width */
+.particles span:nth-child(1)  { left:  6%; animation-delay: 0.0s; }
+.particles span:nth-child(2)  { left: 14%; animation-delay: 1.3s; }
+.particles span:nth-child(3)  { left: 22%; animation-delay: 0.6s; }
+.particles span:nth-child(4)  { left: 30%; animation-delay: 2.2s; }
+.particles span:nth-child(5)  { left: 39%; animation-delay: 1.7s; }
+.particles span:nth-child(6)  { left: 47%; animation-delay: 0.3s; }
+.particles span:nth-child(7)  { left: 55%; animation-delay: 2.8s; }
+.particles span:nth-child(8)  { left: 63%; animation-delay: 1.0s; }
+.particles span:nth-child(9)  { left: 72%; animation-delay: 0.4s; }
+.particles span:nth-child(10) { left: 80%; animation-delay: 2.5s; }
+.particles span:nth-child(11) { left: 88%; animation-delay: 1.5s; }
+.particles span:nth-child(12) { left: 94%; animation-delay: 0.9s; }
+
+/* The rune */
+.rune-wrap {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 22px;
+}
+.rune-glow {
+  position: absolute;
+  inset: -28px;
+  background: radial-gradient(circle, rgba(168,85,247,0.55) 0%, rgba(124,58,237,0.18) 40%, transparent 70%);
+  filter: blur(4px);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(0.92); opacity: 0.6; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+.rune {
+  position: relative;
+  width: 100%; height: 100%;
+  animation: spin 14s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.rune svg { width: 100%; height: 100%; display: block; }
+.rune-core {
+  position: absolute;
+  inset: 0;
+  display: grid; place-items: center;
+  animation: corePulse 2.4s ease-in-out infinite;
+}
+@keyframes corePulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(192,132,252,0.7)); }
+  50%      { filter: drop-shadow(0 0 18px rgba(192,132,252,1)); }
+}
+
+/* Wordmark */
+.wordmark {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 40%, #a855f7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  margin-bottom: 6px;
+  text-shadow: 0 0 24px rgba(168, 85, 247, 0.15);
+}
+
+.tagline {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(229, 229, 229, 0.55);
+  margin-bottom: 28px;
+}
+
+/* Shimmer progress bar */
+.bar {
+  position: relative;
+  width: 220px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent 0%, #a855f7 40%, #ffffff 50%, #7c3aed 60%, transparent 100%);
+  border-radius: 999px;
+  animation: shimmer 1.4s cubic-bezier(.6,.1,.4,.9) infinite;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.7);
+}
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(350%); }
+}
+
+.version {
+  position: absolute;
+  bottom: 14px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: rgba(229, 229, 229, 0.32);
+  font-variant-numeric: tabular-nums;
+}
+</style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="grain"></div>
+    <div class="particles">
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+    </div>
+
+    <div class="rune-wrap">
+      <div class="rune-glow"></div>
+      <div class="rune">
+        <svg viewBox="0 0 100 100" fill="none">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#c084fc"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+          </defs>
+          <!-- Outer hex ring -->
+          <polygon points="50,6 88,28 88,72 50,94 12,72 12,28"
+                   stroke="url(#g1)" stroke-width="1.4" stroke-linejoin="round"
+                   opacity="0.85"/>
+          <!-- Inner spokes -->
+          <g stroke="url(#g1)" stroke-width="1" opacity="0.55">
+            <line x1="50" y1="6" x2="50" y2="38"/>
+            <line x1="88" y1="28" x2="62" y2="44"/>
+            <line x1="88" y1="72" x2="62" y2="56"/>
+            <line x1="50" y1="94" x2="50" y2="62"/>
+            <line x1="12" y1="72" x2="38" y2="56"/>
+            <line x1="12" y1="28" x2="38" y2="44"/>
+          </g>
+          <!-- Inner hex -->
+          <polygon points="50,32 70,42 70,58 50,68 30,58 30,42"
+                   stroke="url(#g1)" stroke-width="1.2" fill="rgba(168,85,247,0.08)"/>
+        </svg>
+      </div>
+      <!-- Center star (counter-rotating) -->
+      <div class="rune-core">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+          <path d="M12 1.5 L13.6 9.4 L21.5 11 L13.6 12.6 L12 20.5 L10.4 12.6 L2.5 11 L10.4 9.4 Z"
+                fill="#ffffff" opacity="0.95"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="wordmark">Wizard Browser</div>
+    <div class="tagline">Conjuring your session</div>
+
+    <div class="bar"></div>
+
+    <div class="version" id="version">v0.0.0</div>
+  </div>
+
+<script>
+  // Version comes from main via location.hash (set on loadFile)
+  const v = (location.hash || '').replace(/^#/, '');
+  if (v) document.getElementById('version').textContent = 'v' + v;
+
+  // Allow main process to trigger exit fade
+  window.__exitSplash = () => {
+    const stage = document.getElementById('stage');
+    if (stage) stage.classList.add('exit');
+  };
+</script>
+</body>
+</html>

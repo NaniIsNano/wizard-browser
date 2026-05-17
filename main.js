@@ -784,12 +784,49 @@ async function checkUBOForUpdate() {
   }
 }
 
+let splashWindow = null;
+
+function createSplash() {
+  splashWindow = new BrowserWindow({
+    width: 480,
+    height: 320,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: true,
+    center: true,
+    show: false,
+    skipTaskbar: true,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  });
+  splashWindow.loadFile('splash.html', { hash: app.getVersion() });
+  splashWindow.once('ready-to-show', () => splashWindow.show());
+  splashWindow.on('closed', () => { splashWindow = null; });
+}
+
+function dismissSplash() {
+  if (!splashWindow || splashWindow.isDestroyed()) return;
+  // Trigger the CSS fade-out, then destroy after the animation duration.
+  splashWindow.webContents.executeJavaScript('window.__exitSplash && window.__exitSplash()')
+    .catch(() => {});
+  setTimeout(() => {
+    if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy();
+  }, 340);
+}
+
 function createWindow() {
   configureContentSession();
+  createSplash();
 
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 900,
+    show: false,                  // revealed after splash + ready-to-show
     title: 'Wizard Browser',
     backgroundColor: '#0a0a0a',
     icon: path.join(__dirname, 'icon.png'),
@@ -803,6 +840,21 @@ function createWindow() {
   });
 
   Menu.setApplicationMenu(null);
+
+  // Hold the splash for a minimum window so it doesn't flash by on fast boots.
+  const splashStart = Date.now();
+  const MIN_SPLASH_MS = 1500;
+  mainWindow.once('ready-to-show', () => {
+    const wait = Math.max(0, MIN_SPLASH_MS - (Date.now() - splashStart));
+    setTimeout(() => {
+      dismissSplash();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    }, wait);
+  });
+
   mainWindow.loadFile('browser.html');
 }
 
@@ -1790,7 +1842,13 @@ let updateState = {
   currentVersion: app.getVersion(),
   availableVersion: null,
   lastChecked: null,       // ms epoch
-  message: null
+  message: null,
+  // Populated while status === 'downloading' (from electron-updater's
+  // 'download-progress' event). Cleared when status leaves 'downloading'.
+  percent: 0,
+  bytesPerSecond: 0,
+  transferred: 0,
+  total: 0
 };
 
 function setUpdateState(patch) {
@@ -1808,10 +1866,27 @@ autoUpdater.on('checking-for-update', () => {
   setUpdateState({ status: 'checking', message: null });
 });
 autoUpdater.on('update-available', (info) => {
-  setUpdateState({ status: 'downloading', availableVersion: info && info.version, message: null });
+  setUpdateState({
+    status: 'downloading',
+    availableVersion: info && info.version,
+    message: null,
+    percent: 0, bytesPerSecond: 0, transferred: 0, total: 0
+  });
+});
+autoUpdater.on('download-progress', (p) => {
+  setUpdateState({
+    status: 'downloading',
+    percent: p && typeof p.percent === 'number' ? p.percent : 0,
+    bytesPerSecond: p && p.bytesPerSecond || 0,
+    transferred: p && p.transferred || 0,
+    total: p && p.total || 0
+  });
 });
 autoUpdater.on('update-downloaded', (info) => {
-  setUpdateState({ status: 'ready', availableVersion: info && info.version, message: null });
+  setUpdateState({
+    status: 'ready', availableVersion: info && info.version, message: null,
+    percent: 100
+  });
 });
 autoUpdater.on('update-not-available', () => {
   setUpdateState({ status: 'up-to-date', availableVersion: null, message: null, lastChecked: Date.now() });
@@ -2089,7 +2164,10 @@ ipcMain.handle('ubo-dash-get-user-filters', () => uboGetUserFilters());
 ipcMain.handle('ubo-dash-set-user-filters', (_, text) => uboSetUserFilters(text));
 ipcMain.handle('ubo-dash-recent-blocks',    () => recentBlocks);
 ipcMain.handle('check-update', async () => { await runUpdateCheck('manual'); return updateState; });
-ipcMain.on('install-update', () => autoUpdater.quitAndInstall(false, true));
+// isSilent=true makes electron-updater pass /S to the NSIS installer, so the
+// auto-update path skips the wizard entirely. The first-time installer still
+// shows the branded wizard because it is launched without /S by the user.
+ipcMain.on('install-update', () => autoUpdater.quitAndInstall(true, true));
 
 // =====================================================================
 // Lifecycle

@@ -1,6 +1,6 @@
 {
   "name": "wizard-browser",
-  "version": "2.17.0",
+  "version": "2.18.0",
   "description": "Libre, privacy-focused browser powered by Wizard Search",
   "author": {
     "name": "NaniIsNano",
@@ -34,10 +34,29 @@
   "build": {
     "appId": "com.wizard.browser",
     "productName": "Wizard Browser",
+    "directories": {
+      "buildResources": "build"
+    },
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "icon": "build/installer.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Wizard Browser",
+      "menuCategory": false,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/installer.ico",
+      "uninstallerIcon": "build/uninstaller.ico",
+      "installerHeaderIcon": "build/installer.ico",
+      "artifactName": "WizardBrowser-Setup-${version}.${ext}",
+      "uninstallDisplayName": "Wizard Browser"
     },
     "linux": {
       "target": [
@@ -64,6 +83,8 @@
       "settings.html",
       "extensions.html",
       "ubo-dashboard.html",
+      "splash.html",
+      "logo.png",
       "tracker-list.json",
       "THIRD-PARTY-LICENSES.txt",
       "backgrounds/**/*",
