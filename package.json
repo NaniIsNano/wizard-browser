@@ -1,6 +1,6 @@
 {
   "name": "wizard-browser",
-  "version": "2.18.3",
+  "version": "2.18.4",
   "description": "Libre, privacy-focused browser powered by Wizard Search",
   "author": {
     "name": "NaniIsNano",
@@ -56,8 +56,7 @@
       "uninstallerIcon": "build/uninstaller.ico",
       "installerHeaderIcon": "build/installer.ico",
       "artifactName": "WizardBrowser-Setup-${version}.${ext}",
-      "uninstallDisplayName": "Wizard Browser",
-      "include": "build/installer.nsh"
+      "uninstallDisplayName": "Wizard Browser"
     },
     "linux": {
       "target": [
