@@ -791,13 +791,17 @@ function createSplash() {
     width: 480,
     height: 320,
     frame: false,
-    transparent: true,
+    // Solid opaque window — the previous transparent: true let the desktop
+    // bleed through the stage's rounded-corner cutouts. Matching the stage's
+    // solid backdrop color so the rectangle outside the rounded corners is
+    // invisible against the dark splash.
+    transparent: false,
     resizable: false,
     movable: true,
     center: true,
     show: false,
     skipTaskbar: true,
-    backgroundColor: '#00000000',
+    backgroundColor: '#06040c',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
