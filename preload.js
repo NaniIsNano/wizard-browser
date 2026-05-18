@@ -38,6 +38,10 @@ contextBridge.exposeInMainWorld('wizardBrowser', {
   verifyPin:        (pin) => ipcRenderer.invoke('verify-pin', pin),
   skipPinSetup:     () => ipcRenderer.invoke('skip-pin-setup'),
 
+  // Export / Import all data (bookmarks, settings, per-site rules)
+  exportData:       () => ipcRenderer.invoke('export-data'),
+  importData:       () => ipcRenderer.invoke('import-data'),
+
   // Auto-update
   checkUpdate:        () => ipcRenderer.invoke('check-update'),
   installUpdate:      () => ipcRenderer.send('install-update'),

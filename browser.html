@@ -627,6 +627,69 @@ body[data-layout="win7"] #statusbar { display: flex; }
 #tab-ctx .ctx-item:hover { background: var(--accent); color: var(--accent-on); }
 #tab-ctx .ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
 
+/* Find in page — floats over the active webview, anchored top-right */
+#find-bar {
+  position: fixed;
+  top: 92px;
+  right: 16px;
+  z-index: 9998;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--text);
+}
+#find-bar.show { display: flex; }
+#find-input {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: var(--font);
+  width: 220px;
+  outline: none;
+}
+#find-input:focus { border-color: var(--accent); }
+#find-count {
+  font-size: 11px;
+  color: var(--text-dim, #999);
+  min-width: 48px;
+  text-align: right;
+}
+#find-count.empty { color: var(--red, #e35); }
+#find-bar button {
+  background: transparent;
+  color: var(--text);
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#find-bar button:hover { background: rgba(255, 255, 255, 0.08); }
+#find-bar button:disabled { opacity: 0.35; cursor: default; background: transparent; }
+
+/* Muted-tab indicator inside the tab label */
+.tab .tab-mute {
+  display: inline-block;
+  margin-right: 4px;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
 /* Toolbar */
 #toolbar {
   flex: 0 0 48px;
@@ -1554,6 +1617,7 @@ webview.active { display: flex; }
 <div id="tab-ctx">
   <div class="ctx-item" data-act="reload">Reload</div>
   <div class="ctx-item" data-act="duplicate">Duplicate</div>
+  <div class="ctx-item" data-act="toggle-mute" id="ctx-mute">Mute tab</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item" data-act="newtab">New tab</div>
   <div class="ctx-item" data-act="newtab-right">New tab to the right</div>
@@ -1561,6 +1625,15 @@ webview.active { display: flex; }
   <div class="ctx-item" data-act="close">Close</div>
   <div class="ctx-item" data-act="close-others">Close other tabs</div>
   <div class="ctx-item" data-act="close-right">Close tabs to the right</div>
+</div>
+
+<!-- Find in page bar (Ctrl+F) -->
+<div id="find-bar" role="search" aria-label="Find in page">
+  <input id="find-input" type="text" placeholder="Find in page" autocomplete="off" spellcheck="false" />
+  <span id="find-count">0/0</span>
+  <button id="find-prev" title="Previous match (Shift+Enter)" disabled>&uarr;</button>
+  <button id="find-next" title="Next match (Enter)" disabled>&darr;</button>
+  <button id="find-close" title="Close (Esc)">&times;</button>
 </div>
 
 <script>
@@ -1681,7 +1754,7 @@ function isActive(wv) {
 function newTab(opts = {}) {
   const id = nextTabId++;
   const wv = createWebview(opts.url);
-  const tab = { id, title: opts.title || 'New Tab', url: opts.url || HOME_URL, wv };
+  const tab = { id, title: opts.title || 'New Tab', url: opts.url || HOME_URL, wv, muted: false };
   if (opts.afterId != null) {
     const idx = tabs.findIndex(t => t.id === opts.afterId);
     tabs.splice(idx + 1, 0, tab);
@@ -1699,6 +1772,9 @@ function activateTab(id) {
   for (const t of tabs) {
     if (t.id === id) t.wv.classList.add('active'); else t.wv.classList.remove('active');
   }
+  // Find-in-page is bound to one webview; switching tab invalidates the
+  // listener. Close the bar rather than try to re-bind on the fly.
+  if (findBar.classList.contains('show')) closeFindBar();
   renderTabs();
   const t = tabs.find(x => x.id === id);
   if (t) {
@@ -1713,6 +1789,9 @@ function closeTab(id) {
   const idx = tabs.findIndex(t => t.id === id);
   if (idx < 0) return;
   const tab = tabs[idx];
+  // If the find bar was bound to this tab's webview, tear it down before
+  // the webview is removed so the listener detach doesn't throw.
+  if (findActiveWv === tab.wv) closeFindBar();
   tab.wv.remove();
   tabs.splice(idx, 1);
   if (tabs.length === 0) { newTab(); return; }
@@ -1746,7 +1825,8 @@ function renderTabs() {
     el.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
     el.dataset.tabId = tab.id;
     el.draggable = true;
-    el.innerHTML = `<span class="tab-title" title="${escHtml(tab.title)}">${escHtml(tab.title || 'New Tab')}</span><span class="tab-close" title="Close tab">×</span>`;
+    const muteGlyph = tab.muted ? `<span class="tab-mute" title="Muted">&#128264;</span>` : '';
+    el.innerHTML = `${muteGlyph}<span class="tab-title" title="${escHtml(tab.title)}">${escHtml(tab.title || 'New Tab')}</span><span class="tab-close" title="Close tab">×</span>`;
     el.addEventListener('click', (e) => {
       if (e.target.classList.contains('tab-close')) { closeTab(tab.id); return; }
       activateTab(tab.id);
@@ -1755,6 +1835,10 @@ function renderTabs() {
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       ctxTabId = tab.id;
+      // Reflect the current mute state on the toggle label so the user
+      // sees "Mute tab" / "Unmute tab" rather than a single ambiguous verb.
+      const muteEl = $('#ctx-mute');
+      if (muteEl) muteEl.textContent = tab.muted ? 'Unmute tab' : 'Mute tab';
       tabCtx.style.left = e.clientX + 'px';
       tabCtx.style.top  = e.clientY + 'px';
       tabCtx.classList.add('show');
@@ -1794,6 +1878,13 @@ tabCtx.addEventListener('click', (e) => {
   switch (act) {
     case 'reload':       { const t = tabs[idx]; try { t.wv.reload(); } catch {} break; }
     case 'duplicate':    duplicateTab(tabId); break;
+    case 'toggle-mute':  {
+      const t = tabs[idx];
+      t.muted = !t.muted;
+      try { t.wv.setAudioMuted(t.muted); } catch {}
+      renderTabs();
+      break;
+    }
     case 'newtab':       newTab(); break;
     case 'newtab-right': newTab({ afterId: tabId }); break;
     case 'close':        closeTab(tabId); break;
@@ -1804,6 +1895,103 @@ tabCtx.addEventListener('click', (e) => {
 document.addEventListener('click', () => { if (tabCtx.classList.contains('show')) { tabCtx.classList.remove('show'); ctxTabId = null; } });
 
 function activeView() { const t = tabs.find(x => x.id === activeTabId); return t ? t.wv : null; }
+
+// ─────────── Find in page (Ctrl+F) ───────────
+// Uses Electron's <webview>.findInPage. We attach a `found-in-page`
+// listener on demand to whichever webview owns the search and detach
+// it when the bar closes, so we never leak listeners across tabs.
+const findBar    = $('#find-bar');
+const findInput  = $('#find-input');
+const findCount  = $('#find-count');
+const findPrev   = $('#find-prev');
+const findNext   = $('#find-next');
+const findClose  = $('#find-close');
+
+let findActiveWv     = null;   // webview the current search is bound to
+let findFoundHandler = null;
+let findLastQuery    = '';
+
+function detachFindListener() {
+  if (findActiveWv && findFoundHandler) {
+    try { findActiveWv.removeEventListener('found-in-page', findFoundHandler); } catch {}
+  }
+  findActiveWv = null;
+  findFoundHandler = null;
+}
+
+function openFindBar() {
+  const wv = activeView();
+  if (!wv) return;
+  // If we're re-binding to a different tab's webview, drop the old listener.
+  if (findActiveWv && findActiveWv !== wv) detachFindListener();
+  if (!findActiveWv) {
+    findActiveWv = wv;
+    findFoundHandler = (e) => {
+      const r = e.result || {};
+      if (typeof r.matches === 'number') {
+        if (r.matches === 0) {
+          findCount.textContent = '0/0';
+          findCount.classList.add('empty');
+          findPrev.disabled = findNext.disabled = true;
+        } else {
+          findCount.textContent = (r.activeMatchOrdinal || 0) + '/' + r.matches;
+          findCount.classList.remove('empty');
+          findPrev.disabled = findNext.disabled = false;
+        }
+      }
+    };
+    findActiveWv.addEventListener('found-in-page', findFoundHandler);
+  }
+  findBar.classList.add('show');
+  findInput.focus();
+  findInput.select();
+}
+
+function closeFindBar() {
+  findBar.classList.remove('show');
+  findLastQuery = '';
+  findCount.textContent = '0/0';
+  findCount.classList.remove('empty');
+  findPrev.disabled = findNext.disabled = true;
+  if (findActiveWv) {
+    try { findActiveWv.stopFindInPage('clearSelection'); } catch {}
+  }
+  detachFindListener();
+}
+
+function runFind(direction /* 'next' | 'prev' | null */) {
+  const wv = findActiveWv;
+  if (!wv) return;
+  const q = findInput.value;
+  if (!q) {
+    try { wv.stopFindInPage('clearSelection'); } catch {}
+    findCount.textContent = '0/0';
+    findCount.classList.remove('empty');
+    findPrev.disabled = findNext.disabled = true;
+    findLastQuery = '';
+    return;
+  }
+  // findNext means "advance from the current match"; only true when the
+  // user explicitly hits ↑/↓/Enter on the same query. Typing a new query
+  // resets the search from the top of the document.
+  const sameQuery = q === findLastQuery;
+  const opts = {
+    forward:   direction !== 'prev',
+    findNext:  sameQuery && direction !== null,
+    matchCase: false
+  };
+  try { wv.findInPage(q, opts); } catch {}
+  findLastQuery = q;
+}
+
+findInput.addEventListener('input',   () => runFind(null));
+findInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter')     { e.preventDefault(); runFind(e.shiftKey ? 'prev' : 'next'); }
+  else if (e.key === 'Escape') { e.preventDefault(); closeFindBar(); }
+});
+findNext.addEventListener('click',  () => { runFind('next'); findInput.focus(); });
+findPrev.addEventListener('click',  () => { runFind('prev'); findInput.focus(); });
+findClose.addEventListener('click', () => closeFindBar());
 
 // ─────────── Padlock: site info & permissions ───────────
 const PAD_ICONS = {
@@ -2231,6 +2419,8 @@ document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'w') { e.preventDefault(); if (activeTabId != null) closeTab(activeTabId); }
   if (e.ctrlKey && e.key === 'Tab') { e.preventDefault(); cycleTab(1); }
   if (e.ctrlKey && e.shiftKey && e.key === 'Tab') { e.preventDefault(); cycleTab(-1); }
+  if (e.ctrlKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); openFindBar(); }
+  if (e.key === 'Escape' && findBar.classList.contains('show')) { e.preventDefault(); closeFindBar(); }
 });
 function cycleTab(dir) {
   if (!tabs.length) return;

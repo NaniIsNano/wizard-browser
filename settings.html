@@ -821,6 +821,21 @@ body[data-glossy="1"] .toggle input:checked + .toggle-slider {
     </div>
   </div>
 
+  <!-- DATA -->
+  <div class="section">
+    <div class="section-title">Data</div>
+    <p style="margin: 0 0 12px; color: var(--text-dim, #888); font-size: 13px;">
+      Export your bookmarks, settings, speed dial and per-site rules to a single JSON file —
+      and re-import on another machine or after a clean install. PIN data is intentionally
+      excluded.
+    </p>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="btn" id="data-export-btn">Export to file…</button>
+      <button class="btn" id="data-import-btn">Import from file…</button>
+    </div>
+    <div id="data-status" style="margin-top: 10px; font-size: 12px; color: var(--text-dim, #888);"></div>
+  </div>
+
   <!-- UPDATES -->
   <div class="section">
     <div class="section-title">Updates</div>
@@ -1110,6 +1125,48 @@ document.getElementById('sd-add-btn').addEventListener('click', async () => {
   document.getElementById('sd-url').value = '';
   showToast('Speed dial updated');
 });
+
+// Export / Import all data
+(function wireExportImport() {
+  const exportBtn = document.getElementById('data-export-btn');
+  const importBtn = document.getElementById('data-import-btn');
+  const status    = document.getElementById('data-status');
+  if (!exportBtn || !importBtn || !window.wizardBrowser) return;
+
+  exportBtn.addEventListener('click', async () => {
+    status.textContent = 'Exporting…';
+    const res = await window.wizardBrowser.exportData();
+    if (res && res.ok) {
+      status.textContent = 'Saved to ' + res.path;
+      showToast('Exported');
+    } else if (res && res.canceled) {
+      status.textContent = '';
+    } else {
+      status.textContent = 'Export failed' + (res && res.error ? ': ' + res.error : '');
+    }
+  });
+
+  importBtn.addEventListener('click', async () => {
+    status.textContent = 'Importing…';
+    const res = await window.wizardBrowser.importData();
+    if (res && res.ok) {
+      status.textContent = 'Imported from ' + res.path + ' — reload the browser to see every change apply.';
+      showToast('Imported');
+      // Re-render the speed dial and re-pull settings so what's visible
+      // on this page reflects the imported state without a hard reload.
+      try {
+        const s = await window.wizardBrowser.getSettings();
+        currentSettings = s;
+        const sd = await window.wizardBrowser.getSpeedDial();
+        renderSpeedDial(sd || []);
+      } catch {}
+    } else if (res && res.canceled) {
+      status.textContent = '';
+    } else {
+      status.textContent = 'Import failed' + (res && res.error ? ': ' + res.error : '');
+    }
+  });
+})();
 
 // PIN management
 document.getElementById('pin-set-btn').addEventListener('click', async () => {
