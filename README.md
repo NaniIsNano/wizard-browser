@@ -49,18 +49,20 @@ Sources: SearXNG, Wikipedia, Wikidata, YouTube (via Piped), Hacker News, Reddit,
 
 ### Browser
 
-- Multi-tab: drag to reorder, middle-click to close, `Ctrl+T` / `Ctrl+W`, right-click tab menu
+- Multi-tab: drag to reorder, middle-click to close, `Ctrl+T` / `Ctrl+W`, right-click tab menu with **mute / unmute** per tab
 - 10 colour schemes × 6 backgrounds (none, the Frutiger Aero gradient, 3 built-in wallpapers, or your own image), plus sharp-edges / glossy-UI modifiers and a Win7 layout
 - Animated splash screen on boot
 - Back / Forward / Reload / Home
+- **Find in page** (`Ctrl+F`)
 - Smart URL bar (auto-detects URLs vs. search queries)
 - Block counter on the toolbar shield
 - Bookmarks (`Ctrl+B`)
 - Downloads (`Ctrl+J`)
 - Customisable speed dial
+- **Export / import all data** (bookmarks, settings, speed dial, per-site rules) as a single portable JSON file
 - PIN lock on launch
 - Manual CLEAR button to wipe session data
-- Right-click context menu: copy, paste, **"Search Wizard for…"** the selection, bookmark page / link, copy image, **view page source**, inspect element
+- Right-click context menu: copy, paste, **"Search Wizard for…"** the selection, bookmark page / link, copy image, **Picture-in-Picture** for videos, view page source, inspect element
 - Auto-updater (checks GitHub Releases on startup, installs on quit; opt-out in Settings → Updates)
 
 ### Tor
@@ -101,6 +103,7 @@ Community store backed by Supabase, with in-app install. No sideloading.
 | Shortcut | Action |
 |---|---|
 | `Ctrl+L` | Focus URL bar |
+| `Ctrl+F` | Find in page |
 | `Alt+←` / `Alt+→` | Back / Forward |
 | `F5` | Reload |
 | `Ctrl+D` | Bookmark page |

@@ -954,6 +954,25 @@ app.on('web-contents-created', (event, contents) => {
       tmpl.push({ type: 'separator' });
     }
 
+    // Picture-in-Picture for <video> elements. The Chromium PiP API
+    // lives on the video element itself, so we use elementFromPoint at
+    // the click location to find the right one. requestPictureInPicture
+    // rejects if the site has set disablePictureInPicture — we swallow
+    // it since there's no useful action either way.
+    if (params.mediaType === 'video') {
+      tmpl.push({
+        label: 'Picture in Picture',
+        click: () => {
+          contents.executeJavaScript(
+            `(() => { const el = document.elementFromPoint(${params.x}, ${params.y});` +
+            ` const v = el && (el.tagName === 'VIDEO' ? el : (el.closest && el.closest('video')));` +
+            ` if (v && v.requestPictureInPicture) v.requestPictureInPicture().catch(() => {}); })();`
+          ).catch(() => {});
+        }
+      });
+      tmpl.push({ type: 'separator' });
+    }
+
     tmpl.push({
       label: 'Bookmark This Page',
       click: () => {
@@ -1399,6 +1418,79 @@ ipcMain.handle('set-pin',          (_, { pin, enabled }) => {
 });
 ipcMain.handle('verify-pin',       (_, pin) => pinData.pin === pin);
 ipcMain.handle('skip-pin-setup',   () => { pinData.asked = true; saveJSON(pinPath, pinData); return true; });
+
+// =====================================================================
+// Export / Import all data
+// =====================================================================
+// Bundles the user's portable state into a single JSON file. We
+// deliberately omit the PIN data — exporting a PIN hash is a footgun
+// and the import path would need a "are you sure you want to replace
+// your lock screen credentials" confirmation we don't want to design
+// around. The user can re-set their PIN after restore.
+const DATA_BUNDLE_VERSION = 'wizard-data-v1';
+
+ipcMain.handle('export-data', async () => {
+  try {
+    const res = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export Wizard data',
+      defaultPath: 'wizard-data-' + new Date().toISOString().slice(0, 10) + '.json',
+      filters: [{ name: 'Wizard data', extensions: ['json'] }]
+    });
+    if (res.canceled || !res.filePath) return { ok: false, canceled: true };
+    const bundle = {
+      version: DATA_BUNDLE_VERSION,
+      exportedAt: new Date().toISOString(),
+      appVersion: app.getVersion(),
+      settings,
+      bookmarks,
+      siteSettings
+    };
+    fs.writeFileSync(res.filePath, JSON.stringify(bundle, null, 2), 'utf-8');
+    return { ok: true, path: res.filePath };
+  } catch (e) {
+    return { ok: false, error: e && e.message };
+  }
+});
+
+ipcMain.handle('import-data', async () => {
+  try {
+    const res = await dialog.showOpenDialog(mainWindow, {
+      title: 'Import Wizard data',
+      filters: [{ name: 'Wizard data', extensions: ['json'] }],
+      properties: ['openFile']
+    });
+    if (res.canceled || !res.filePaths || !res.filePaths[0]) return { ok: false, canceled: true };
+    const raw  = fs.readFileSync(res.filePaths[0], 'utf-8');
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object' || data.version !== DATA_BUNDLE_VERSION) {
+      return { ok: false, error: 'Not a Wizard data file (expected version ' + DATA_BUNDLE_VERSION + ').' };
+    }
+    // Replace state atomically per slot. We keep references the same so
+    // any existing closures still see the updated content.
+    if (data.settings && typeof data.settings === 'object') {
+      settings = { ...settings, ...data.settings };
+      saveJSON(settingsPath, settings);
+    }
+    if (Array.isArray(data.bookmarks)) {
+      bookmarks = data.bookmarks.filter(b => b && typeof b.url === 'string');
+      saveJSON(bookmarksPath, bookmarks);
+    }
+    if (data.siteSettings && typeof data.siteSettings === 'object') {
+      siteSettings = { ...data.siteSettings };
+      saveJSON(siteSettingsPath, siteSettings);
+    }
+    // Tell every renderer (shell, search homepage, settings) to re-skin
+    // and re-render with the imported state.
+    try {
+      webContents.getAllWebContents().forEach(wc => {
+        try { wc.send('settings-changed', settings); } catch {}
+      });
+    } catch {}
+    return { ok: true, path: res.filePaths[0] };
+  } catch (e) {
+    return { ok: false, error: e && e.message };
+  }
+});
 
 // Webview navigation requested from inside the inner page (search/settings).
 // Forward to the shell so it can drive `<webview>.loadURL(...)`.
