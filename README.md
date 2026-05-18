@@ -10,7 +10,7 @@
   [![Electron](https://img.shields.io/badge/electron-35-555?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
 
   [Website](https://wizardbrowser.netlify.app/) · [Extension Store](https://wizardextensionstore.netlify.app/)
-  [Website Mirror](https://privacywizard.net/)
+  · [Website Mirror](https://privacywizard.net/)
 
   <br/>
 
