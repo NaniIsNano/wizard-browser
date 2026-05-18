@@ -24,21 +24,23 @@
 
 | Feature | Details |
 |---|---|
-| Ad & tracker blocking | Real uBlock Origin (gorhill MV2, auto-installed and auto-updated) plus Ghostery's filter engine (EasyList, EasyPrivacy, uBO unbreak, Peter Lowe's) as a fallback. Static blocklist for first/offline launch. |
-| Ad blocker dashboard | Native dashboard from the toolbar shield: engine status, filter-list toggles, custom rules, live log of blocked requests. |
+| Ad & tracker blocking | Real uBlock Origin (gorhill MV2, auto-installed from GitHub Releases and silently kept up to date) with Ghostery's filter engine (EasyList, EasyPrivacy, uBO unbreak, Peter Lowe's) as the always-on fallback. Static blocklist used until the engine is ready on first / offline launch. |
+| Ad blocker dashboard | Native dashboard from the toolbar shield: engine status, filter-list toggles, custom user filters, live log of blocked requests. |
 | No cookies | All cookies stripped from responses. Nothing persists between sessions. |
-| WebRTC leak prevention | Real IP stays hidden during video/voice. |
+| WebRTC leak prevention | Real IP stays hidden during video/voice (`disable_non_proxied_udp`). |
 | Canvas & WebGL spoofing | GPU/rendering fingerprinting blocked. |
-| Referrer stripping | Cross-origin referrer headers removed. |
-| Generic user agent | Spoofs a common Chrome UA. |
+| Referrer stripping | Cross-origin `Referer` headers removed. |
+| Generic user agent | Spoofs a common Chrome UA and sanitises client hints. |
 | DNT + GPC headers | Sends `DNT: 1` and `Sec-GPC: 1` on every request. |
+| Per-site padlock | Per-origin toggles for JavaScript (enforced by an injected strict CSP), camera/mic, geolocation and notifications. Sensitive Web APIs (HID, Serial, USB, Bluetooth, MIDI sysex, idle detection, clipboard read, window management, local fonts, storage access) are hard-denied. |
 | Clear on exit | All browsing data wiped when the browser closes. |
+| Hardened defaults | Background networking, sync, component updates, default apps and Chromium extensions disabled at the command line. |
 
 ### Wizard Search
 
-Built-in search aggregated from multiple independent sources. Queries route through a pool of SearXNG instances (randomly selected, DuckDuckGo Lite as fallback) server-side to avoid CORS and fingerprinting.
+Built-in search aggregated from multiple independent sources. Queries route through a randomised pool of nine SearXNG instances (DuckDuckGo Lite as fallback) **server-side**, so the search request never carries your browser fingerprint and never hits a CORS wall.
 
-Sources: SearXNG, Wikipedia, YouTube (via Piped), Hacker News, Reddit, Archive.org, Stack Overflow, GitHub.
+Sources: SearXNG, Wikipedia, Wikidata, YouTube (via Piped), Hacker News, Reddit, Archive.org, Stack Overflow, GitHub.
 
 - Knowledge panels from Wikipedia and Wikidata
 - Image viewer with copy, download, navigation
@@ -48,18 +50,29 @@ Sources: SearXNG, Wikipedia, YouTube (via Piped), Hacker News, Reddit, Archive.o
 ### Browser
 
 - Multi-tab: drag to reorder, middle-click to close, `Ctrl+T` / `Ctrl+W`, right-click tab menu
-- 10 colour schemes × 6 backgrounds (4 built-in wallpapers or your own), plus sharp-edges / glossy-UI modifiers and a Win7 layout
+- 10 colour schemes × 6 backgrounds (none, the Frutiger Aero gradient, 3 built-in wallpapers, or your own image), plus sharp-edges / glossy-UI modifiers and a Win7 layout
+- Animated splash screen on boot
 - Back / Forward / Reload / Home
 - Smart URL bar (auto-detects URLs vs. search queries)
 - Block counter on the toolbar shield
 - Bookmarks (`Ctrl+B`)
 - Downloads (`Ctrl+J`)
-- Speed dial
-- Tor routing via SOCKS5 (auto-suggests `.onion` versions)
+- Customisable speed dial
 - PIN lock on launch
 - Manual CLEAR button to wipe session data
-- Right-click context menu: copy, paste, search selection, bookmark, inspect
-- Auto-updater (checks GitHub Releases on startup, installs on quit)
+- Right-click context menu: copy, paste, **"Search Wizard for…"** the selection, bookmark page / link, copy image, **view page source**, inspect element
+- Auto-updater (checks GitHub Releases on startup, installs on quit; opt-out in Settings → Updates)
+
+### Tor
+
+Wizard detects an existing Tor daemon at `127.0.0.1:9050` (your own Tor service, or the standalone Tor Browser-less daemon). If one isn't running it falls back to a **bundled `tor` binary** — the official Tor Expert Bundle is fetched at CI build time and shipped inside every Windows and Linux release — spawned on port `9151` with its own data directory and `torrc`.
+
+Two routing modes:
+
+- **`.onion`-only (default)** — a PAC script sends only `*.onion` hosts through Tor. Everything else stays DIRECT.
+- **Full traffic** — flip the toggle and *all* traffic routes through `socks5://127.0.0.1:<port>`.
+
+A built-in `onionMap` for DuckDuckGo, Proton Mail, Facebook, Twitter/X, NYT, BBC, Reddit, GitHub and Archive.org auto-surfaces the `.onion` version of the site you're on. If a `.onion` load fails the UI tells you Tor isn't reachable instead of showing a blank error.
 
 ### WizardScript extension API
 
@@ -81,7 +94,7 @@ Community store backed by Supabase, with in-app install. No sideloading.
 
 - In-browser: open Extensions → Store. One-click install, no restart.
 - Web: browse, review, publish at [wizardextensionstore.netlify.app](https://wizardextensionstore.netlify.app/). Paste a `wizard.json` and script, the site packages a `.wizext`.
-- Hardened install path: size/file-count capped, zip-slip-validated, manifest-checked, privilege flags stripped before write.
+- Hardened install path: size / file-count capped, zip-slip-validated, manifest-checked, privilege flags stripped before write.
 
 ### Keyboard shortcuts
 
@@ -110,6 +123,8 @@ npm install
 npm start
 ```
 
+> macOS code paths exist in the source (hidden-inset title bar, etc.) so `npm start` runs on a Mac, but no signed `.dmg` is built — Windows and Linux are the only shipped targets.
+
 ## Build
 
 Windows:
@@ -118,7 +133,7 @@ Windows:
 npm run build:win
 ```
 
-Outputs `dist/WizardBrowser-Setup-x.x.x.exe` (NSIS installer).
+Outputs `dist/WizardBrowser-Setup-x.x.x.exe` (NSIS installer; the bundled Tor binary lives under `resources/tor/` in the installed app, fetched into `./tor/` at build time by CI).
 
 Linux:
 
@@ -128,6 +143,8 @@ npm run build:linux
 
 Outputs `dist/Wizard-Browser-x.x.x.AppImage` and `.deb`.
 
+Both targets are also built automatically on tag push via the `.github/workflows/build.yml` GitHub Action, which is what feeds the auto-updater.
+
 ## Windows SmartScreen
 
 On first run, Windows may show "Windows protected your PC". This is expected for unsigned open-source software. Click "More info" → "Run anyway".
@@ -136,18 +153,21 @@ On first run, Windows may show "Windows protected your PC". This is expected for
 
 ```
 wizard-browser/
-├── main.js                 Electron main (privacy, sessions, adblock, store, IPC, updater)
+├── main.js                 Electron main (privacy, sessions, adblock, Tor, store, IPC, updater)
 ├── config.js               Supabase URL + publishable key for the Extension Store
 ├── preload.js              Preload bridge for the browser shell
-├── preload-search.js       Preload injected into every inner page
-├── browser.html            Browser shell (tab bar, toolbar)
+├── preload-search.js       Preload injected into every inner page + every webview
+├── browser.html            Browser shell (tab bar, toolbar, padlock)
 ├── search.html             Wizard Search homepage
 ├── settings.html           Settings panel
 ├── extensions.html         Extension manager + store
-├── ubo-dashboard.html      Ad blocker dashboard
+├── ubo-dashboard.html      Native ad blocker dashboard
+├── splash.html             Boot splash
 ├── built-in-extensions/    Extensions auto-extracted on first run
 ├── tracker-list.json       Static fallback blocklist
 ├── backgrounds/            Built-in wallpapers
+├── .github/                CI workflow + Tor-fetch script
+├── build/                  Installer icons + art-generation script
 ├── package.json
 └── logo.png / thumbnail.png
 ```
@@ -156,6 +176,8 @@ wizard-browser/
 
 - MrBlight — contributor
 - [SearXNG](https://searxng.org/), [Wikipedia](https://wikipedia.org/), [Wikidata](https://www.wikidata.org/), [Piped](https://github.com/TeamPiped/Piped) for search
+- [gorhill/uBlock](https://github.com/gorhill/uBlock) and [Ghostery's adblocker engine](https://github.com/ghostery/adblocker)
+- [The Tor Project](https://www.torproject.org/)
 - [Electron](https://www.electronjs.org/)
 
 ## License
