@@ -12,7 +12,9 @@
     "start": "electron .",
     "build": "electron-builder --win nsis --linux AppImage",
     "build:win": "electron-builder --win nsis",
-    "build:linux": "electron-builder --linux AppImage deb"
+    "build:linux": "electron-builder --linux AppImage deb",
+    "build:flatpak": "electron-builder --linux flatpak",
+    "build:mac": "electron-builder --mac dmg zip"
   },
   "contributors": [
     "MrBlight (https://github.com/MrBlight)"
@@ -61,9 +63,52 @@
     "linux": {
       "target": [
         "AppImage",
-        "deb"
+        "deb",
+        "flatpak"
       ],
-      "category": "Network"
+      "category": "Network",
+      "icon": "logo.png",
+      "executableName": "wizard-browser",
+      "synopsis": "Libre, privacy-focused browser with built-in Wizard Search",
+      "description": "Libre, privacy-focused browser powered by Wizard Search. Real uBlock Origin, bundled Tor, per-site padlock, no cookies, no telemetry."
+    },
+    "flatpak": {
+      "runtime": "org.freedesktop.Platform",
+      "runtimeVersion": "23.08",
+      "sdk": "org.freedesktop.Sdk",
+      "base": "org.electronjs.Electron2.BaseApp",
+      "baseVersion": "23.08",
+      "branch": "stable",
+      "license": "LicenseRef-WPL-1.0",
+      "finishArgs": [
+        "--share=ipc",
+        "--share=network",
+        "--socket=x11",
+        "--socket=wayland",
+        "--socket=pulseaudio",
+        "--device=dri",
+        "--filesystem=xdg-download:rw",
+        "--talk-name=org.freedesktop.Notifications"
+      ],
+      "artifactName": "Wizard-Browser-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg",  "arch": ["x64"] },
+        { "target": "zip",  "arch": ["x64"] }
+      ],
+      "category": "public.app-category.utilities",
+      "icon": "build/icon.icns",
+      "artifactName": "WizardBrowser-${version}-${arch}.${ext}",
+      "darkModeSupport": true,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null
+    },
+    "dmg": {
+      "title": "Wizard Browser ${version}",
+      "artifactName": "WizardBrowser-${version}-${arch}.${ext}",
+      "writeUpdateInfo": false
     },
     "publish": [
       {
