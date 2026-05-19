@@ -6,7 +6,7 @@
   A libre browser with a built-in private search engine.
 
   [![License](https://img.shields.io/badge/license-WPL--1.0-555?style=flat-square)](./LICENSE)
-  [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-555?style=flat-square)](#install)
+  [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555?style=flat-square)](#install)
   [![Electron](https://img.shields.io/badge/electron-35-555?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
 
   [Website](https://wizardbrowser.netlify.app/) · [Extension Store](https://wizardextensionstore.netlify.app/)
@@ -127,8 +127,6 @@ npm install
 npm start
 ```
 
-> macOS code paths exist in the source (hidden-inset title bar, etc.) so `npm start` runs on a Mac, but no signed `.dmg` is built — Windows and Linux are the only shipped targets.
-
 ## Build
 
 Windows:
@@ -139,19 +137,39 @@ npm run build:win
 
 Outputs `dist/WizardBrowser-Setup-x.x.x.exe` (NSIS installer; the bundled Tor binary lives under `resources/tor/` in the installed app, fetched into `./tor/` at build time by CI).
 
+macOS:
+
+```bash
+npm run build:mac
+```
+
+Outputs `dist/WizardBrowser-x.x.x-x64.dmg` and `.zip`. Builds **unsigned** — see [macOS Gatekeeper](#macos-gatekeeper) below. Apple Silicon users run the x64 build via Rosetta 2.
+
 Linux:
 
 ```bash
 npm run build:linux
 ```
 
-Outputs `dist/Wizard-Browser-x.x.x.AppImage` and `.deb`.
+Outputs `dist/Wizard-Browser-x.x.x.AppImage`, `.deb`, and `.flatpak`. Building the Flatpak target locally requires `flatpak-builder` plus the `org.freedesktop.Platform//23.08` and `org.electronjs.Electron2.BaseApp//23.08` runtimes; CI handles all of that automatically. If you only want the AppImage + deb, use `electron-builder --linux AppImage deb`.
 
-Both targets are also built automatically on tag push via the `.github/workflows/build.yml` GitHub Action, which is what feeds the auto-updater.
+All three platforms are built automatically on tag push via the `.github/workflows/build.yml` GitHub Action, which feeds the auto-updater.
 
 ## Windows SmartScreen
 
 On first run, Windows may show "Windows protected your PC". This is expected for unsigned open-source software. Click "More info" → "Run anyway".
+
+## macOS Gatekeeper
+
+The macOS build is **not** signed or notarized (we don't have an Apple Developer account — same approach as the unsigned Windows build). On first launch macOS will refuse to open the app with "Wizard Browser can't be opened because Apple cannot check it for malicious software."
+
+Bypass it once:
+
+1. **Right-click** the `Wizard Browser.app` icon in `/Applications` (or wherever you dropped it).
+2. Click **Open**.
+3. macOS will show the same warning but with an extra **Open** button. Click it.
+
+After the first launch, the app opens normally from then on.
 
 ## Project layout
 

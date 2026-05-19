@@ -41,9 +41,68 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+
+      # Flatpak toolchain. We do --user installs so we don't have to deal
+      # with sudo for flatpak (only apt-get needs sudo here). The Electron
+      # BaseApp + Freedesktop runtime pull a few hundred MB but they cache
+      # well on the runner if you run this job often.
+      - name: Install Flatpak toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder elfutils
+          flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install -y --user --noninteractive flathub \
+            org.freedesktop.Platform//23.08 \
+            org.freedesktop.Sdk//23.08 \
+            org.electronjs.Electron2.BaseApp//23.08
+
       - name: Fetch bundled Tor (Expert Bundle)
         shell: bash
         run: bash .github/scripts/fetch-tor.sh linux x86_64
-      - run: npx electron-builder --linux AppImage deb --publish always
+
+      - run: npx electron-builder --linux AppImage deb flatpak --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-mac:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+
+      - name: Fetch bundled Tor (Expert Bundle)
+        run: bash .github/scripts/fetch-tor.sh macos x86_64
+
+      # Generate icon.icns from logo.png. macOS runners have sips +
+      # iconutil built in. sips will upscale the source PNG if needed
+      # so we don't have to commit a high-res master.
+      - name: Generate macOS icon
+        run: |
+          mkdir -p build
+          rm -rf icon.iconset && mkdir icon.iconset
+          sips -Z 1024 logo.png --out logo-1024.png
+          for size in 16 32 64 128 256 512 1024; do
+            sips -z "$size" "$size" logo-1024.png --out "icon.iconset/icon_${size}x${size}.png"
+          done
+          # Retina (@2x) variants
+          sips -z 32   32   logo-1024.png --out icon.iconset/icon_16x16@2x.png
+          sips -z 64   64   logo-1024.png --out icon.iconset/icon_32x32@2x.png
+          sips -z 256  256  logo-1024.png --out icon.iconset/icon_128x128@2x.png
+          sips -z 512  512  logo-1024.png --out icon.iconset/icon_256x256@2x.png
+          sips -z 1024 1024 logo-1024.png --out icon.iconset/icon_512x512@2x.png
+          iconutil -c icns icon.iconset -o build/icon.icns
+          rm -rf icon.iconset logo-1024.png
+          ls -lh build/icon.icns
+
+      - run: npx electron-builder --mac dmg zip --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # We do NOT have an Apple Developer cert. Don't try to sign or
+          # notarize — users will Right-click → Open the first time to
+          # bypass Gatekeeper. See README "macOS Gatekeeper" section.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
