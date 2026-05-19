@@ -10,7 +10,7 @@
   [![Electron](https://img.shields.io/badge/electron-35-555?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
 
   [Website](https://wizardbrowser.netlify.app/) · [Extension Store](https://wizardextensionstore.netlify.app/)
-  · [Website Mirror](https://privacywizard.net/)
+  · [Website Mirror](https://privacywizard.net/) · [r/PrivacyWizard](https://www.reddit.com/r/PrivacyWizard/)
 
   <br/>
 
@@ -175,6 +175,12 @@ wizard-browser/
 ├── package.json
 └── logo.png / thumbnail.png
 ```
+
+## Community
+
+- **Subreddit:** [r/PrivacyWizard](https://www.reddit.com/r/PrivacyWizard/) — release notes, feature requests, theme showcases, support threads.
+- **GitHub Discussions:** [github.com/NaniIsNano/wizard-browser/discussions](https://github.com/NaniIsNano/wizard-browser/discussions) — long-form Q&A and "show me your setup" threads.
+- **Issues:** [github.com/NaniIsNano/wizard-browser/issues](https://github.com/NaniIsNano/wizard-browser/issues) — bugs, regressions, privacy leaks. Reproduction steps + version number gets the fastest reply.
 
 ## Credits
 
