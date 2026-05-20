@@ -890,19 +890,49 @@ function createWindow() {
 
   Menu.setApplicationMenu(null);
 
-  // Hold the splash for a minimum window so it doesn't flash by on fast boots.
+  // Splash dismiss + main-window reveal. One-shot guard so the splash
+  // never flashes twice — we call this from ready-to-show on the happy
+  // path, from did-fail-load / render-process-gone on the renderer-
+  // crashed paths, and from a safety timeout if nothing else ever
+  // fires. Users were getting stuck on an infinite splash when
+  // ready-to-show didn't come back (typically a GPU init hang); the
+  // 8-second SPLASH_TIMEOUT_MS guarantees we never sit there forever.
+  let mainShown = false;
+  function showMainOnce(reason) {
+    if (mainShown) return;
+    mainShown = true;
+    if (reason && reason !== 'ready-to-show') {
+      console.warn('[boot] showing main window via fallback:', reason);
+    }
+    dismissSplash();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  }
+
   const splashStart = Date.now();
   const MIN_SPLASH_MS = 1500;
+  const SPLASH_TIMEOUT_MS = 8000;
+
   mainWindow.once('ready-to-show', () => {
     const wait = Math.max(0, MIN_SPLASH_MS - (Date.now() - splashStart));
-    setTimeout(() => {
-      dismissSplash();
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.show();
-        mainWindow.focus();
-      }
-    }, wait);
+    setTimeout(() => showMainOnce('ready-to-show'), wait);
   });
+  // Hard fallback if ready-to-show never fires.
+  setTimeout(() => showMainOnce('timeout'), SPLASH_TIMEOUT_MS);
+  // Renderer fail-fast paths — never leave the user on the splash.
+  mainWindow.webContents.once('did-fail-load', (_e, code, desc) => {
+    console.warn('[boot] browser.html failed to load:', code, desc);
+    showMainOnce('did-fail-load');
+  });
+  mainWindow.webContents.once('render-process-gone', (_e, details) => {
+    console.warn('[boot] render process gone:', details && details.reason);
+    showMainOnce('render-process-gone');
+  });
+  // Legacy unblocker — present for old Electron versions that don't emit
+  // render-process-gone in every crash path.
+  mainWindow.webContents.once('crashed', () => showMainOnce('crashed'));
 
   mainWindow.loadFile('browser.html');
 }
@@ -2343,6 +2373,31 @@ app.on('before-quit', async () => {
   }
 });
 app.on('will-quit', () => stopBundledTor());
+
+// Single-instance lock. If the user double-clicks the launcher while
+// the app is already running, we want the second click to focus the
+// existing window — NOT spawn a parallel process. This also serves as
+// the "click to unstick" escape hatch when boot stalls: the
+// second-instance handler force-shows the main window even if it's
+// still hidden behind the splash.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      // If the boot stalled and the main window is still hidden behind
+      // the splash, force it to surface here — this is the path the
+      // user discovered manually by re-running the launcher.
+      if (!mainWindow.isVisible()) {
+        if (splashWindow && !splashWindow.isDestroyed()) dismissSplash();
+        mainWindow.show();
+      }
+      mainWindow.focus();
+    }
+  });
+}
 
 app.whenReady().then(() => {
   createWindow();
