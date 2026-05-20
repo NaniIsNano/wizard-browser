@@ -823,12 +823,42 @@ function dismissSplash() {
   }, 340);
 }
 
+// Per-theme colours for the Windows native min/max/close overlay. The
+// overlay is a raw OS surface — it can't read our CSS variables — so
+// every theme needs an entry here picked to roughly match its toolbar
+// background and stay readable. Gradient-based themes (frutiger,
+// canola, retrowave) collapse to their midpoint colour.
+const TITLEBAR_COLORS = {
+  default:    { color: '#0d0d0d', symbolColor: '#cccccc' },
+  frutiger:   { color: '#a8cce8', symbolColor: '#1a2a3a' },
+  canola:     { color: '#2c4806', symbolColor: '#e0e8c8' },
+  mountains:  { color: '#141e28', symbolColor: '#cccccc' },
+  fortress:   { color: '#1e140a', symbolColor: '#d8c0a0' },
+  retrowave:  { color: '#1f0a3a', symbolColor: '#e0c0ff' },
+  rose:       { color: '#2a0e1d', symbolColor: '#f0c0d0' },
+  emerald:    { color: '#0e2a20', symbolColor: '#a0e0c0' },
+  sunset:     { color: '#2a1208', symbolColor: '#f0c08c' },
+  monochrome: { color: '#1a1a1a', symbolColor: '#aaaaaa' }
+};
+function titlebarColorsFor(theme) {
+  return TITLEBAR_COLORS[theme] || TITLEBAR_COLORS.default;
+}
+function applyTitlebarColorsFromTheme(theme) {
+  if (process.platform !== 'win32') return;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const c = titlebarColorsFor(theme);
+  try {
+    mainWindow.setTitleBarOverlay({ color: c.color, symbolColor: c.symbolColor, height: 32 });
+  } catch {}
+}
+
 function createWindow() {
   configureContentSession();
   createSplash();
 
   const isWin = process.platform === 'win32';
   const isMac = process.platform === 'darwin';
+  const initTb = titlebarColorsFor(settings.theme);
 
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -840,10 +870,12 @@ function createWindow() {
     // Chrome-style integrated title bar: drop the OS chrome on Windows/macOS
     // and let the tab bar live where the title bar used to. titleBarOverlay
     // keeps the native min/max/close buttons as an OS overlay so we don't
-    // have to ship custom window controls.
+    // have to ship custom window controls. Initial colours come from the
+    // user's saved theme so the buttons don't flash dark-default during
+    // first paint — save-settings re-applies them on every theme change.
     ...(isWin ? {
       titleBarStyle: 'hidden',
-      titleBarOverlay: { color: '#0d0d0d', symbolColor: '#aaaaaa', height: 32 }
+      titleBarOverlay: { color: initTb.color, symbolColor: initTb.symbolColor, height: 32 }
     } : isMac ? {
       titleBarStyle: 'hiddenInset'
     } : {}),
@@ -1396,6 +1428,11 @@ ipcMain.handle('save-settings',    (_, partial) => {
       adblockerStatus = { ...adblockerStatus, enabled: false, ready: false, message: 'Tracker blocking is off in Settings.' };
       broadcastAdblockerStatus();
     }
+  }
+  // If the colour scheme changed, re-tint the Windows native min/max/close
+  // overlay so it stops looking like a black bar pasted onto the toolbar.
+  if ('theme' in (partial || {}) && prev.theme !== settings.theme) {
+    applyTitlebarColorsFromTheme(settings.theme);
   }
   return true;
 });
