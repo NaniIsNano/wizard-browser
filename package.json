@@ -79,7 +79,6 @@
       "base": "org.electronjs.Electron2.BaseApp",
       "baseVersion": "23.08",
       "branch": "stable",
-      "license": "LicenseRef-WPL-1.0",
       "finishArgs": [
         "--share=ipc",
         "--share=network",
