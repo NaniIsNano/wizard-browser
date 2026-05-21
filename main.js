@@ -883,8 +883,16 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // sandbox: false is required for the <webview> tag to function;
+      // we compensate with the IPC-surface design (every privileged op
+      // goes through validated handlers in main).
       sandbox: false,
-      webviewTag: true
+      webviewTag: true,
+      // Explicit defaults — these are already Electron's defaults but
+      // pinning them defends against future regressions / footguns.
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      experimentalFeatures: false
     }
   });
 
@@ -941,9 +949,39 @@ function createWindow() {
 app.on('web-contents-created', (event, contents) => {
   if (contents.getType() !== 'webview') return;
 
+  // Popups / target=_blank links: redirect to the current webview rather
+  // than opening a new window. URL is validated first — a malicious page
+  // calling window.open('file:///etc/...') or window.open('chrome://...')
+  // would otherwise navigate the webview to a privileged scheme.
   contents.setWindowOpenHandler(({ url }) => {
-    contents.loadURL(url);
+    try {
+      const u = new URL(url);
+      if (u.protocol === 'http:' || u.protocol === 'https:' || u.protocol === 'about:') {
+        contents.loadURL(url);
+      }
+    } catch {}
     return { action: 'deny' };
+  });
+
+  // Block the same dangerous-scheme jumps when they come via in-page
+  // navigation (location.href = ..., link clicks, history.pushState
+  // followed by reload, etc.) rather than window.open.
+  contents.on('will-navigate', (event, navUrl) => {
+    try {
+      const u = new URL(navUrl);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:' && u.protocol !== 'about:') {
+        event.preventDefault();
+      }
+    } catch {
+      event.preventDefault();
+    }
+  });
+  // Refuse webPreferences overrides on any popup that does get through
+  // (defence in depth — setWindowOpenHandler should already deny).
+  contents.on('will-attach-webview', (_event, webPreferences) => {
+    delete webPreferences.preload;
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
   });
 
   contents.on('will-prevent-unload', (e) => e.preventDefault());

@@ -1,0 +1,30 @@
+name: Security audit
+
+# Runs npm audit on a schedule and on every PR that touches dependencies.
+# Reports advisories but does NOT block CI — a new advisory landing
+# upstream shouldn't crash builds while we triage it.
+on:
+  schedule:
+    # Every Monday 09:00 UTC
+    - cron: "0 9 * * 1"
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+
+jobs:
+  npm-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Audit runtime dependencies
+        run: npm audit --audit-level=high --omit=dev || true
+      - name: Audit ALL dependencies (incl. dev)
+        run: npm audit --audit-level=high || true
