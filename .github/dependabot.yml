@@ -1,0 +1,26 @@
+version: 2
+# Wizard ships an Electron browser that renders untrusted web content.
+# Dependency CVEs are a real concern, so we let Dependabot file PRs
+# weekly for npm + the GitHub Actions we use in CI. Cap at 5 open PRs
+# per ecosystem so the queue stays reviewable.
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    # Group lockfile-only bumps so we don't get one PR per transitive
+    # dependency — those are usually safe to batch.
+    groups:
+      lockfile-bumps:
+        update-types: ["patch"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "ci"
+      - "dependencies"

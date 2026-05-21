@@ -117,6 +117,12 @@
         "releaseType": "release"
       }
     ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "onlyLoadAppFromAsar": true
+    },
     "files": [
       "main.js",
       "config.js",

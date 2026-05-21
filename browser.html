@@ -2,6 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<!-- Defense-in-depth CSP. Blocks remote script/style loading, object/embed
+     elements, and <base> tag hijacking. 'unsafe-inline' / 'unsafe-eval' are
+     kept because the renderer relies heavily on inline scripts/styles and
+     the WizardScript extension runtime uses Function/eval-style loading.
+     Even with those, this CSP blocks the dominant XSS-to-RCE escalation
+     path (an injected <script src="evil.com/x.js">). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; media-src 'self' https: blob:; object-src 'none'; base-uri 'self';">
 <title>Wizard Browser</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
