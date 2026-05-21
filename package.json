@@ -1,6 +1,6 @@
 {
   "name": "wizard-browser",
-  "version": "2.20.1",
+  "version": "2.20.2",
   "description": "Libre, privacy-focused browser powered by Wizard Search",
   "author": {
     "name": "NaniIsNano",
@@ -117,12 +117,6 @@
         "releaseType": "release"
       }
     ],
-    "electronFuses": {
-      "runAsNode": false,
-      "enableNodeOptionsEnvironmentVariable": false,
-      "enableNodeCliInspectArguments": false,
-      "onlyLoadAppFromAsar": true
-    },
     "files": [
       "main.js",
       "config.js",
